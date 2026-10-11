@@ -13,6 +13,8 @@ export interface Character extends SheetInput {
   species: string
   background: string
   alignment: string
+  /** Feat names, e.g. the background's Origin feat and Human Versatile's extra feat. */
+  feats: string[]
 
   /** current is kept between 0 and max; temp HP is separate and lost first. */
   hp: { max: number; current: number; temp: number }
@@ -70,6 +72,7 @@ export function createCharacter(overrides: Partial<Character> = {}): Character {
     species: '',
     background: '',
     alignment: '',
+    feats: [],
     scores: { ...DEFAULT_SCORES },
     saveProficiencies: [],
     skills: {},
@@ -98,4 +101,12 @@ export function createCharacter(overrides: Partial<Character> = {}): Character {
     updatedAt: now,
     ...overrides,
   }
+}
+
+/**
+ * Fill in fields that didn't exist when an older character was saved,
+ * so screens never see `undefined`. Stored values always win.
+ */
+export function withDefaults(stored: Partial<Character> & { id: string }): Character {
+  return { ...createCharacter(), ...stored }
 }

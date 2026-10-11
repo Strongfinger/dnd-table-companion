@@ -1,14 +1,14 @@
 // Read/write characters. UI code uses these instead of touching `db` directly.
-import type { Character } from '../model/character'
+import { withDefaults, type Character } from '../model/character'
 import { db } from './db'
 
 /** All characters, most recently edited first. */
 export function listCharacters(): Promise<Character[]> {
-  return db.characters.orderBy('updatedAt').reverse().toArray()
+  return db.characters.orderBy('updatedAt').reverse().toArray().then((all) => all.map(withDefaults))
 }
 
 export function getCharacter(id: string): Promise<Character | undefined> {
-  return db.characters.get(id)
+  return db.characters.get(id).then((c) => c && withDefaults(c))
 }
 
 /** Insert or update. Stamps updatedAt and returns the saved copy. */
