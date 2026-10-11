@@ -12,6 +12,7 @@ describe('parseRoute', () => {
     expect(parseRoute('#/new')).toEqual({ name: 'new' })
     expect(parseRoute('#/import')).toEqual({ name: 'import' })
     expect(parseRoute('#/fights')).toEqual({ name: 'fights' })
+    expect(parseRoute('#/about')).toEqual({ name: 'about' })
     expect(parseRoute('#/fight/x1')).toEqual({ name: 'fight', id: 'x1' })
     expect(parseRoute('#/c/abc')).toEqual({ name: 'sheet', id: 'abc' })
     expect(parseRoute('#/c/abc/edit')).toEqual({ name: 'edit', id: 'abc' })

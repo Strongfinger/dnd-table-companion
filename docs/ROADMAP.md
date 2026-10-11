@@ -15,7 +15,7 @@
 
 ## Phase 2 — Initiative & combat tracker (DM, laptop/tablet)
 - [x] Add combatants: PCs linked to their sheet, quick monsters (name/AC/HP/init, numbered copies)
-- [ ] SRD monster quick-add from bundled 5e-bits data (approved; confirm file before download)
+- [x] SRD monster quick-add: 341 SRD 5.2.1 monsters (search, CR filter, average or rolled HP), About page with CC-BY credit
 - [x] Roll or enter initiative, sort, Next Turn, round counter, fight log by round
 - [x] HP and damage, the 15 conditions with durations, concentration reminder, death saves
 - [x] Built-in dice roller (2d6+3, advantage/disadvantage, Critical, real-dice entry, history)

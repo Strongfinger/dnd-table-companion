@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useRoute } from './app/router'
+import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
@@ -34,6 +35,10 @@ export default function App() {
         {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
         {route.name === 'fights' && <EncounterList />}
         {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
+        {route.name === 'about' && <About />}
+        <footer className="mt-10 text-center text-xs text-stone-600">
+          <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
+        </footer>
       </main>
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
     </>
