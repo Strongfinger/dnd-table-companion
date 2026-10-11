@@ -29,6 +29,13 @@ export default function About() {
         </p>
       </Section>
 
+      <Section title="เวอร์ชัน">
+        <p className="text-sm text-stone-300">
+          Build {new Date(__BUILD_TIME__).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+        </p>
+        <p className="mt-1 text-xs text-stone-500">ติดตั้งลงหน้าจอหลักแล้วใช้ได้แม้ไม่มีอินเทอร์เน็ต เมื่อมีเวอร์ชันใหม่จะมีปุ่มให้กดอัปเดต</p>
+      </Section>
+
       <Section title="ฟอนต์">
         <p className="text-sm text-stone-300">Noto Sans Thai, SIL Open Font License 1.1</p>
       </Section>

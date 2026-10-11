@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- DND Table Companion icon: a d20 in amber on dark stone. Content kept inside the
+       central 80% so Android's round "maskable" crop never cuts it off. -->
+  <rect width="512" height="512" rx="96" fill="#1c1917"/>
+  <g fill="none" stroke="#f59e0b" stroke-width="14" stroke-linejoin="round">
+    <polygon points="256,86 403,171 403,341 256,426 109,341 109,171"/>
+    <polygon points="256,150 352,316 160,316" fill="#f59e0b" fill-opacity="0.18"/>
+    <polyline points="256,86 256,150"/>
+    <polyline points="403,171 352,316 403,341"/>
+    <polyline points="109,171 160,316 109,341"/>
+    <polyline points="160,316 256,426 352,316"/>
+    <polyline points="109,171 256,150 403,171"/>
+  </g>
+  <text x="256" y="276" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="bold" fill="#fbbf24">20</text>
+</svg>

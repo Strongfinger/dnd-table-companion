@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import UpdatePrompt from './app/UpdatePrompt'
 import { useRoute } from './app/router'
 import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
@@ -40,6 +41,7 @@ export default function App() {
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
       </main>
+      <UpdatePrompt />
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
     </>
   )

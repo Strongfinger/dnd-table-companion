@@ -21,6 +21,9 @@
 - [x] Built-in dice roller (2d6+3, advantage/disadvantage, Critical, real-dice entry, history)
 - [x] Action / Bonus Action / Reaction tracking (sheet + tracker, refreshed at the start of each turn)
 
+## Offline / PWA
+- [x] Installable app (manifest + d20 icon), works fully offline after the first visit, update prompt, build time on About page
+
 ## Phase 3 — DM assistant (offline)
 - [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters
 - [ ] SRD monster and spell lookup
