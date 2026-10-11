@@ -69,7 +69,7 @@ export default function AddCombatants({ encounter, characters, onAdd }: {
         {srdPick && (
           <p className="mt-2 rounded-lg bg-stone-900 p-2 text-xs text-stone-300">
             {srdPick.name}: {srdPick.size} {srdPick.type} · CR {formatCR(srdPick.cr)} ({srdPick.xp} XP) · Speed {srdPick.speed}
-            {' '}· Initiative ใช้ DEX ({monster.initBonus >= 0 ? '+' : ''}{monster.initBonus}) แก้ได้ถ้าใน Stat Block ต่างไป
+            {' '}· Initiative ใช้ DEX ({monster.initBonus >= 0 ? '+' : ''}{monster.initBonus}): หลาย Stat Block บวก Proficiency Bonus เพิ่ม ตรวจแล้วแก้ช่อง "โบนัส Initiative" ได้
           </p>
         )}
         <div className="mt-3 grid grid-cols-2 gap-2">

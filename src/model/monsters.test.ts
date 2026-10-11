@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { xpMatchesCR } from '../rules'
 import { formatCR, loadSrdMonsters, monsterInput, rollMonsterHp, searchMonsters } from './monsters'
 
 describe('SRD monster data', async () => {
@@ -13,6 +14,23 @@ describe('SRD monster data', async () => {
       expect(m.hp, m.name).toBeGreaterThan(0)
       expect(m.scores, m.name).toHaveLength(6)
     }
+  })
+
+  it('every monster\'s XP matches its CR (Archmage corrected to 8,400)', () => {
+    for (const m of all) expect(xpMatchesCR(m.cr, m.xp), `${m.name} CR ${m.cr} XP ${m.xp}`).toBe(true)
+    expect(byName('Archmage')).toMatchObject({ cr: 12, xp: 8400 })
+  })
+
+  it('spot-checks against the SRD stat blocks', () => {
+    expect(byName('Wolf')).toMatchObject({ ac: 12, hp: 11, cr: 0.25 })
+    expect(byName('Ogre')).toMatchObject({ ac: 11, hp: 68, cr: 2, xp: 450 })
+    expect(byName('Young Red Dragon')).toMatchObject({ ac: 18, hp: 178, cr: 10 })
+    expect(byName('Lich')).toMatchObject({ ac: 20, hp: 315, cr: 21, xp: 33000 })
+  })
+
+  it('a tiny monster with a negative HP modifier never rolls below 1 HP', () => {
+    const tiny = all.find((m) => /-\s*\d+$/.test(m.hpRoll))!
+    expect(rollMonsterHp(tiny, () => 0)).toBe(1)
   })
 
   it('Goblin Warrior matches the stat block', () => {
