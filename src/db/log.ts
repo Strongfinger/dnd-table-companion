@@ -2,8 +2,14 @@
 import { newId } from '../model/character'
 import { db, type LogEntry } from './db'
 
-export function addLog(characterId: string, text: string): Promise<string> {
-  return db.log.add({ id: newId(), characterId, at: Date.now(), text })
+/** characterId is '' for entries that aren't about a saved character (e.g. a monster). */
+export function addLog(characterId: string, text: string, fight?: { encounterId: string; round: number }): Promise<string> {
+  return db.log.add({ id: newId(), characterId, at: Date.now(), text, ...fight })
+}
+
+/** A fight's log, oldest first (reads like a story of the battle). */
+export function listEncounterLog(encounterId: string): Promise<LogEntry[]> {
+  return db.log.where('encounterId').equals(encounterId).sortBy('at')
 }
 
 /** Latest entries for one character, newest first. */
