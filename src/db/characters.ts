@@ -18,6 +18,10 @@ export async function saveCharacter(character: Character): Promise<Character> {
   return saved
 }
 
-export function deleteCharacter(id: string): Promise<void> {
-  return db.characters.delete(id)
+/** Deletes the character and its play log. */
+export async function deleteCharacter(id: string): Promise<void> {
+  await db.transaction('rw', db.characters, db.log, async () => {
+    await db.characters.delete(id)
+    await db.log.where('characterId').equals(id).delete()
+  })
 }

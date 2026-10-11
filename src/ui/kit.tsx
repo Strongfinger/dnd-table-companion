@@ -1,5 +1,6 @@
 // Small shared UI pieces so screens stay short and look consistent.
 import { useState, type ReactNode } from 'react'
+import { parseManualRoll, rollDie } from '../rules'
 
 export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -168,5 +169,42 @@ export function RuleMessages({ messages }: { messages: { level: 'warning' | 'inf
         </li>
       ))}
     </ul>
+  )
+}
+
+/**
+ * A dice roll the player can do two ways: 🎲 let the app roll, or type the number
+ * from real dice at the table. Either way `onRoll` gets one die result (1..sides).
+ */
+export function DiceRoll({ sides, label, onRoll }: { sides: number; label: string; onRoll: (value: number, manual: boolean) => void }) {
+  const [text, setText] = useState('')
+  const manual = parseManualRoll(text, sides)
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-2">
+        <Button variant="primary" className="flex-1 whitespace-nowrap px-2" onClick={() => onRoll(rollDie(sides), false)}>
+          🎲 {label} (d{sides})
+        </Button>
+        <input
+          className="w-16 rounded-lg border border-stone-600 bg-stone-900 px-2 text-center text-base"
+          inputMode="numeric"
+          placeholder={`1–${sides}`}
+          aria-label={`ค่าที่ทอยได้จริง d${sides}`}
+          value={text}
+          onChange={(e) => setText(e.target.value.replace(/\D/g, ''))}
+        />
+        <Button
+          className={`whitespace-nowrap px-3 ${manual === null ? 'opacity-40' : ''}`}
+          onClick={() => {
+            if (manual === null) return
+            onRoll(manual, true)
+            setText('')
+          }}
+        >
+          ใช้ค่านี้
+        </Button>
+      </div>
+      {text && manual === null && <p className="text-xs text-amber-300">ใส่เลข 1–{sides}</p>}
+    </div>
   )
 }
