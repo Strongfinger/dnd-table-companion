@@ -14,9 +14,10 @@
 - [ ] QR code export/import (optional)
 
 ## Phase 2 — Initiative & combat tracker (DM, laptop/tablet)
-- [ ] Add combatants (import a player JSON, or add an SRD monster quickly)
-- [ ] Roll or enter initiative, sort, Next Turn, round counter
-- [ ] HP and damage, the 15 conditions with durations, concentration reminder
+- [x] Add combatants: PCs linked to their sheet, quick monsters (name/AC/HP/init, numbered copies)
+- [ ] SRD monster quick-add from bundled 5e-bits data (approved; confirm file before download)
+- [x] Roll or enter initiative, sort, Next Turn, round counter, fight log by round
+- [x] HP and damage, the 15 conditions with durations, concentration reminder, death saves
 - [ ] Built-in dice roller (2d6+3, advantage/disadvantage)
 
 ## Phase 3 — DM assistant (offline)

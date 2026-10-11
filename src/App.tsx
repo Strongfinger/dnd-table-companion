@@ -3,19 +3,33 @@ import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
 import CreateWizard from './screens/CreateWizard'
+import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
+import Tracker from './screens/Tracker'
 
 export default function App() {
   const route = useRoute()
+  const inFights = route.name === 'fights' || route.name === 'fight'
 
   return (
-    <main className="mx-auto min-h-dvh max-w-xl p-4">
-      {route.name === 'list' && <CharacterList />}
-      {route.name === 'new' && <CreateWizard />}
-      {route.name === 'import' && <ImportCharacter />}
-      {route.name === 'sheet' && <CharacterSheet id={route.id} />}
-      {/* key makes React start a fresh form when switching characters */}
-      {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
-    </main>
+    <>
+      <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
+        <div className="mx-auto flex max-w-5xl">
+          <a href="#/" className={`flex-1 py-3 text-center font-bold ${inFights ? 'text-stone-500' : 'border-b-2 border-amber-400 text-amber-400'}`}>📜 ตัวละคร</a>
+          <a href="#/fights" className={`flex-1 py-3 text-center font-bold ${inFights ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`}>⚔️ การต่อสู้</a>
+        </div>
+      </nav>
+      {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
+      <main className={`mx-auto min-h-dvh p-4 ${route.name === 'fight' ? 'max-w-5xl' : 'max-w-xl'}`}>
+        {route.name === 'list' && <CharacterList />}
+        {route.name === 'new' && <CreateWizard />}
+        {route.name === 'import' && <ImportCharacter />}
+        {route.name === 'sheet' && <CharacterSheet id={route.id} />}
+        {/* key makes React start a fresh form when switching characters */}
+        {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
+        {route.name === 'fights' && <EncounterList />}
+        {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
+      </main>
+    </>
   )
 }

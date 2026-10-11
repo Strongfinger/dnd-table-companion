@@ -1,12 +1,14 @@
 // In-play tracking on the sheet: HP, death saves, rests, spell slots, features, conditions.
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
-import { saveCharacter } from '../db/characters'
+import { updateCharacter } from '../db/characters'
 import { addLog } from '../db/log'
-import { damageCharacter, healCharacter, tempHpCharacter } from '../model/actions'
+import {
+  damageCharacter, deathSaveCharacter, healCharacter, isDead, reviveCharacter, tempHpCharacter, type ActionResult,
+} from '../model/actions'
 import type { Character } from '../model/character'
 import {
-  CONDITIONS, exhaustionPenalty, hitDieSize, longRest, rollDeathSave,
+  CONDITIONS, exhaustionPenalty, hitDieSize, longRest,
   shortRest, spellSlotsFor, spendHitDie, type Condition,
 } from '../rules'
 import { Button, DiceRoll, Section } from '../ui/kit'
@@ -21,71 +23,73 @@ export default function PlayPanel({ c }: { c: Character }) {
   const [resting, setResting] = useState(false)
   const [confirmLong, setConfirmLong] = useState(false)
 
-  const save = (next: Character) => saveCharacter(next)
-  /** Save the new state, show what happened, and write it to the play log. */
-  const act = (next: Character, text: string) => {
-    save(next)
-    setMessage(text)
-    addLog(c.id, text)
+  /**
+   * Apply a change to the newest saved copy (`ch`), show what happened and log it.
+   * Starting from the saved copy means quick taps never undo each other.
+   */
+  const act = async (fn: (ch: Character) => ActionResult | null) => {
+    // fn returns null for "nothing to do": save the character unchanged, log nothing.
+    const text = await updateCharacter(c.id, (ch) => fn(ch) ?? { character: ch, text: '' })
+    if (text) {
+      setMessage(text)
+      addLog(c.id, text)
+    }
   }
   const hpText = (h: Character['hp']) => `HP ${h.current}/${h.max}${h.temp ? ` (+${h.temp} Temp)` : ''}`
   const rollText = (value: number, manual: boolean) => `${manual ? 'ทอยเอง' : '🎲'} ${value}`
   const value = Math.max(0, Math.floor(Number(amount) || 0))
   const atZero = c.hp.current === 0
-  const dead = c.deathSaves.failures >= 3
+  const dead = isDead(c)
   const stable = atZero && c.deathSaves.successes >= 3
 
   function damage() {
     if (!value) return
-    const r = damageCharacter(c, value, critical)
-    act(r.character, r.text)
+    act((ch) => damageCharacter(ch, value, critical))
     setAmount('')
     setCritical(false)
   }
 
   function healing() {
     if (!value) return
-    const r = healCharacter(c, value)
-    act(r.character, r.text)
+    act((ch) => healCharacter(ch, value))
     setAmount('')
   }
 
   function tempHp() {
     if (!value) return
-    const r = tempHpCharacter(c, value)
-    act(r.character, r.text)
+    act((ch) => tempHpCharacter(ch, value))
     setAmount('')
   }
 
   function deathSave(d20: number, manual: boolean) {
-    const r = rollDeathSave(c, d20)
-    const text = {
-      success: 'สำเร็จ', failure: 'ล้มเหลว', stable: 'สำเร็จครบ 3: อาการคงที่ (Stable)',
-      dead: '💀 ล้มเหลวครบ 3: ตาย', revived: '✨ Nat 20! ฟื้นขึ้นมา 1 HP',
-    }[r.outcome]
-    const conditions = r.outcome === 'revived' ? c.conditions.filter((x) => x !== 'Unconscious') : c.conditions
-    act({ ...c, hp: r.hp, deathSaves: r.deathSaves, conditions }, `Death Save: ${rollText(d20, manual)} → ${text}`)
+    act((ch) => deathSaveCharacter(ch, d20, manual))
   }
 
   function useHitDie(roll: number, manual: boolean) {
-    const r = spendHitDie(c, roll, c.scores.con)
-    if (!r) return setMessage(atZero ? 'HP 0 ใช้ Hit Dice ไม่ได้' : 'Hit Dice หมดแล้ว')
-    act(r, `ใช้ Hit Die d${hitDieSize(c.className)}: ${rollText(roll, manual)} + CON → ฟื้น ${r.hp.current - c.hp.current} · ${hpText(r.hp)}`)
+    if (atZero || c.hitDiceSpent >= c.level) return setMessage(atZero ? 'HP 0 ใช้ Hit Dice ไม่ได้' : 'Hit Dice หมดแล้ว')
+    act((ch) => {
+      const r = spendHitDie(ch, roll, ch.scores.con)
+      if (!r) return null
+      return { character: r, text: `ใช้ Hit Die d${hitDieSize(ch.className)}: ${rollText(roll, manual)} + CON → ฟื้น ${r.hp.current - ch.hp.current} · ${hpText(r.hp)}` }
+    })
   }
 
   function finishShortRest() {
     setResting(false)
-    act(shortRest(c), '☕ พักสั้นเสร็จ: ความสามารถแบบ Short Rest กลับมาแล้ว')
+    act((ch) => ({ character: shortRest(ch), text: '☕ พักสั้นเสร็จ: ความสามารถแบบ Short Rest กลับมาแล้ว' }))
   }
 
   function doLongRest() {
     setConfirmLong(false)
-    const r = longRest(c)
-    if (!r) return setMessage('HP 0 พักยาวไม่ได้ (ต้องมีอย่างน้อย 1 HP)')
-    act(
-      { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious') },
-      '🌙 พักยาวเสร็จ: ทุกอย่างกลับมาเต็ม' + (c.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : ''),
-    )
+    if (atZero) return setMessage('HP 0 พักยาวไม่ได้ (ต้องมีอย่างน้อย 1 HP)')
+    act((ch) => {
+      const r = longRest(ch)
+      if (!r) return null
+      return {
+        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious') },
+        text: '🌙 พักยาวเสร็จ: ทุกอย่างกลับมาเต็ม' + (ch.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : ''),
+      }
+    })
   }
 
   /** Tap pip i: if it's used, give it back; otherwise use up to it. */
@@ -97,32 +101,43 @@ export default function PlayPanel({ c }: { c: Character }) {
   const slotsMissing = slots.length === 0 && tableSlots.some((n) => n > 0)
 
   function tapSlot(level: number, i: number) {
-    const slot = c.spellSlots[level]
-    const used = tapPip(slot.used, i)
-    const verb = used > slot.used ? 'ใช้' : 'คืน'
-    act(
-      { ...c, spellSlots: c.spellSlots.map((x, j) => (j === level ? { ...x, used } : x)) },
-      `${verb} Spell Slot ${SLOT_LABEL[level]} (เหลือ ${slot.max - used}/${slot.max})`,
-    )
+    act((ch) => {
+      const slot = ch.spellSlots[level]
+      const used = tapPip(slot.used, i)
+      return {
+        character: { ...ch, spellSlots: ch.spellSlots.map((x, j) => (j === level ? { ...x, used } : x)) },
+        text: `${used > slot.used ? 'ใช้' : 'คืน'} Spell Slot ${SLOT_LABEL[level]} (เหลือ ${slot.max - used}/${slot.max})`,
+      }
+    })
   }
 
   function tapFeature(id: string, i: number) {
-    const f = c.features.find((x) => x.id === id)!
-    const used = tapPip(f.used, i)
-    act(
-      { ...c, features: c.features.map((x) => (x.id === id ? { ...x, used } : x)) },
-      `${used > f.used ? 'ใช้' : 'คืน'} ${f.name} (เหลือ ${f.max - used}/${f.max})`,
-    )
+    act((ch) => {
+      const f = ch.features.find((x) => x.id === id)
+      if (!f) return null
+      const used = tapPip(f.used, i)
+      return {
+        character: { ...ch, features: ch.features.map((x) => (x.id === id ? { ...x, used } : x)) },
+        text: `${used > f.used ? 'ใช้' : 'คืน'} ${f.name} (เหลือ ${f.max - used}/${f.max})`,
+      }
+    })
   }
 
-  function changeExhaustion(level: number) {
-    const next = Math.min(6, Math.max(0, level))
-    if (next !== c.exhaustion) act({ ...c, exhaustion: next }, `Exhaustion ${c.exhaustion} → ${next}`)
+  function changeExhaustion(delta: number) {
+    act((ch) => {
+      const next = Math.min(6, Math.max(0, ch.exhaustion + delta))
+      return next === ch.exhaustion ? null : { character: { ...ch, exhaustion: next }, text: `Exhaustion ${ch.exhaustion} → ${next}` }
+    })
   }
 
   function toggleCondition(cond: Condition) {
-    const on = c.conditions.includes(cond)
-    act({ ...c, conditions: on ? c.conditions.filter((x) => x !== cond) : [...c.conditions, cond] }, `${on ? 'หาย' : 'ติด'} ${cond} (${CONDITION_TH[cond]})`)
+    act((ch) => {
+      const on = ch.conditions.includes(cond)
+      return {
+        character: { ...ch, conditions: on ? ch.conditions.filter((x) => x !== cond) : [...ch.conditions, cond] },
+        text: `${on ? 'หาย' : 'ติด'} ${cond} (${CONDITION_TH[cond]})`,
+      }
+    })
   }
   const penalty = exhaustionPenalty(c.exhaustion)
 
@@ -138,7 +153,7 @@ export default function PlayPanel({ c }: { c: Character }) {
         </div>
         <button
           type="button"
-          onClick={() => act({ ...c, heroicInspiration: !c.heroicInspiration }, c.heroicInspiration ? 'ใช้ Heroic Inspiration' : 'ได้ Heroic Inspiration')}
+          onClick={() => act((ch) => ({ character: { ...ch, heroicInspiration: !ch.heroicInspiration }, text: ch.heroicInspiration ? 'ใช้ Heroic Inspiration' : 'ได้ Heroic Inspiration' }))}
           className={`rounded-lg px-3 py-2 text-sm ${c.heroicInspiration ? 'bg-amber-500 font-bold text-stone-900' : 'bg-stone-900 text-stone-400'}`}
         >
           {c.heroicInspiration ? '★' : '☆'} Heroic Inspiration
@@ -169,6 +184,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       {atZero && (
         <div className="mt-3 rounded-lg bg-red-950/60 p-3">
           <div className="mb-2 font-bold text-red-300">{dead ? '💀 ตายแล้ว' : stable ? 'อาการคงที่ (Stable)' : 'Death Saves (DC 10)'}</div>
+          {dead && <Button className="mb-2 w-full" onClick={() => act(reviveCharacter)}>✨ ชุบชีวิต (เช่น Revivify): กลับมาที่ 1 HP</Button>}
           <div className="flex justify-between text-sm">
             <span>สำเร็จ {'●'.repeat(c.deathSaves.successes)}{'○'.repeat(3 - c.deathSaves.successes)}</span>
             <span>ล้มเหลว {'●'.repeat(c.deathSaves.failures)}{'○'.repeat(3 - c.deathSaves.failures)}</span>
@@ -184,17 +200,20 @@ export default function PlayPanel({ c }: { c: Character }) {
           className="min-w-0 flex-1 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-base"
           placeholder="ชื่อคาถา"
           value={c.concentration}
-          onChange={(e) => save({ ...c, concentration: e.target.value })}
+          onChange={(e) => {
+            const text = e.target.value
+            updateCharacter(c.id, (ch) => ({ character: { ...ch, concentration: text }, text: '' }))
+          }}
           onBlur={() => c.concentration && addLog(c.id, `🔮 เริ่ม Concentration: ${c.concentration}`)}
         />
-        {c.concentration && <button type="button" className="text-sm text-red-400" onClick={() => act({ ...c, concentration: '' }, `🔮 เลิก Concentration: ${c.concentration}`)}>ยกเลิก</button>}
+        {c.concentration && <button type="button" className="text-sm text-red-400" onClick={() => act((ch) => ({ character: { ...ch, concentration: '' }, text: `🔮 เลิก Concentration: ${ch.concentration}` }))}>ยกเลิก</button>}
       </div>
 
       {/* Spell slots */}
       {slotsMissing && (
         <div className="mt-4 rounded-lg bg-stone-900 p-3 text-sm">
           <p className="mb-2 text-stone-400">Spell Slots ยังไม่ได้ตั้ง</p>
-          <Button className="w-full" onClick={() => act({ ...c, spellSlots: tableSlots.map((max) => ({ max, used: 0 })) }, `ตั้ง Spell Slots ตามตาราง ${c.className} ${c.level}`)}>
+          <Button className="w-full" onClick={() => act((ch) => ({ character: { ...ch, spellSlots: tableSlots.map((max) => ({ max, used: 0 })) }, text: `ตั้ง Spell Slots ตามตาราง ${ch.className} ${ch.level}` }))}>
             ✨ ตั้ง Spell Slots ตามตาราง {c.className} {c.level}
           </Button>
         </div>
@@ -265,9 +284,9 @@ export default function PlayPanel({ c }: { c: Character }) {
       {/* Exhaustion */}
       <div className="mt-4 flex items-center gap-3">
         <span className="text-sm">Exhaustion</span>
-        <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(c.exhaustion - 1)}>−</button>
+        <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(-1)}>−</button>
         <span className={`w-4 text-center font-bold ${c.exhaustion ? 'text-red-400' : ''}`}>{c.exhaustion}</span>
-        <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(c.exhaustion + 1)}>+</button>
+        <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(1)}>+</button>
         {c.exhaustion > 0 && (
           <span className="text-xs text-red-300">
             {c.exhaustion >= 6 ? '💀 ตาย' : `D20 −${penalty.d20} · Speed −${penalty.speed} ft. (หักในตัวเลขแล้ว)`}

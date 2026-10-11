@@ -5,7 +5,7 @@ import { sampleCharacters } from '../dev/sampleCharacters'
 import { createCharacter } from '../model/character'
 import { ALL_FIXTURES } from '../rules/fixtures/characters'
 import { deriveSheet } from '../rules'
-import { deleteCharacter, getCharacter, listCharacters, saveCharacter } from './characters'
+import { deleteCharacter, getCharacter, listCharacters, saveCharacter, updateCharacter } from './characters'
 import { db } from './db'
 
 beforeEach(async () => {
@@ -49,5 +49,22 @@ describe('character storage', () => {
       expect(deriveSheet(loaded).saves, f.name).toEqual(f.expected.saves)
     }
     expect(await listCharacters()).toHaveLength(4)
+  })
+})
+
+describe('updateCharacter', () => {
+  it('two quick changes both survive (each starts from the newest copy)', async () => {
+    const c = await saveCharacter(createCharacter({ name: 'Boom', hp: { max: 19, current: 19, temp: 0 } }))
+    await Promise.all([
+      updateCharacter(c.id, (x) => ({ character: { ...x, hp: { ...x.hp, current: x.hp.current - 5 } }, text: 'damage' })),
+      updateCharacter(c.id, (x) => ({ character: { ...x, conditions: [...x.conditions, 'Prone'] }, text: 'prone' })),
+    ])
+    const after = (await getCharacter(c.id))!
+    expect(after.hp.current).toBe(14)
+    expect(after.conditions).toEqual(['Prone'])
+  })
+
+  it('returns null for a missing character', async () => {
+    expect(await updateCharacter('nope', (x) => ({ character: x, text: '' }))).toBeNull()
   })
 })

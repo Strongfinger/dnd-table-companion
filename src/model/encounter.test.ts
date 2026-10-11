@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { sampleCharacters } from '../dev/sampleCharacters'
-import { addEffect, combatantFromCharacter, createEncounter, createMonsters, damageMonster, healMonster, removeEffect } from './encounter'
+import {
+  addEffect, combatantFromCharacter, conditionsToClear, createEncounter, createMonsters, damageMonster, healMonster, removeEffect,
+  rollInitiative, tempHpMonster,
+} from './encounter'
 
 const goblin = { name: 'Goblin', ac: 15, hpMax: 7, initBonus: 2 }
 
@@ -60,5 +63,51 @@ describe('effects', () => {
     const g = addEffect(createMonsters(goblin, 1)[0], 'Frightened', 2, 'end')
     expect(g.effects[0]).toMatchObject({ name: 'Frightened', rounds: 2, ends: 'end' })
     expect(removeEffect(g, g.effects[0].id).effects).toEqual([])
+  })
+})
+
+describe('monster numbering', () => {
+  it('never repeats a number after one is removed', () => {
+    const [, g2, g3] = createMonsters(goblin, 3)
+    expect(createMonsters(goblin, 1, [g2, g3])[0].name).toBe('Goblin 4')
+  })
+
+  it('an unnumbered Goblin counts as 1; other names do not count', () => {
+    const solo = createMonsters(goblin, 1)
+    expect(createMonsters(goblin, 1, solo)[0].name).toBe('Goblin 2')
+    const archer = createMonsters({ ...goblin, name: 'Goblin Archer' }, 1)
+    expect(createMonsters(goblin, 1, archer)[0].name).toBe('Goblin')
+  })
+
+  it('names with special characters work', () => {
+    const big = createMonsters({ ...goblin, name: 'Ogre (big)' }, 2)
+    expect(createMonsters({ ...goblin, name: 'Ogre (big)' }, 1, big)[0].name).toBe('Ogre (big) 3')
+  })
+})
+
+describe('monster temp HP, heal text, initiative', () => {
+  const g = createMonsters(goblin, 1)[0]
+
+  it('temp HP keeps the higher value', () => {
+    const t = tempHpMonster(g, 5).combatant
+    expect(tempHpMonster(t, 3).combatant.hp.temp).toBe(5)
+    expect(tempHpMonster(t, 3).text).toContain('ไม่ซ้อนกัน')
+  })
+
+  it('heal text shows HP actually gained', () => {
+    expect(healMonster({ ...g, hp: { ...g.hp, current: 5 } }, 10).text).toContain('ฮีล 2')
+  })
+
+  it('rollInitiative adds the bonus', () => {
+    expect(rollInitiative(2, () => 0.5)).toEqual({ total: 13, how: '🎲 11 +2' })
+    expect(rollInitiative(-1, () => 0)).toEqual({ total: 0, how: '🎲 1 -1' })
+  })
+})
+
+describe('conditionsToClear', () => {
+  const ef = (name: string) => ({ id: name + Math.random(), name, rounds: 1, ends: 'end' as const })
+  it('only real conditions, and not while another effect still applies it', () => {
+    expect(conditionsToClear([ef('Prone'), ef('Bless')], [])).toEqual(['Prone'])
+    expect(conditionsToClear([ef('Prone')], [ef('Prone')])).toEqual([])
   })
 })

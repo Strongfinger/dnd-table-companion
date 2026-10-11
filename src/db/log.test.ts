@@ -19,6 +19,11 @@ describe('play log', () => {
     expect((await listLog('a')).map((e) => e.text)).toEqual(['second', 'first'])
   })
 
+  it('entries written in the same moment keep their order', async () => {
+    await Promise.all(['a1', 'a2', 'a3', 'a4'].map((t) => addLog('a', t)))
+    expect((await listLog('a')).map((e) => e.text)).toEqual(['a4', 'a3', 'a2', 'a1'])
+  })
+
   it('limits and clears', async () => {
     for (let i = 0; i < 5; i++) await addLog('a', `e${i}`)
     expect(await listLog('a', 3)).toHaveLength(3)

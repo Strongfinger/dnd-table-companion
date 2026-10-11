@@ -6,6 +6,8 @@ export type Route =
   | { name: 'list' }
   | { name: 'new' }
   | { name: 'import' }
+  | { name: 'fights' }
+  | { name: 'fight'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
 
@@ -13,6 +15,8 @@ export function parseRoute(hash: string): Route {
   const [first, id, action] = hash.replace(/^#\/?/, '').split('/')
   if (first === 'new') return { name: 'new' }
   if (first === 'import') return { name: 'import' }
+  if (first === 'fights') return { name: 'fights' }
+  if (first === 'fight' && id) return { name: 'fight', id }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
   return { name: 'list' }
 }
