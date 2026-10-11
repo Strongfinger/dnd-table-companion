@@ -15,9 +15,10 @@ export function damageCharacter(c: Character, amount: number, critical = false):
   const addedFailures = r.deathSaves.failures - c.deathSaves.failures
   const notes: string[] = [`${c.name} โดน ${amount} ดาเมจ${critical ? ' (Critical)' : ''} → ${hpText(r.hp)}`]
   if (r.dead) notes.push('💀 ตาย (Massive Damage หรือ Death Save ล้มเหลว 3 ครั้ง)')
-  else if (r.droppedToZero) notes.push('HP เหลือ 0: หมดสติ เริ่มทอย Death Save')
+  else if (r.droppedToZero) notes.push('HP เหลือ 0: Unconscious (หมดสติ) เริ่มทอย Death Save')
   else if (addedFailures > 0) notes.push(`Death Save ล้มเหลว +${addedFailures}`)
   if (c.concentration && (r.droppedToZero || r.dead)) notes.push(`🔮 Concentration (${c.concentration}) หลุดเพราะหมดสติ`)
+  // Damage absorbed by Temp HP still counts as taking damage, so the Concentration save still applies.
   else if (c.concentration) notes.push(`🔮 ทอย CON Save DC ${concentrationDC(amount)} เพื่อรักษา Concentration (${c.concentration})`)
   // Dropping to 0 HP adds Unconscious and ends Concentration.
   const conditions: Condition[] = r.droppedToZero && !c.conditions.includes('Unconscious') ? [...c.conditions, 'Unconscious'] : c.conditions
@@ -33,8 +34,8 @@ export const isDead = (c: Pick<Character, 'deathSaves' | 'hp'>) => c.hp.current 
 export function healCharacter(c: Character, amount: number): ActionResult {
   if (isDead(c)) return { character: c, text: `${c.name} ตายแล้ว: การฮีลปกติชุบชีวิตไม่ได้ (ใช้ปุ่ม "ชุบชีวิต" สำหรับคาถาอย่าง Revivify)` }
   const r = heal(c, amount)
-  // Regaining HP ends Unconscious from dropping to 0.
-  const conditions = c.hp.current === 0 ? c.conditions.filter((x) => x !== 'Unconscious') : c.conditions
+  // Regaining HP ends Unconscious from dropping to 0 (only if HP actually went up).
+  const conditions = c.hp.current === 0 && r.hp.current > 0 ? c.conditions.filter((x) => x !== 'Unconscious') : c.conditions
   return { character: { ...c, ...r, conditions }, text: `${c.name} ฮีล ${amount} → ${hpText(r.hp)}` }
 }
 
@@ -44,8 +45,13 @@ export function tempHpCharacter(c: Character, amount: number): ActionResult {
   return { character: { ...c, ...r }, text }
 }
 
-/** Record a death save roll (from the app or real dice). */
-export function deathSaveCharacter(c: Character, d20: number, manual: boolean): ActionResult {
+/** Can this character roll a death save right now? Only at 0 HP, not Stable and not dead. */
+export const isDying = (c: Pick<Character, 'deathSaves' | 'hp'>) =>
+  c.hp.current === 0 && c.deathSaves.failures < 3 && c.deathSaves.successes < 3
+
+/** Record a death save roll (from the app or real dice). Null when no death save is possible. */
+export function deathSaveCharacter(c: Character, d20: number, manual: boolean): ActionResult | null {
+  if (!isDying(c)) return null
   const r = rollDeathSave(c, d20)
   const label = {
     success: 'สำเร็จ', failure: 'ล้มเหลว', stable: 'สำเร็จครบ 3: อาการคงที่ (Stable)',
@@ -58,8 +64,9 @@ export function deathSaveCharacter(c: Character, d20: number, manual: boolean): 
   }
 }
 
-/** Bring a dead character back with 1 HP (e.g. the Revivify spell). */
-export function reviveCharacter(c: Character): ActionResult {
+/** Bring a dead character back with 1 HP (e.g. the Revivify spell). Null if not dead. */
+export function reviveCharacter(c: Character): ActionResult | null {
+  if (!isDead(c)) return null
   return {
     character: { ...c, hp: { ...c.hp, current: 1, temp: 0 }, deathSaves: { successes: 0, failures: 0 }, conditions: c.conditions.filter((x) => x !== 'Unconscious') },
     text: `✨ ${c.name} ถูกชุบชีวิต: HP 1/${c.hp.max}`,

@@ -1,9 +1,8 @@
 // One line in the initiative order; tap to open its controls.
 import { useState } from 'react'
-import {
-  damageCharacter, deathSaveCharacter, healCharacter, isDead, reviveCharacter, tempHpCharacter, type ActionResult,
-} from '../model/actions'
+import { isDead, type ActionResult } from '../model/actions'
 import type { Character } from '../model/character'
+import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import {
   addEffect, conditionsToClear, damageMonster, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
@@ -47,30 +46,32 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   // A PC's initiative bonus follows its sheet (Alert, DEX, Exhaustion can change).
   const initBonus = isPc && character ? deriveSheet(character).initiative : c.initBonus
   const same = (combatant: Combatant, text = ''): MonsterResult => ({ combatant, text })
+  /** A PC change goes through the same actions as the player's own sheet. */
+  const pcAct = (action: CharacterAction) => onCharacter((ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
   // Action economy: on the sheet for PCs, on the combatant for monsters.
   const economy = isPc && character ? character.turn : (c.turn ?? FRESH_TURN)
   function toggleEconomy(kind: ActionKind) {
-    if (isPc && character) onCharacter((ch) => ({ character: { ...ch, turn: toggleAction(ch.turn, kind) }, text: '' }))
+    if (isPc && character) pcAct({ type: 'setActionUsed', kind, used: !character.turn[kind] })
     else onUpdate((m) => same({ ...m, turn: toggleAction(m.turn ?? FRESH_TURN, kind) }))
   }
 
   function damage() {
     if (!value) return
-    if (isPc && character) onCharacter((ch) => damageCharacter(ch, value))
+    if (isPc && character) pcAct({ type: 'damage', amount: value, critical: false })
     else onUpdate((m) => damageMonster(m, value))
     setAmount('')
   }
 
   function healing() {
     if (!value) return
-    if (isPc && character) onCharacter((ch) => healCharacter(ch, value))
+    if (isPc && character) pcAct({ type: 'heal', amount: value })
     else onUpdate((m) => healMonster(m, value))
     setAmount('')
   }
 
   function temp() {
     if (!value) return
-    if (isPc && character) onCharacter((ch) => tempHpCharacter(ch, value))
+    if (isPc && character) pcAct({ type: 'tempHp', amount: value })
     else onUpdate((m) => tempHpMonster(m, value))
     setAmount('')
   }
@@ -83,12 +84,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
     const text = `${c.name}: ${name}${r ? ` ${r} รอบ (นับ${ends === 'start' ? 'ต้น' : 'ท้าย'}เทิร์น)` : ''}`
     onUpdate((m) => same(addEffect(m, name, r, ends), `🌀 ${text}`))
     // A PC's conditions also show on its sheet.
-    if (isPc && character && isConditionName(name)) {
-      onCharacter((ch) => ({
-        character: ch.conditions.includes(name) ? ch : { ...ch, conditions: [...ch.conditions, name] },
-        text: `ติด ${name} (${CONDITION_TH[name]})`,
-      }))
-    }
+    if (isPc && character && isConditionName(name)) pcAct({ type: 'setCondition', condition: name, on: true })
     setRounds('')
     setCustomEffect('')
   }
@@ -99,18 +95,14 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
     onUpdate((m) => same(removeEffect(m, effectId), `${c.name}: ${name} หมดผล`))
     // Take it off the sheet too, unless another effect still applies the same condition.
     const clear = conditionsToClear(removed, remaining)
-    if (isPc && character && clear.length) {
-      onCharacter((ch) => ({ character: { ...ch, conditions: ch.conditions.filter((x) => !clear.includes(x)) }, text: `หาย ${name}` }))
-    }
+    if (isPc && character) for (const cond of clear) pcAct({ type: 'setCondition', condition: cond, on: false })
   }
 
-  function deathSave(d20: number, manual: boolean) {
-    onCharacter((ch) => deathSaveCharacter(ch, d20, manual))
-  }
+  const deathSave = (d20: number, manual: boolean) => pcAct({ type: 'deathSave', d20, manual })
 
   function setConcentration(text: string) {
     const line = text ? `🔮 ${c.name} Concentration: ${text}` : `🔮 ${c.name} เลิก Concentration`
-    if (isPc && character) onCharacter((ch) => ({ character: { ...ch, concentration: text }, text: line }))
+    if (isPc && character) pcAct({ type: 'setConcentration', spell: text })
     else onUpdate((m) => same({ ...m, concentration: text }, line))
   }
 
@@ -128,6 +120,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           <div className="flex items-center gap-2">
             <span className="truncate font-bold">{active && '▶ '}{isPc ? '🧑' : '👹'} {c.name}</span>
             {(c.defeated || dead) && <span className="text-xs">☠️</span>}
+            {c.hidden && <span className="rounded bg-stone-700 px-1 text-xs" title="ซ่อนจากผู้เล่น">🙈 ซ่อน</span>}
           </div>
           <div className="mt-1 h-2 overflow-hidden rounded bg-stone-900">
             <div className={`h-full ${pct > 50 ? 'bg-emerald-500' : pct > 25 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} />
@@ -191,7 +184,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           {dead && character && (
             <div className="flex items-center gap-2 rounded-lg bg-red-950/60 p-2 text-sm">
               <span className="flex-1">💀 ตายแล้ว (Death Save ล้มเหลว 3 ครั้ง)</span>
-              <Button className="text-sm" onClick={() => onCharacter(reviveCharacter)}>✨ ชุบชีวิต (1 HP)</Button>
+              <Button className="text-sm" onClick={() => pcAct({ type: 'revive' })}>✨ ชุบชีวิต (1 HP)</Button>
             </div>
           )}
           {isPc && character && down && character.deathSaves.failures < 3 && character.deathSaves.successes < 3 && (
@@ -271,6 +264,11 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
               </button>
             )}
             {isPc && character && <a href={`#/c/${character.id}`} className="rounded bg-stone-700 px-2 py-1">ดูใบตัวละคร</a>}
+            {!isPc && (
+              <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={() => onUpdate((m) => same({ ...m, hidden: !m.hidden }, m.hidden ? `👁 ${c.name} ปรากฏตัว` : ''))}>
+                {c.hidden ? '👁 ให้ผู้เล่นเห็น' : '🙈 ซ่อนจากผู้เล่น'}
+              </button>
+            )}
             <button type="button" className="ml-auto text-red-400" onClick={() => setConfirmRemove(!confirmRemove)}>เอาออก</button>
             {confirmRemove && <Button variant="danger" className="text-sm" onClick={onRemove}>ยืนยันเอาออก</Button>}
           </div>

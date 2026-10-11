@@ -33,13 +33,13 @@ Live scope: players' own sheets synced with the DM · players see initiative ord
 monsters shown to players with name and rough health only (never exact HP) · shared dice log.
 Estimates are in "sessions" (one long working block like the ones that built Phase 1 or 2).
 
-## Step A — Sync-ready foundation (no networking) · 1–2 sessions
-- [ ] Campaign: groups characters, fights and notes; a lobby is a live session of a campaign
-- [ ] Device identity (random id + device name) and ownership: a player's device owns their character, the DM owns fights/monsters/notes
-- [ ] Revision counter on every saved record; app/data version handshake
-- [ ] Every change expressed as a small serializable action (we already have pure rule functions + `updateCharacter`)
-- [ ] DM-secret flags: hidden monsters, exact HP, notes
-- [ ] Validation for incoming actions (reuse the import validation: network data is untrusted)
+## Step A — Sync-ready foundation (no networking) · 1–2 sessions ✅ done 2026-10-11
+- [x] Campaign: groups characters, fights and notes; a lobby is a live session of a campaign
+- [x] Device identity (random id + device name) and ownership: a player's device owns their character, the DM owns fights/monsters/notes
+- [x] Revision counter on every saved record; app/data version handshake
+- [x] Every change expressed as a small serializable action (we already have pure rule functions + `updateCharacter`)
+- [x] DM-secret flags: hidden monsters, exact HP, notes
+- [x] Validation for incoming actions (reuse the import validation: network data is untrusted)
 
 ## Step B — Realtime service trial · 1 session
 - [ ] Pick the free realtime service (compare Supabase Realtime, Firebase, Cloudflare/PartyKit: free limits, keys, Thai latency)
@@ -58,6 +58,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [ ] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied")
 - [ ] Shared dice log: rolls from any phone appear in the fight log
 - [ ] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect
+- [ ] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character
 
 ## Phase 5 — Hardening · 1–2 sessions
 - [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes

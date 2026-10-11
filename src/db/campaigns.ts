@@ -25,7 +25,13 @@ export async function renameCampaign(id: string, name: string): Promise<void> {
 export async function deleteCampaign(id: string): Promise<void> {
   await db.transaction('rw', db.campaigns, db.characters, db.encounters, async () => {
     await db.campaigns.delete(id)
-    await db.characters.where('campaignId').equals(id).modify({ campaignId: null })
-    await db.encounters.where('campaignId').equals(id).modify({ campaignId: null })
+    // Stamp the changed records too, so other devices can tell they changed.
+    const me = deviceId()
+    await db.characters.where('campaignId').equals(id).modify((c) => {
+      Object.assign(c, stamp({ ...c, campaignId: null }, me))
+    })
+    await db.encounters.where('campaignId').equals(id).modify((e) => {
+      Object.assign(e, stamp({ ...e, campaignId: null }, me))
+    })
   })
 }

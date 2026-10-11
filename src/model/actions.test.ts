@@ -41,15 +41,15 @@ describe('dying and death', () => {
   })
 
   it('death saves are recorded with how they were rolled', () => {
-    expect(deathSaveCharacter(down, 7, true).text).toContain('ทอยเอง 7')
-    expect(deathSaveCharacter(down, 20, false).character.hp.current).toBe(1)
+    expect(deathSaveCharacter(down, 7, true)!.text).toContain('ทอยเอง 7')
+    expect(deathSaveCharacter(down, 20, false)!.character.hp.current).toBe(1)
   })
 
   it('a dead character cannot be healed, but can be revived with 1 HP', () => {
     const dead = { ...down, deathSaves: { successes: 0, failures: 3 }, conditions: ['Unconscious' as const] }
     expect(isDead(dead)).toBe(true)
     expect(healCharacter(dead, 10).character.hp.current).toBe(0)
-    const back = reviveCharacter(dead).character
+    const back = reviveCharacter(dead)!.character
     expect(back.hp.current).toBe(1)
     expect(back.deathSaves).toEqual({ successes: 0, failures: 0 })
     expect(back.conditions).toEqual([])

@@ -20,9 +20,21 @@ export interface SyncMeta {
   updatedAt: number
 }
 
+/** A usable revision number (older or hand-edited records may lack one). */
+const safeRev = (rev: unknown) => (Number.isSafeInteger(rev) && (rev as number) >= 0 ? (rev as number) : 0)
+
 /** Stamp a change: next revision, by this device, now. */
 export function stamp<T extends SyncMeta>(record: T, deviceId: string, now = Date.now()): T {
-  return { ...record, rev: record.rev + 1, updatedBy: deviceId, updatedAt: now }
+  return { ...record, rev: safeRev(record.rev) + 1, updatedBy: deviceId, updatedAt: now }
+}
+
+/**
+ * Check the bookkeeping of a record received from another device.
+ * (A misbehaving device could still inflate revisions: the DM device stays the source of truth.)
+ */
+export function isValidSyncMeta(v: { rev?: unknown; updatedAt?: unknown; updatedBy?: unknown }): boolean {
+  return Number.isSafeInteger(v.rev) && (v.rev as number) >= 0 && (v.rev as number) < 1e9 &&
+    Number.isFinite(v.updatedAt) && typeof v.updatedBy === 'string' && v.updatedBy.length <= 64
 }
 
 /**

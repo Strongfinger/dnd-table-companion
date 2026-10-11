@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DATA_VERSION, isCompatibleVersion, newerOf, stamp, type SyncMeta } from './sync'
+import { DATA_VERSION, isCompatibleVersion, isValidSyncMeta, newerOf, stamp, type SyncMeta } from './sync'
 
 const rec = (rev: number, updatedAt: number, updatedBy: string): SyncMeta & { v: string } => ({ rev, updatedAt, updatedBy, v: `${rev}-${updatedBy}` })
 
@@ -19,5 +19,18 @@ describe('sync bookkeeping', () => {
     expect(isCompatibleVersion(DATA_VERSION)).toBe(true)
     expect(isCompatibleVersion(DATA_VERSION + 1)).toBe(false)
     expect(isCompatibleVersion('2')).toBe(false)
+  })
+})
+
+describe('bad bookkeeping from old records or other devices', () => {
+  it('stamp treats a missing or broken revision as 0', () => {
+    expect(stamp({ ...rec(0, 0, 'a'), rev: Number.NaN }, 'dm', 1).rev).toBe(1)
+  })
+
+  it('isValidSyncMeta rejects nonsense', () => {
+    expect(isValidSyncMeta({ rev: 3, updatedAt: 1, updatedBy: 'x' })).toBe(true)
+    for (const v of [{ rev: -1, updatedAt: 1, updatedBy: 'x' }, { rev: 1e12, updatedAt: 1, updatedBy: 'x' }, { rev: 1, updatedAt: Infinity, updatedBy: 'x' }, { rev: 1, updatedAt: 1 }]) {
+      expect(isValidSyncMeta(v), JSON.stringify(v)).toBe(false)
+    }
   })
 })

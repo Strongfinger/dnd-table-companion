@@ -12,9 +12,14 @@ let current: DeviceInfo | null = null
 
 /** Read this device's identity, creating it the first time the app runs here. */
 export async function loadDevice(): Promise<DeviceInfo> {
-  const stored = (await db.settings.get('device'))?.value as DeviceInfo | undefined
-  current = stored ?? { id: newId(), name: 'อุปกรณ์ของฉัน' }
-  if (!stored) await db.settings.put({ key: 'device', value: current })
+  // One transaction: two calls at the same time can't create two different ids.
+  current = await db.transaction('rw', db.settings, async () => {
+    const stored = (await db.settings.get('device'))?.value as DeviceInfo | undefined
+    if (stored) return stored
+    const created = { id: newId(), name: 'อุปกรณ์ของฉัน' }
+    await db.settings.put({ key: 'device', value: created })
+    return created
+  })
   return current
 }
 

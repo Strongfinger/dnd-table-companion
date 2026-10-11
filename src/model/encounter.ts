@@ -19,6 +19,8 @@ export interface Combatant extends TurnCombatant {
   notes: string
   /** Monsters only (a PC's action economy is on its sheet). Missing in older saves = fresh. */
   turn?: ActionEconomy
+  /** DM secret: not shown to players (e.g. an ambusher not yet revealed). */
+  hidden?: boolean
 }
 
 export interface Encounter {

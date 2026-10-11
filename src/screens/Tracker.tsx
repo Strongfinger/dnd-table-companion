@@ -8,10 +8,13 @@ import { deleteEncounter, getEncounter, updateEncounter } from '../db/encounters
 import { addLog, listEncounterLog } from '../db/log'
 import { isDead, type ActionResult } from '../model/actions'
 import type { Character } from '../model/character'
+import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
 import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
 import { Button, Section } from '../ui/kit'
+import { playerView } from '../model/playerView'
 import AddCombatants from './AddCombatants'
+import PlayerViewPanel from './PlayerViewPanel'
 import CombatantRow from './CombatantRow'
 
 
@@ -22,6 +25,7 @@ export default function Tracker({ id }: { id: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showPlayerView, setShowPlayerView] = useState(false)
 
   if (e === undefined) return null
   if (e === null) return <p className="text-center text-stone-400">ไม่พบการต่อสู้นี้</p>
@@ -61,6 +65,12 @@ export default function Tracker({ id }: { id: string }) {
     if (text) await log(text)
   }
 
+  /** Apply a character action to a linked PC (optionally logging it to the fight and the sheet). */
+  async function pcAction(characterId: string, action: CharacterAction, logIt = true) {
+    const text = await updateCharacter(characterId, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
+    if (text && logIt) await log(text, characterId)
+  }
+
   async function updatePc(characterId: string, fn: (latest: Character) => ActionResult) {
     const text = await updateCharacter(characterId, fn)
     if (text) await log(text, characterId)
@@ -70,8 +80,7 @@ export default function Tracker({ id }: { id: string }) {
   async function clearPcConditions(list: Combatant[]) {
     for (const c of list) {
       if (c.kind !== 'pc' || !c.characterId) continue
-      const clear = conditionsToClear(c.effects, [])
-      if (clear.length) await updateCharacter(c.characterId, (ch) => ({ character: { ...ch, conditions: ch.conditions.filter((x) => !clear.includes(x)) }, text: '' }))
+      for (const condition of conditionsToClear(c.effects, [])) await pcAction(c.characterId, { type: 'setCondition', condition, on: false }, false)
     }
   }
 
@@ -109,7 +118,7 @@ export default function Tracker({ id }: { id: string }) {
   /** Start of a creature's turn: Action, Bonus Action and Reaction come back. */
   async function refreshTurn(activeId: string | null, combatants: Combatant[]) {
     const who = combatants.find((c) => c.id === activeId)
-    if (who?.kind === 'pc' && who.characterId) await updateCharacter(who.characterId, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))
+    if (who?.kind === 'pc' && who.characterId) await pcAction(who.characterId, { type: 'resetTurn' }, false)
   }
   const freshMonster = (list: Combatant[], activeId: string | null) =>
     list.map((c) => (c.id === activeId && c.kind === 'monster' ? { ...c, turn: startOfTurn() } : c))
@@ -127,7 +136,7 @@ export default function Tracker({ id }: { id: string }) {
       if (b.kind !== 'pc' || !b.characterId) continue
       const after = r.t.combatants.find((x) => x.id === b.id)?.effects ?? []
       const clear = conditionsToClear(b.effects.filter((ef) => !after.some((x) => x.id === ef.id)), after)
-      if (clear.length) await updateCharacter(b.characterId, (ch) => ({ character: { ...ch, conditions: ch.conditions.filter((x) => !clear.includes(x)) }, text: '' }))
+      for (const condition of clear) await pcAction(b.characterId, { type: 'setCondition', condition, on: false }, false)
     }
     for (const ev of r.t.events) await log(ev.text, '', r.t.state.round)
   }
@@ -146,7 +155,7 @@ export default function Tracker({ id }: { id: string }) {
     await clearPcConditions(enc.combatants)
     // Out of combat: everyone's Action / Bonus Action / Reaction is available again.
     for (const c of enc.combatants) {
-      if (c.kind === 'pc' && c.characterId) await updateCharacter(c.characterId, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))
+      if (c.kind === 'pc' && c.characterId) await pcAction(c.characterId, { type: 'resetTurn' }, false)
     }
     await log(`🏁 จบการต่อสู้ (${enc.round} รอบ)`)
   }
@@ -200,8 +209,13 @@ export default function Tracker({ id }: { id: string }) {
             {enc.status === 'ended' && `จบแล้ว (${enc.round} รอบ)`}
           </p>
         </div>
-        <Button onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : '+ เพิ่มผู้ร่วมต่อสู้'}</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowPlayerView(!showPlayerView)}>{showPlayerView ? 'ปิดมุมมองผู้เล่น' : '👁 มุมมองผู้เล่น'}</Button>
+          <Button onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : '+ เพิ่มผู้ร่วมต่อสู้'}</Button>
+        </div>
       </header>
+
+      {showPlayerView && <PlayerViewPanel view={playerView(enc, byId)} />}
 
       {adding && <AddCombatants encounter={enc} characters={characters} onAdd={addCombatants} />}
 

@@ -3,14 +3,10 @@
 import { useState } from 'react'
 import { updateCharacter } from '../db/characters'
 import { addLog } from '../db/log'
-import {
-  damageCharacter, deathSaveCharacter, healCharacter, isDead, reviveCharacter, tempHpCharacter, type ActionResult,
-} from '../model/actions'
+import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
-import {
-  CONDITIONS, exhaustionPenalty, hitDieSize, longRest, startOfTurn, toggleAction,
-  shortRest, spellSlotsFor, spendHitDie, type Condition,
-} from '../rules'
+import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
+import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, Section } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
 
@@ -22,21 +18,26 @@ export default function PlayPanel({ c }: { c: Character }) {
   const [message, setMessage] = useState('')
   const [resting, setResting] = useState(false)
   const [confirmLong, setConfirmLong] = useState(false)
+  // Concentration text being typed; saved (and logged once) when the box loses focus.
+  const [spell, setSpell] = useState(c.concentration)
+  const [shownSpell, setShownSpell] = useState(c.concentration)
+  if (c.concentration !== shownSpell) {
+    // Changed elsewhere (e.g. dropped at 0 HP, or by the DM's tracker): show the new value.
+    setShownSpell(c.concentration)
+    setSpell(c.concentration)
+  }
 
   /**
-   * Apply a change to the newest saved copy (`ch`), show what happened and log it.
-   * Starting from the saved copy means quick taps never undo each other.
+   * Send one action (see model/characterActions.ts): it's applied to the newest saved copy,
+   * shown, and logged. In a live lobby the same actions will travel to the DM's device.
    */
-  const act = async (fn: (ch: Character) => ActionResult | null) => {
-    // fn returns null for "nothing to do": save the character unchanged, log nothing.
-    const text = await updateCharacter(c.id, (ch) => fn(ch) ?? { character: ch, text: '' })
+  const act = async (action: CharacterAction) => {
+    const text = await updateCharacter(c.id, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
     if (text) {
       setMessage(text)
       addLog(c.id, text)
     }
   }
-  const hpText = (h: Character['hp']) => `HP ${h.current}/${h.max}${h.temp ? ` (+${h.temp} Temp)` : ''}`
-  const rollText = (value: number, manual: boolean) => `${manual ? 'ทอยเอง' : '🎲'} ${value}`
   const value = Math.max(0, Math.floor(Number(amount) || 0))
   const atZero = c.hp.current === 0
   const dead = isDead(c)
@@ -44,52 +45,39 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   function damage() {
     if (!value) return
-    act((ch) => damageCharacter(ch, value, critical))
+    act({ type: 'damage', amount: value, critical })
     setAmount('')
     setCritical(false)
   }
 
   function healing() {
     if (!value) return
-    act((ch) => healCharacter(ch, value))
+    act({ type: 'heal', amount: value })
     setAmount('')
   }
 
   function tempHp() {
     if (!value) return
-    act((ch) => tempHpCharacter(ch, value))
+    act({ type: 'tempHp', amount: value })
     setAmount('')
   }
 
-  function deathSave(d20: number, manual: boolean) {
-    act((ch) => deathSaveCharacter(ch, d20, manual))
-  }
+  const deathSave = (d20: number, manual: boolean) => act({ type: 'deathSave', d20, manual })
 
   function useHitDie(roll: number, manual: boolean) {
     if (atZero || c.hitDiceSpent >= c.level) return setMessage(atZero ? 'HP 0 ใช้ Hit Dice ไม่ได้' : 'Hit Dice หมดแล้ว')
-    act((ch) => {
-      const r = spendHitDie(ch, roll, ch.scores.con)
-      if (!r) return null
-      return { character: r, text: `ใช้ Hit Die d${hitDieSize(ch.className)}: ${rollText(roll, manual)} + CON → ฟื้น ${r.hp.current - ch.hp.current} · ${hpText(r.hp)}` }
-    })
+    act({ type: 'spendHitDie', roll, manual })
   }
 
   function finishShortRest() {
     setResting(false)
-    act((ch) => ({ character: shortRest(ch), text: '☕ พักสั้นเสร็จ: ความสามารถแบบ Short Rest กลับมาแล้ว' }))
+    act({ type: 'shortRest' })
   }
 
   function doLongRest() {
     setConfirmLong(false)
     if (atZero) return setMessage('HP 0 พักยาวไม่ได้ (ต้องมีอย่างน้อย 1 HP)')
-    act((ch) => {
-      const r = longRest(ch)
-      if (!r) return null
-      return {
-        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious'), turn: startOfTurn() },
-        text: '🌙 พักยาวเสร็จ: ทุกอย่างกลับมาเต็ม' + (ch.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : ''),
-      }
-    })
+    act({ type: 'longRest' })
   }
 
   /** Tap pip i: if it's used, give it back; otherwise use up to it. */
@@ -97,48 +85,17 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   const slots = c.spellSlots.map((s, i) => ({ ...s, level: i })).filter((s) => s.max > 0)
   // Characters made before slots existed have none set; offer the class table in one tap.
-  const tableSlots = spellSlotsFor(c.className, c.level)
-  const slotsMissing = slots.length === 0 && tableSlots.some((n) => n > 0)
+  const slotsMissing = slots.length === 0 && spellSlotsFor(c.className, c.level).some((n) => n > 0)
 
-  function tapSlot(level: number, i: number) {
-    act((ch) => {
-      const slot = ch.spellSlots[level]
-      const used = tapPip(slot.used, i)
-      return {
-        character: { ...ch, spellSlots: ch.spellSlots.map((x, j) => (j === level ? { ...x, used } : x)) },
-        text: `${used > slot.used ? 'ใช้' : 'คืน'} Spell Slot ${SLOT_LABEL[level]} (เหลือ ${slot.max - used}/${slot.max})`,
-      }
-    })
-  }
+  const tapSlot = (level: number, i: number) => act({ type: 'setSlotUsed', level, used: tapPip(c.spellSlots[level].used, i) })
 
   function tapFeature(id: string, i: number) {
-    act((ch) => {
-      const f = ch.features.find((x) => x.id === id)
-      if (!f) return null
-      const used = tapPip(f.used, i)
-      return {
-        character: { ...ch, features: ch.features.map((x) => (x.id === id ? { ...x, used } : x)) },
-        text: `${used > f.used ? 'ใช้' : 'คืน'} ${f.name} (เหลือ ${f.max - used}/${f.max})`,
-      }
-    })
+    const f = c.features.find((x) => x.id === id)
+    if (f) act({ type: 'setFeatureUsed', featureId: id, used: tapPip(f.used, i) })
   }
 
-  function changeExhaustion(delta: number) {
-    act((ch) => {
-      const next = Math.min(6, Math.max(0, ch.exhaustion + delta))
-      return next === ch.exhaustion ? null : { character: { ...ch, exhaustion: next }, text: `Exhaustion ${ch.exhaustion} → ${next}` }
-    })
-  }
-
-  function toggleCondition(cond: Condition) {
-    act((ch) => {
-      const on = ch.conditions.includes(cond)
-      return {
-        character: { ...ch, conditions: on ? ch.conditions.filter((x) => x !== cond) : [...ch.conditions, cond] },
-        text: `${on ? 'หาย' : 'ติด'} ${cond} (${CONDITION_TH[cond]})`,
-      }
-    })
-  }
+  const changeExhaustion = (delta: number) => act({ type: 'setExhaustion', level: c.exhaustion + delta })
+  const toggleCondition = (cond: Condition) => act({ type: 'setCondition', condition: cond, on: !c.conditions.includes(cond) })
   const penalty = exhaustionPenalty(c.exhaustion)
 
   return (
@@ -153,7 +110,7 @@ export default function PlayPanel({ c }: { c: Character }) {
         </div>
         <button
           type="button"
-          onClick={() => act((ch) => ({ character: { ...ch, heroicInspiration: !ch.heroicInspiration }, text: ch.heroicInspiration ? 'ใช้ Heroic Inspiration' : 'ได้ Heroic Inspiration' }))}
+          onClick={() => act({ type: 'setInspiration', on: !c.heroicInspiration })}
           className={`rounded-lg px-3 py-2 text-sm ${c.heroicInspiration ? 'bg-amber-500 font-bold text-stone-900' : 'bg-stone-900 text-stone-400'}`}
         >
           {c.heroicInspiration ? '★' : '☆'} Heroic Inspiration
@@ -185,10 +142,10 @@ export default function PlayPanel({ c }: { c: Character }) {
         <div className="flex-1">
           <ActionEconomyBar
             economy={c.turn}
-            onToggle={(kind) => updateCharacter(c.id, (ch) => ({ character: { ...ch, turn: toggleAction(ch.turn, kind) }, text: '' }))}
+            onToggle={(kind) => act({ type: 'setActionUsed', kind, used: !c.turn[kind] })}
           />
         </div>
-        <Button className="whitespace-nowrap px-2 text-sm" onClick={() => updateCharacter(c.id, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))}>
+        <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
           ↻ เทิร์นใหม่
         </Button>
       </div>
@@ -197,7 +154,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       {atZero && (
         <div className="mt-3 rounded-lg bg-red-950/60 p-3">
           <div className="mb-2 font-bold text-red-300">{dead ? '💀 ตายแล้ว' : stable ? 'อาการคงที่ (Stable)' : 'Death Saves (DC 10)'}</div>
-          {dead && <Button className="mb-2 w-full" onClick={() => act(reviveCharacter)}>✨ ชุบชีวิต (เช่น Revivify): กลับมาที่ 1 HP</Button>}
+          {dead && <Button className="mb-2 w-full" onClick={() => act({ type: 'revive' })}>✨ ชุบชีวิต (เช่น Revivify): กลับมาที่ 1 HP</Button>}
           <div className="flex justify-between text-sm">
             <span>สำเร็จ {'●'.repeat(c.deathSaves.successes)}{'○'.repeat(3 - c.deathSaves.successes)}</span>
             <span>ล้มเหลว {'●'.repeat(c.deathSaves.failures)}{'○'.repeat(3 - c.deathSaves.failures)}</span>
@@ -212,21 +169,19 @@ export default function PlayPanel({ c }: { c: Character }) {
         <input
           className="min-w-0 flex-1 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-base"
           placeholder="ชื่อคาถา"
-          value={c.concentration}
-          onChange={(e) => {
-            const text = e.target.value
-            updateCharacter(c.id, (ch) => ({ character: { ...ch, concentration: text }, text: '' }))
-          }}
-          onBlur={() => c.concentration && addLog(c.id, `🔮 เริ่ม Concentration: ${c.concentration}`)}
+          value={spell}
+          onChange={(e) => setSpell(e.target.value)}
+          onBlur={() => act({ type: 'setConcentration', spell: spell.trim() })}
+          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         />
-        {c.concentration && <button type="button" className="text-sm text-red-400" onClick={() => act((ch) => ({ character: { ...ch, concentration: '' }, text: `🔮 เลิก Concentration: ${ch.concentration}` }))}>ยกเลิก</button>}
+        {c.concentration && <button type="button" className="text-sm text-red-400" onClick={() => act({ type: 'setConcentration', spell: '' })}>ยกเลิก</button>}
       </div>
 
       {/* Spell slots */}
       {slotsMissing && (
         <div className="mt-4 rounded-lg bg-stone-900 p-3 text-sm">
           <p className="mb-2 text-stone-400">Spell Slots ยังไม่ได้ตั้ง</p>
-          <Button className="w-full" onClick={() => act((ch) => ({ character: { ...ch, spellSlots: tableSlots.map((max) => ({ max, used: 0 })) }, text: `ตั้ง Spell Slots ตามตาราง ${ch.className} ${ch.level}` }))}>
+          <Button className="w-full" onClick={() => act({ type: 'setSlotsFromTable' })}>
             ✨ ตั้ง Spell Slots ตามตาราง {c.className} {c.level}
           </Button>
         </div>
