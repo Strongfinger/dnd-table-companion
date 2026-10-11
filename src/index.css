@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/* Noto Sans Thai is bundled with the app (not loaded from Google), so it works offline. */
+@theme {
+  --font-sans: 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+}
