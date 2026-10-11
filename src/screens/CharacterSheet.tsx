@@ -8,6 +8,7 @@ import ExportPanel from './ExportPanel'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
 import { Button, Section, Stat } from '../ui/kit'
+import { Term } from '../ui/help'
 
 export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
@@ -31,9 +32,12 @@ export default function CharacterSheet({ id }: { id: string }) {
           <p className="text-stone-400">
             {c.className} {c.level}
             {c.subclass && ` (${c.subclass})`}
-            {c.species && ` · ${c.species}`}
-            {c.background && ` · ${c.background}`}
+            {c.species && <> · <Term name={c.species} /></>}
+            {c.background && <> · <Term name={c.background} /></>}
           </p>
+          {c.feats.length > 0 && (
+            <p className="text-sm text-stone-400">Feats: {c.feats.map((f, i) => <span key={f + i}>{i > 0 && ', '}<Term name={f} /></span>)}</p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2">
           <Button onClick={() => setExporting(!exporting)}>📤</Button>

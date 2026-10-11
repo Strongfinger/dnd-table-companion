@@ -1,6 +1,8 @@
 // Small shared UI pieces so screens stay short and look consistent.
 import { useState, type ReactNode } from 'react'
 import { ACTION_KINDS, parseManualRoll, rollDie, type ActionEconomy, type ActionKind } from '../rules'
+import { Term } from './help'
+import { useHelp } from './useHelp'
 
 export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -118,7 +120,7 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
     <div className="rounded-lg bg-stone-900 px-2 py-2 text-center">
       <div className="text-xl font-bold">{value}</div>
       {sub && <div className="text-xs text-stone-400">{sub}</div>}
-      <div className="text-xs text-stone-400">{label}</div>
+      <div className="text-xs text-stone-400"><Term name={label} /></div>
     </div>
   )
 }
@@ -227,13 +229,32 @@ export function ActionEconomyBar({ economy, onToggle, compact = false }: {
         const style = used ? 'border-stone-700 text-stone-500 line-through' : 'border-emerald-500 bg-emerald-900/60 text-emerald-100'
         const size = compact ? 'px-1.5 text-[10px]' : 'flex-1 px-2 py-2 text-sm font-bold'
         return onToggle ? (
-          <button key={kind} type="button" aria-pressed={used} onClick={() => onToggle(kind)} className={`rounded-lg border ${style} ${size}`}>
-            {ACTION_LABEL[kind]}
-          </button>
+          <EconomyButton key={kind} label={ACTION_LABEL[kind]} used={used} className={`rounded-lg border ${style} ${size}`} onClick={() => onToggle(kind)} />
         ) : (
           <span key={kind} className={`rounded border ${style} ${size}`}>{compact ? ACTION_LABEL[kind].replace('Bonus Action', 'Bonus') : ACTION_LABEL[kind]}</span>
         )
       })}
     </div>
   )
+}
+
+/** A button that also shows help for its label (hover with a mouse, press-and-hold on a phone). */
+export function HelpButton({ term, children, className = '', onClick, ...rest }: {
+  term: string
+  children: ReactNode
+  className?: string
+  onClick: () => void
+  'aria-pressed'?: boolean
+  title?: string
+}) {
+  const help = useHelp(term)
+  return (
+    <button type="button" {...help} {...rest} onClick={onClick} className={className}>
+      {children}
+    </button>
+  )
+}
+
+function EconomyButton({ label, used, className, onClick }: { label: string; used: boolean; className: string; onClick: () => void }) {
+  return <HelpButton term={label} aria-pressed={used} className={className} onClick={onClick}>{label}</HelpButton>
 }

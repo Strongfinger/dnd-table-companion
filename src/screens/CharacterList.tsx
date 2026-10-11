@@ -28,6 +28,7 @@ export default function CharacterList() {
         </Button>
         <Button className="py-3" onClick={() => go('/import')}>📥 นำเข้า</Button>
       </div>
+      <Button className="w-full" onClick={() => go('/party')}>👥 ภาพรวมปาร์ตี้ (HP · สถานะ · ทรัพยากร)</Button>
 
       {characters?.length === 0 && (
         <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีตัวละคร กดปุ่มด้านบนเพื่อสร้าง</p>

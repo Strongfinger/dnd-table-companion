@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
+import { HelpProvider } from './ui/help'
 import { useRoute } from './app/router'
 import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
@@ -9,6 +10,7 @@ import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
+import PartyOverview from './screens/PartyOverview'
 import Tracker from './screens/Tracker'
 
 export default function App() {
@@ -18,7 +20,7 @@ export default function App() {
   const inFights = route.name === 'fights' || route.name === 'fight'
 
   return (
-    <>
+    <HelpProvider>
       <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
         <div className="mx-auto flex max-w-5xl">
           <a href="#/" className={`flex-1 py-3 text-center font-bold ${inFights ? 'text-stone-500' : 'border-b-2 border-amber-400 text-amber-400'}`}>📜 ตัวละคร</a>
@@ -27,7 +29,7 @@ export default function App() {
       </nav>
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
-      <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' ? 'max-w-5xl' : 'max-w-xl'}`}>
+      <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' || route.name === 'party' ? 'max-w-5xl' : 'max-w-xl'}`}>
         {route.name === 'list' && <CharacterList />}
         {route.name === 'new' && <CreateWizard />}
         {route.name === 'import' && <ImportCharacter />}
@@ -37,12 +39,13 @@ export default function App() {
         {route.name === 'fights' && <EncounterList />}
         {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
         {route.name === 'about' && <About />}
+        {route.name === 'party' && <PartyOverview />}
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
       </main>
       <UpdatePrompt />
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
-    </>
+    </HelpProvider>
   )
 }

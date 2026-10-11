@@ -9,7 +9,8 @@ import {
   type Combatant, type MonsterResult,
 } from '../model/encounter'
 import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
-import { ActionEconomyBar, Button, DiceRoll } from '../ui/kit'
+import { ActionEconomyBar, Button, DiceRoll, HelpButton } from '../ui/kit'
+import { Term } from '../ui/help'
 import UseActionDialog from '../ui/UseActionDialog'
 import { CONDITION_TH } from '../ui/labels'
 
@@ -138,7 +139,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
             {c.effects.map((ef) => (
-              <span key={ef.id} className="rounded-full bg-red-900 px-2 text-xs">{ef.name}{ef.rounds !== null && ` (${ef.rounds})`}</span>
+              <span key={ef.id} className="rounded-full bg-red-900 px-2 text-xs"><Term name={ef.name} />{ef.rounds !== null && ` (${ef.rounds})`}</span>
             ))}
             {concentration && <span className="rounded-full bg-violet-900 px-2 text-xs">🔮 {concentration}</span>}
           </div>
@@ -212,9 +213,9 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           <div className="space-y-2">
             <div className="flex flex-wrap gap-1">
               {c.effects.map((ef) => (
-                <button key={ef.id} type="button" onClick={() => dropEffect(ef.id, ef.name)} className="rounded-full border border-red-400 bg-red-900 px-2 py-0.5 text-xs">
+                <HelpButton key={ef.id} term={ef.name} onClick={() => dropEffect(ef.id, ef.name)} className="rounded-full border border-red-400 bg-red-900 px-2 py-0.5 text-xs">
                   {ef.name}{ef.rounds !== null ? ` · เหลือ ${ef.rounds}` : ''} ✕
-                </button>
+                </HelpButton>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">

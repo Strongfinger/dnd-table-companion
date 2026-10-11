@@ -8,7 +8,8 @@ import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
-import { ActionEconomyBar, Button, DiceRoll, Section } from '../ui/kit'
+import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
+import { Term } from '../ui/help'
 import UseActionDialog from '../ui/UseActionDialog'
 import { CONDITION_TH } from '../ui/labels'
 
@@ -103,15 +104,15 @@ export default function PlayPanel({ c }: { c: Character }) {
           <div className={`text-4xl font-bold ${atZero ? 'text-red-400' : ''}`}>
             {c.hp.current}<span className="text-xl text-stone-400">/{c.hp.max}</span>
           </div>
-          <div className="text-xs text-stone-400">HP{c.hp.temp > 0 && <span className="ml-2 rounded bg-sky-900 px-1 text-sky-200">Temp {c.hp.temp}</span>}</div>
+          <div className="text-xs text-stone-400">HP{c.hp.temp > 0 && <span className="ml-2 rounded bg-sky-900 px-1 text-sky-200"><Term name="Temp HP">Temp {c.hp.temp}</Term></span>}</div>
         </div>
-        <button
-          type="button"
+        <HelpButton
+          term="Heroic Inspiration"
           onClick={() => act({ type: 'setInspiration', on: !c.heroicInspiration })}
           className={`rounded-lg px-3 py-2 text-sm ${c.heroicInspiration ? 'bg-amber-500 font-bold text-stone-900' : 'bg-stone-900 text-stone-400'}`}
         >
           {c.heroicInspiration ? '★' : '☆'} Heroic Inspiration
-        </button>
+        </HelpButton>
       </div>
 
       <div className="mt-3 flex gap-2">
@@ -151,7 +152,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       {/* Death saves */}
       {atZero && (
         <div className="mt-3 rounded-lg bg-red-950/60 p-3">
-          <div className="mb-2 font-bold text-red-300">{dead ? '💀 ตายแล้ว' : stable ? 'อาการคงที่ (Stable)' : 'Death Saves (DC 10)'}</div>
+          <div className="mb-2 font-bold text-red-300">{dead ? '💀 ตายแล้ว' : stable ? <Term name="Stable">อาการคงที่ (Stable)</Term> : <Term name="Death Save">Death Saves (DC 10)</Term>}</div>
           {dead && <Button className="mb-2 w-full" onClick={() => act({ type: 'revive' })}>✨ ชุบชีวิต (เช่น Revivify): กลับมาที่ 1 HP</Button>}
           <div className="flex justify-between text-sm">
             <span>สำเร็จ {'●'.repeat(c.deathSaves.successes)}{'○'.repeat(3 - c.deathSaves.successes)}</span>
@@ -165,7 +166,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       <div className="mt-4 flex items-center gap-2">
         {c.concentration ? (
           <>
-            <span className="flex-1 rounded-lg bg-violet-900/60 px-3 py-2 text-sm">🔮 Concentration: <b>{c.concentration}</b></span>
+            <span className="flex-1 rounded-lg bg-violet-900/60 px-3 py-2 text-sm">🔮 <Term name="Concentration" />: <b>{c.concentration}</b></span>
             <button type="button" className="text-sm text-red-400" onClick={() => act({ type: 'setConcentration', spell: '' })}>เลิก</button>
           </>
         ) : (
@@ -184,7 +185,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       )}
       {slots.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1 text-sm text-stone-400">Spell Slots{c.className === 'Warlock' && ' (Pact Magic: คืนเมื่อพักสั้น)'} · แตะเพื่อใช้/คืน</div>
+          <div className="mb-1 text-sm text-stone-400"><Term name="Spell Slots" />{c.className === 'Warlock' && ' (Pact Magic: คืนเมื่อพักสั้น)'} · แตะเพื่อใช้/คืน</div>
           {slots.map((s) => (
             <div key={s.level} className="flex items-center gap-2 py-1">
               <span className="w-10 text-sm">{SLOT_LABEL[s.level]}</span>
@@ -226,10 +227,10 @@ export default function PlayPanel({ c }: { c: Character }) {
       )}
 
       {/* Rests */}
-      <div className="mt-4 text-sm text-stone-400">Hit Dice: d{hitDieSize(c.className)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
+      <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c.className)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
       <div className="mt-2 flex gap-2">
-        <Button className="flex-1" onClick={() => setResting(!resting)}>☕ พักสั้น</Button>
-        <Button className="flex-1" onClick={() => setConfirmLong(!confirmLong)}>🌙 พักยาว</Button>
+        <HelpButton term="Short Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>☕ พักสั้น</HelpButton>
+        <HelpButton term="Long Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setConfirmLong(!confirmLong)}>🌙 พักยาว</HelpButton>
       </div>
       {confirmLong && (
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
@@ -247,7 +248,7 @@ export default function PlayPanel({ c }: { c: Character }) {
 
       {/* Exhaustion */}
       <div className="mt-4 flex items-center gap-3">
-        <span className="text-sm">Exhaustion</span>
+        <span className="text-sm"><Term name="Exhaustion" /></span>
         <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(-1)}>−</button>
         <span className={`w-4 text-center font-bold ${c.exhaustion ? 'text-red-400' : ''}`}>{c.exhaustion}</span>
         <button type="button" className="h-8 w-8 rounded bg-stone-700" onClick={() => changeExhaustion(1)}>+</button>
@@ -260,20 +261,19 @@ export default function PlayPanel({ c }: { c: Character }) {
 
       {/* Conditions */}
       <div className="mt-4">
-        <div className="mb-1 text-sm text-stone-400">Conditions</div>
+        <div className="mb-1 text-sm text-stone-400">Conditions <span className="text-xs text-stone-600">· กดค้าง/ชี้เมาส์ เพื่อดูคำอธิบาย</span></div>
         <div className="flex flex-wrap gap-1.5">
           {CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion').map((cond) => {
             const on = c.conditions.includes(cond)
             return (
-              <button
+              <HelpButton
                 key={cond}
-                type="button"
-                title={CONDITION_TH[cond]}
+                term={cond}
                 onClick={() => toggleCondition(cond)}
                 className={`rounded-full border px-2.5 py-1 text-xs ${on ? 'border-red-400 bg-red-800 font-bold' : 'border-stone-600 text-stone-400'}`}
               >
                 {cond} <span className="opacity-70">{CONDITION_TH[cond]}</span>
-              </button>
+              </HelpButton>
             )
           })}
         </div>

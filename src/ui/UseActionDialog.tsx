@@ -2,7 +2,7 @@
 // pick a suggestion or type it, then it's saved to the log.
 import { useState } from 'react'
 import { cleanDetail } from '../model/actionSuggestions'
-import { Button } from './kit'
+import { Button, HelpButton } from './kit'
 
 export default function UseActionDialog({ title, suggestions, placeholder, required = false, onConfirm, onCancel }: {
   title: string
@@ -29,14 +29,14 @@ export default function UseActionDialog({ title, suggestions, placeholder, requi
         {suggestions.length > 0 && (
           <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
             {suggestions.map((s) => (
-              <button
+              <HelpButton
                 key={s}
-                type="button"
+                term={s}
                 onClick={() => setText(s)}
                 className={`rounded-full border px-3 py-1.5 text-sm ${detail === s ? 'border-amber-400 bg-amber-500 font-bold text-stone-900' : 'border-stone-600'}`}
               >
                 {s}
-              </button>
+              </HelpButton>
             ))}
           </div>
         )}

@@ -1,6 +1,7 @@
 // DM preview of what players' phones will show for this fight (no secrets).
 import { HEALTH_LABEL, type HealthStatus, type PlayerEncounterView } from '../model/playerView'
 import { Section } from '../ui/kit'
+import { Term } from '../ui/help'
 
 const HEALTH_STYLE: Record<HealthStatus, string> = {
   healthy: 'text-emerald-300',
@@ -27,7 +28,9 @@ export default function PlayerViewPanel({ view }: { view: PlayerEncounterView })
             {c.pc ? (
               <span className="text-sm">HP {c.pc.hp.current}/{c.pc.hp.max}</span>
             ) : (
-              <span className={`text-sm ${HEALTH_STYLE[c.health]}`}>{HEALTH_LABEL[c.health]}</span>
+              <span className={`text-sm ${HEALTH_STYLE[c.health]}`}>
+                {c.health === 'bloodied' ? <Term name="Bloodied">{HEALTH_LABEL[c.health]}</Term> : HEALTH_LABEL[c.health]}
+              </span>
             )}
           </li>
         ))}
