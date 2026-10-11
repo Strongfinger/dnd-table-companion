@@ -42,9 +42,9 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] Validation for incoming actions (reuse the import validation: network data is untrusted)
 
 ## Step B — Realtime service trial · 1 session
-- [ ] Pick the free realtime service (compare Supabase Realtime, Firebase, Cloudflare/PartyKit: free limits, keys, Thai latency)
+- [x] Pick the free realtime service → **Firebase Realtime Database** (free, never pauses, presence + room state built in, Singapore region; Supabase free projects pause after 7 idle days)
 - [ ] Prototype: DM creates a room code, 2 phones join, presence list, send/receive actions, lock a phone and reconnect
-- [ ] Decide how the public client key is handled (publishable keys only + access rules; never secret keys)
+- [x] Public client key: publishable Firebase config allowed via env vars + security rules + anonymous sign-in; never secret keys
 
 ## Phase 3 — DM assistant (offline) · 2–3 sessions
 - [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters
@@ -64,6 +64,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
 
 ## Later
+- [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content
 - [ ] Minimap / battle map (shared view for players)
 - [ ] Claude API DM helper through a Vercel serverless function (NPC dialogue, descriptions, rules Q&A)
 - [ ] QR code export/import of a character (optional)
