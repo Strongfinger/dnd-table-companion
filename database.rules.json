@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".validate": "$code.matches(/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/)",
+        "members": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['deviceId', 'name', 'role', 'online']) && newData.child('deviceId').isString() && newData.child('deviceId').val().length <= 64 && newData.child('name').isString() && newData.child('name').val().length <= 40 && (newData.child('role').val() === 'dm' || newData.child('role').val() === 'player')"
+          }
+        },
+        "messages": {
+          ".read": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid).exists()",
+          ".indexOn": ["at"],
+          "$msg": {
+            ".write": "auth != null && !data.exists() && root.child('rooms/' + $code + '/members/' + auth.uid).exists()",
+            ".validate": "newData.child('fromUid').val() === auth.uid && newData.child('at').isNumber() && newData.child('json').isString() && newData.child('json').val().length < 64000"
+          }
+        }
+      }
+    }
+  }
+}

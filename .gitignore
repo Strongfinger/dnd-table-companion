@@ -8,3 +8,4 @@ dist/
 # Private: player sheets and DM notes (repo is public)
 docs/Character Sheets/
 docs/DM Scripts/
+!.env.example

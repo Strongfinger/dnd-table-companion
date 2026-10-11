@@ -1,0 +1,111 @@
+// The real lobby connection: Firebase Realtime Database (free Spark plan).
+//
+// Layout (protected by database.rules.json in the repo):
+//   rooms/{code}/members/{uid}   who is in the room (uid = anonymous sign-in id)
+//   rooms/{code}/messages/{id}   { fromUid, at, json }  (json = the Envelope as text)
+// The sender of a message is the member record of `fromUid` (checked by the rules),
+// never what the message claims.
+//
+// Firebase is loaded only when a lobby is joined, so the rest of the app stays small.
+import { Deduper, parseEnvelope, type Envelope } from './envelope'
+import type { Me, Member, RoomConnection, RoomHandlers, RoomTransport } from './transport'
+
+/** The public (publishable) web config from .env.local / Vercel. Null if not set up yet. */
+export function firebaseConfig() {
+  const env = import.meta.env
+  const config = {
+    apiKey: env.VITE_FIREBASE_API_KEY as string | undefined,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+    databaseURL: env.VITE_FIREBASE_DATABASE_URL as string | undefined,
+    projectId: env.VITE_FIREBASE_PROJECT_ID as string | undefined,
+    appId: env.VITE_FIREBASE_APP_ID as string | undefined,
+  }
+  return config.apiKey && config.databaseURL && config.projectId ? config : null
+}
+
+export function firebaseTransport(): RoomTransport | null {
+  const config = firebaseConfig()
+  if (!config) return null
+  return {
+    label: 'ออนไลน์ (Firebase)',
+    join(code: string, me: Me, handlers: RoomHandlers): RoomConnection {
+      let closed = false
+      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId }
+      const queue: Envelope[] = []
+      let sendNow: ((e: Envelope) => void) | null = null
+      let updateSelf: (() => void) | null = null
+      const cleanups: (() => void)[] = []
+      handlers.onStatus('connecting')
+
+      ;(async () => {
+        const [{ initializeApp, getApps }, auth, db] = await Promise.all([
+          import('firebase/app'), import('firebase/auth'), import('firebase/database'),
+        ])
+        const app = getApps()[0] ?? initializeApp(config)
+        const user = (await auth.signInAnonymously(auth.getAuth(app))).user
+        if (closed) return
+        const database = db.getDatabase(app)
+        const room = `rooms/${code}`
+        const memberRef = db.ref(database, `${room}/members/${user.uid}`)
+        const memberData = () => ({ ...self, online: true, lastSeen: db.serverTimestamp() })
+
+        // Presence: write myself; Firebase marks me offline by itself if the connection drops.
+        const connectedRef = db.ref(database, '.info/connected')
+        cleanups.push(db.onValue(connectedRef, async (snap) => {
+          if (snap.val() === true) {
+            await db.onDisconnect(memberRef).update({ online: false, lastSeen: db.serverTimestamp() })
+            await db.set(memberRef, memberData())
+            handlers.onStatus('connected')
+            // Anything sent while offline goes out now.
+            while (queue.length) sendNow?.(queue.shift()!)
+          } else {
+            handlers.onStatus('reconnecting')
+          }
+        }))
+        updateSelf = () => void db.update(memberRef, { ...self, lastSeen: db.serverTimestamp() })
+
+        // Members: also remembers uid → device so we know who sent each message.
+        const byUid = new Map<string, { id: string; name: string }>()
+        cleanups.push(db.onValue(db.ref(database, `${room}/members`), (snap) => {
+          const list: Member[] = []
+          byUid.clear()
+          snap.forEach((child) => {
+            const m = child.val() as Member
+            if (typeof m?.deviceId !== 'string' || typeof m?.name !== 'string') return
+            byUid.set(child.key!, { id: m.deviceId, name: m.name.slice(0, 40) })
+            list.push({ deviceId: m.deviceId, name: m.name, role: m.role === 'dm' ? 'dm' : 'player', characterId: m.characterId ?? null, online: !!m.online })
+          })
+          handlers.onMembers(list)
+        }))
+
+        // Messages: only new ones (from a moment before joining); checked and de-duplicated.
+        const dedupe = new Deduper()
+        const recent = db.query(db.ref(database, `${room}/messages`), db.orderByChild('at'), db.startAt(Date.now() - 5000))
+        cleanups.push(db.onChildAdded(recent, (snap) => {
+          const raw = snap.val() as { fromUid?: string; json?: string }
+          const sender = raw?.fromUid ? byUid.get(raw.fromUid) : undefined
+          if (!sender || raw.fromUid === user.uid || typeof raw.json !== 'string') return
+          const r = parseEnvelope(raw.json, sender)
+          if (r.ok && dedupe.firstTime(r.envelope.id)) handlers.onMessage(r.envelope)
+        }))
+
+        sendNow = (e) => void db.push(db.ref(database, `${room}/messages`), { fromUid: user.uid, at: e.at, json: JSON.stringify(e) })
+        cleanups.push(() => void db.update(memberRef, { online: false, lastSeen: db.serverTimestamp() }))
+      })().catch(() => handlers.onStatus('offline'))
+
+      return {
+        code,
+        send: (e) => (sendNow ? sendNow(e) : queue.push(e)),
+        updateMe: (patch) => {
+          self = { ...self, ...patch }
+          updateSelf?.()
+        },
+        leave: () => {
+          closed = true
+          cleanups.splice(0).forEach((stop) => stop())
+          handlers.onStatus('offline')
+        },
+      }
+    },
+  }
+}
