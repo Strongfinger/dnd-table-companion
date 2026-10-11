@@ -13,6 +13,13 @@ export interface Character extends SheetInput {
   species: string
   background: string
   alignment: string
+  /** The campaign this character plays in, or null if none yet. */
+  campaignId: string | null
+  /** The device that owns this character (the player's phone). Set on first save. */
+  ownerDeviceId: string
+  /** Sync bookkeeping (see model/sync.ts): bumps on every save, last device to change it. */
+  rev: number
+  updatedBy: string
   /** Feat names, e.g. the background's Origin feat and Human Versatile's extra feat. */
   feats: string[]
 
@@ -74,6 +81,10 @@ export function createCharacter(overrides: Partial<Character> = {}): Character {
     species: '',
     background: '',
     alignment: '',
+    campaignId: null,
+    ownerDeviceId: '',
+    rev: 0,
+    updatedBy: '',
     feats: [],
     scores: { ...DEFAULT_SCORES },
     saveProficiencies: [],

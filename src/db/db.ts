@@ -1,6 +1,7 @@
 // The on-device database (IndexedDB via Dexie). Each phone/laptop has its own copy.
 import Dexie, { type EntityTable } from 'dexie'
 import type { Character } from '../model/character'
+import type { Campaign } from '../model/campaign'
 import type { Encounter } from '../model/encounter'
 
 export interface LogEntry {
@@ -18,6 +19,9 @@ export const db = new Dexie('dnd-table-companion') as Dexie & {
   characters: EntityTable<Character, 'id'>
   log: EntityTable<LogEntry, 'id'>
   encounters: EntityTable<Encounter, 'id'>
+  campaigns: EntityTable<Campaign, 'id'>
+  /** Per-device key/value settings (device identity, selected campaign). */
+  settings: EntityTable<{ key: string; value: unknown }, 'key'>
 }
 
 // Only listed fields are indexed (searchable); every other field is still saved.
@@ -33,4 +37,11 @@ db.version(3).stores({
   characters: 'id, name, updatedAt',
   log: 'id, characterId, encounterId, at',
   encounters: 'id, updatedAt',
+})
+db.version(4).stores({
+  characters: 'id, name, updatedAt, campaignId',
+  log: 'id, characterId, encounterId, at',
+  encounters: 'id, updatedAt, campaignId',
+  campaigns: 'id, updatedAt',
+  settings: 'key',
 })

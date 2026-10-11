@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
 import { newId, type Character } from '../model/character'
 import {
@@ -22,6 +24,7 @@ export default function CharacterEdit({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false)
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
+  const campaigns = useLiveQuery(listCampaigns) ?? []
 
   useEffect(() => {
     getCharacter(id).then((c) => (c ? setDraft(c) : setNotFound(true)))
@@ -150,7 +153,14 @@ export default function CharacterEdit({ id }: { id: string }) {
           <Label text="Species (เผ่าพันธุ์)"><ChoiceField value={c.species} options={SPECIES} onChange={changeSpecies} /></Label>
           <Label text="Background (ภูมิหลัง)"><ChoiceField value={c.background} options={BACKGROUNDS} onChange={changeBackground} /></Label>
           <Label text="Alignment"><TextInput value={c.alignment} onChange={(v) => set('alignment', v)} /></Label>
-          <Label text="ผู้เล่น" className="col-span-2"><TextInput value={c.player} onChange={(v) => set('player', v)} /></Label>
+          <Label text="ผู้เล่น"><TextInput value={c.player} onChange={(v) => set('player', v)} /></Label>
+          <Label text="แคมเปญ">
+            <Select
+              value={c.campaignId ?? ''}
+              options={[{ value: '', label: '— ไม่มี —' }, ...campaigns.map((x) => ({ value: x.id, label: x.name }))]}
+              onChange={(v) => set('campaignId', v || null)}
+            />
+          </Label>
         </div>
         <p className="mt-2 text-xs text-stone-500">เปลี่ยน Class แล้ว Saving Throw และ Spellcasting จะถูกตั้งให้ตาม Class · เลือก Background แล้วจะได้ Skill และ Feat ของ Background ให้อัตโนมัติ</p>
       </Section>

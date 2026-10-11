@@ -1,6 +1,8 @@
 // Read/write characters. UI code uses these instead of touching `db` directly.
 import { withDefaults, type Character } from '../model/character'
+import { stamp } from '../model/sync'
 import { db } from './db'
+import { deviceId } from './device'
 
 /** All characters, most recently edited first. */
 export function listCharacters(): Promise<Character[]> {
@@ -11,9 +13,18 @@ export function getCharacter(id: string): Promise<Character | undefined> {
   return db.characters.get(id).then((c) => c && withDefaults(c))
 }
 
-/** Insert or update. Stamps updatedAt and returns the saved copy. */
+/**
+ * Stamp a change for sync: next revision, by this device, now.
+ * A character with no owner yet becomes owned by this device (where it was created).
+ */
+function stampCharacter(c: Character): Character {
+  const me = deviceId()
+  return stamp({ ...c, ownerDeviceId: c.ownerDeviceId || me }, me)
+}
+
+/** Insert or update. Stamps revision/updatedAt and returns the saved copy. */
 export async function saveCharacter(character: Character): Promise<Character> {
-  const saved = { ...character, updatedAt: Date.now() }
+  const saved = stampCharacter(character)
   await db.characters.put(saved)
   return saved
 }
@@ -28,7 +39,7 @@ export async function updateCharacter(id: string, fn: (c: Character) => { charac
     const stored = await db.characters.get(id)
     if (!stored) return null
     const r = fn(withDefaults(stored))
-    await db.characters.put({ ...r.character, updatedAt: Date.now() })
+    await db.characters.put(stampCharacter(r.character))
     return r.text
   })
 }

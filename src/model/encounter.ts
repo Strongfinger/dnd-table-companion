@@ -24,6 +24,11 @@ export interface Combatant extends TurnCombatant {
 export interface Encounter {
   id: string
   name: string
+  /** The campaign this fight belongs to, or null. */
+  campaignId: string | null
+  /** Sync bookkeeping (see model/sync.ts). */
+  rev: number
+  updatedBy: string
   status: 'setup' | 'active' | 'ended'
   round: number
   /** Whose turn it is, or null before the fight starts. */
@@ -34,9 +39,17 @@ export interface Encounter {
   updatedAt: number
 }
 
-export function createEncounter(name: string): Encounter {
+export function createEncounter(name: string, campaignId: string | null = null): Encounter {
   const now = Date.now()
-  return { id: newId(), name: name.trim() || 'การต่อสู้', status: 'setup', round: 0, activeId: null, combatants: [], createdAt: now, updatedAt: now }
+  return {
+    id: newId(), name: name.trim() || 'การต่อสู้', campaignId, rev: 0, updatedBy: '',
+    status: 'setup', round: 0, activeId: null, combatants: [], createdAt: now, updatedAt: now,
+  }
+}
+
+/** Fill in fields that didn't exist when an older fight was saved. */
+export function withEncounterDefaults(stored: Partial<Encounter> & { id: string }): Encounter {
+  return { campaignId: null, rev: 0, updatedBy: '', ...stored } as Encounter
 }
 
 /** A PC joins the fight: name, AC and initiative bonus come from the sheet. */

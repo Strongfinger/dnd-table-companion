@@ -103,6 +103,11 @@ export function parseCharacterImport(text: string): ImportResult {
     species: field('species', str(100), '', 'Species'),
     background: field('background', str(100), '', 'Background'),
     alignment: field('alignment', str(100), '', 'Alignment'),
+    // Sync bookkeeping: ids are short safe tokens; the revision is a whole number.
+    campaignId: field('campaignId', (v) => (v === null ? null : safeId(v)), null, 'แคมเปญ'),
+    ownerDeviceId: field('ownerDeviceId', (v) => (v === '' ? '' : safeId(v)), '', 'เจ้าของ'),
+    rev: field('rev', int(0, 1_000_000_000), 0, 'รุ่นข้อมูล'),
+    updatedBy: field('updatedBy', (v) => (v === '' ? '' : safeId(v)), '', 'แก้ไขล่าสุดโดย'),
     feats: field('feats', arrayOf(str(100), 20), [], 'Feats'),
     saveProficiencies: field('saveProficiencies', subsetOf(ABILITIES), [], 'Saving Throws'),
     skills: field('skills', skillsMap, {}, 'Skills'),
@@ -139,6 +144,10 @@ export function parseCharacterImport(text: string): ImportResult {
 }
 
 // --- small checkers: each returns the cleaned value, or undefined if it's invalid ---
+
+function safeId(v: unknown): string | undefined {
+  return typeof v === 'string' && /^[\w-]{1,64}$/.test(v) ? v : undefined
+}
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)

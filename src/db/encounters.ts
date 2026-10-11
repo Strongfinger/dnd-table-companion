@@ -1,18 +1,20 @@
 // Read/write encounters for the combat tracker.
-import type { Encounter } from '../model/encounter'
+import { withEncounterDefaults, type Encounter } from '../model/encounter'
+import { stamp } from '../model/sync'
 import { db } from './db'
+import { deviceId } from './device'
 
 /** All encounters, most recently changed first. */
 export function listEncounters(): Promise<Encounter[]> {
-  return db.encounters.orderBy('updatedAt').reverse().toArray()
+  return db.encounters.orderBy('updatedAt').reverse().toArray().then((all) => all.map(withEncounterDefaults))
 }
 
 export function getEncounter(id: string): Promise<Encounter | undefined> {
-  return db.encounters.get(id)
+  return db.encounters.get(id).then((e) => e && withEncounterDefaults(e))
 }
 
 export async function saveEncounter(e: Encounter): Promise<Encounter> {
-  const saved = { ...e, updatedAt: Date.now() }
+  const saved = stamp(e, deviceId())
   await db.encounters.put(saved)
   return saved
 }
@@ -25,8 +27,8 @@ export async function updateEncounter<R>(id: string, fn: (e: Encounter) => { enc
   return db.transaction('rw', db.encounters, async () => {
     const stored = await db.encounters.get(id)
     if (!stored) return undefined
-    const r = fn(stored)
-    await db.encounters.put({ ...r.encounter, updatedAt: Date.now() })
+    const r = fn(withEncounterDefaults(stored))
+    await db.encounters.put(stamp(r.encounter, deviceId()))
     return r.result
   })
 }

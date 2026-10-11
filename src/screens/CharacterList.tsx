@@ -1,11 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { go } from '../app/router'
+import { listCampaigns } from '../db/campaigns'
 import { listCharacters, saveCharacter } from '../db/characters'
 import { Button } from '../ui/kit'
 
 export default function CharacterList() {
   // useLiveQuery re-runs automatically whenever the characters table changes.
   const characters = useLiveQuery(listCharacters)
+  const campaignName = new Map((useLiveQuery(listCampaigns) ?? []).map((c) => [c.id, c.name]))
 
   async function loadSamples() {
     const { sampleCharacters } = await import('../dev/sampleCharacters')
@@ -42,6 +44,7 @@ export default function CharacterList() {
                   {c.species && ` · ${c.species}`}
                   {c.background && ` · ${c.background}`}
                 </div>
+                {c.campaignId && campaignName.has(c.campaignId) && <div className="text-xs text-amber-500/80">🗺 {campaignName.get(c.campaignId)}</div>}
               </div>
               <div className="text-right text-sm">
                 <div className="font-bold">{c.hp.current}/{c.hp.max}</div>

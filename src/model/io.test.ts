@@ -112,6 +112,15 @@ describe('cleans up bad optional fields', () => {
     expect(importOk(JSON.stringify(noTurn)).character.turn).toEqual({ action: false, bonusAction: false, reaction: false })
   })
 
+  it('sync fields: kept when valid, cleaned when unsafe', () => {
+    const ok = imp({ campaignId: 'camp-1', ownerDeviceId: 'phone-1', rev: 7, updatedBy: 'phone-1' }).character
+    expect(ok).toMatchObject({ campaignId: 'camp-1', ownerDeviceId: 'phone-1', rev: 7 })
+    const bad = imp({ campaignId: '<x>', rev: -1 })
+    expect(bad.character.campaignId).toBeNull()
+    expect(bad.character.rev).toBe(0)
+    expect(bad.warnings).toHaveLength(2)
+  })
+
   it('replaces unsafe ids', () => {
     const r = imp({ id: '<script>' })
     expect(r.character.id).not.toBe('<script>')

@@ -1,10 +1,23 @@
 // About page: credits and licenses (SRD 5.2.1 attribution is required by CC-BY-4.0).
-import { Section } from '../ui/kit'
+import { useState } from 'react'
+import { currentDevice, setDeviceName } from '../db/device'
+import { Button, Section, TextInput } from '../ui/kit'
 
 export default function About() {
+  const [name, setName] = useState(currentDevice()?.name ?? '')
+  const [saved, setSaved] = useState(false)
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-amber-400">เกี่ยวกับแอป</h1>
+
+      <Section title="อุปกรณ์นี้">
+        <p className="mb-2 text-xs text-stone-400">ชื่อที่ผู้เล่นคนอื่นจะเห็นเมื่อเข้าห้องเล่นร่วมกัน (ฟีเจอร์ในอนาคต)</p>
+        <div className="flex gap-2">
+          <div className="flex-1"><TextInput value={name} onChange={(v) => { setName(v); setSaved(false) }} /></div>
+          <Button onClick={async () => { setName((await setDeviceName(name)).name); setSaved(true) }}>{saved ? '✓ บันทึกแล้ว' : 'บันทึก'}</Button>
+        </div>
+      </Section>
       <Section title="DND Table Companion">
         <p className="text-sm text-stone-300">
           ผู้ช่วยโต๊ะ D&amp;D สำหรับเล่นกับเพื่อนแบบเจอกัน: ใบตัวละคร, ตัวติดตามการต่อสู้ และตัวทอยลูกเต๋า

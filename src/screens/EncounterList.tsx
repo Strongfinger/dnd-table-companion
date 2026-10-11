@@ -1,19 +1,26 @@
 // The DM's list of fights: start a new one or continue a saved one.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { go } from '../app/router'
+import { getSetting } from '../db/device'
 import { listEncounters, saveEncounter } from '../db/encounters'
 import { createEncounter } from '../model/encounter'
+import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Button, Section, TextInput } from '../ui/kit'
 
 const STATUS = { setup: 'เตรียมการ', active: 'กำลังต่อสู้', ended: 'จบแล้ว' }
 
 export default function EncounterList() {
-  const encounters = useLiveQuery(listEncounters)
+  const all = useLiveQuery(listEncounters)
   const [name, setName] = useState('')
+  const [campaignId, setCampaignId] = useState(ALL)
+  useEffect(() => {
+    getSetting<string>('currentCampaignId').then((id) => id && setCampaignId(id))
+  }, [])
+  const encounters = campaignId === ALL ? all : all?.filter((e) => e.campaignId === campaignId)
 
   async function create() {
-    const e = await saveEncounter(createEncounter(name))
+    const e = await saveEncounter(createEncounter(name, campaignId === ALL ? null : campaignId))
     go(`/fight/${e.id}`)
   }
 
@@ -23,6 +30,8 @@ export default function EncounterList() {
         <h1 className="text-3xl font-bold text-amber-400">การต่อสู้</h1>
         <p className="text-stone-400">Initiative Tracker สำหรับ DM</p>
       </header>
+
+      <CampaignPicker value={campaignId} onChange={setCampaignId} />
 
       <Section title="สร้างการต่อสู้ใหม่">
         <div className="flex gap-2">
