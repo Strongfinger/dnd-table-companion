@@ -1,0 +1,15 @@
+// Shared game-rule types (D&D 5e, SRD 5.1).
+
+export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
+export type Ability = (typeof ABILITIES)[number]
+
+/** How proficient a character is in a skill or save. Expertise doubles the proficiency bonus. */
+export type ProficiencyLevel = 'none' | 'proficient' | 'expertise'
+
+export const CLASSES = [
+  'Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk',
+  'Paladin', 'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard',
+] as const
+export type ClassName = (typeof CLASSES)[number]
+
+export type HitDie = 6 | 8 | 10 | 12
