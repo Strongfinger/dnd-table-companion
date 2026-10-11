@@ -1,6 +1,7 @@
 // Runs against an in-memory IndexedDB, so it works in Node without a browser.
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { sampleCharacters } from '../dev/sampleCharacters'
 import { createCharacter } from '../model/character'
 import { ALL_FIXTURES } from '../rules/fixtures/characters'
 import { deriveSheet } from '../rules'
@@ -40,12 +41,12 @@ describe('character storage', () => {
   })
 
   it('round-trips the 4 real characters and they still derive the right numbers', async () => {
-    for (const f of ALL_FIXTURES) {
-      const { expected, hpRolls: _r, hpBonusPerLevel: _b, ...fields } = f
-      const saved = await saveCharacter(createCharacter({ ...fields, hp: { max: expected.maxHp, current: expected.maxHp, temp: 0 }, ac: expected.ac }))
+    const samples = sampleCharacters()
+    for (const [i, f] of ALL_FIXTURES.entries()) {
+      const saved = await saveCharacter(samples[i])
       const loaded = (await getCharacter(saved.id))!
-      expect(deriveSheet(loaded).initiative, f.name).toBe(expected.initiative)
-      expect(deriveSheet(loaded).saves, f.name).toEqual(expected.saves)
+      expect(deriveSheet(loaded).initiative, f.name).toBe(f.expected.initiative)
+      expect(deriveSheet(loaded).saves, f.name).toEqual(f.expected.saves)
     }
     expect(await listCharacters()).toHaveLength(4)
   })

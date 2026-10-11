@@ -1,15 +1,18 @@
-// Placeholder home screen. Real features arrive in Phase 1+ (see docs/ROADMAP.md).
-export default function App() {
-  return (
-    <main className="min-h-dvh bg-stone-900 p-6 text-stone-100">
-      <h1 className="text-3xl font-bold text-amber-400">DND Table Companion</h1>
-      <p className="mt-2 text-stone-300">ผู้ช่วยโต๊ะ D&amp;D สำหรับเล่นกับเพื่อน</p>
+import { useRoute } from './app/router'
+import CharacterEdit from './screens/CharacterEdit'
+import CharacterList from './screens/CharacterList'
+import CharacterSheet from './screens/CharacterSheet'
 
-      <ul className="mt-6 space-y-2">
-        <li className="rounded-lg bg-stone-800 p-4">📜 Character Sheet — ใบตัวละคร (เร็วๆ นี้)</li>
-        <li className="rounded-lg bg-stone-800 p-4">⚔️ Initiative Tracker — ลำดับการต่อสู้ (เร็วๆ นี้)</li>
-        <li className="rounded-lg bg-stone-800 p-4">🎲 DM Assistant — ผู้ช่วย DM (เร็วๆ นี้)</li>
-      </ul>
+export default function App() {
+  const route = useRoute()
+
+  return (
+    <main className="mx-auto min-h-dvh max-w-xl p-4">
+      {route.name === 'list' && <CharacterList />}
+      {route.name === 'new' && <CharacterEdit />}
+      {route.name === 'sheet' && <CharacterSheet id={route.id} />}
+      {/* key makes React start a fresh form when switching characters */}
+      {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
     </main>
   )
 }

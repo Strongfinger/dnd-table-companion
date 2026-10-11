@@ -4,3 +4,7 @@
 @theme {
   --font-sans: 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
 }
+
+body {
+  @apply bg-stone-950 text-stone-100;
+}
