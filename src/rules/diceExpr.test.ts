@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canUseAdvantage, criticalDice, diceRange, formatDice, parseDice, rollDice, totalFromManualDice,
+  addDie, addModifier, canBeCritical, canUseAdvantage, criticalDice, diceRange, formatDice, naturalD20, naturalFromManual, parseDice, resolveRollMode, rollDice,
+  totalFromManualDice,
 } from './diceExpr'
 
 /** A fake random source that makes dice with `sides` show these faces in order. */
@@ -85,5 +86,64 @@ describe('manual dice', () => {
     expect(totalFromManualDice(e, 1)).toBeNull()
     expect(totalFromManualDice(e, 13)).toBeNull()
     expect(totalFromManualDice(e, 2.5)).toBeNull()
+  })
+})
+
+describe('dice roller helpers', () => {
+  it('advantage and disadvantage cancel', () => {
+    expect(resolveRollMode(true, false)).toBe('advantage')
+    expect(resolveRollMode(false, true)).toBe('disadvantage')
+    expect(resolveRollMode(true, true)).toBe('normal')
+    expect(resolveRollMode(false, false)).toBe('normal')
+  })
+
+  it('quick dice buttons build the expression', () => {
+    expect(addDie('', 20)).toBe('1d20')
+    expect(addDie('1d6', 6)).toBe('2d6')
+    expect(addDie('2d6+3', 8)).toBe('2d6+1d8+3')
+    expect(addDie('nonsense', 4)).toBe('1d4')
+  })
+
+  it('modifier buttons', () => {
+    expect(addModifier('1d20', 1)).toBe('1d20+1')
+    expect(addModifier('1d20+1', -2)).toBe('1d20-1')
+    expect(addModifier('', 2)).toBe('2')
+  })
+
+  it('spots natural 20s and 1s on a single d20', () => {
+    const d20 = parseDice('d20+5')!
+    expect(naturalD20(d20, { total: 25, rolls: [[20]] })).toBe(20)
+    expect(naturalD20(d20, { total: 6, rolls: [[3, 1]], kept: 1 })).toBe(1)
+    expect(naturalD20(d20, { total: 15, rolls: [[10]] })).toBeNull()
+    expect(naturalD20(parseDice('2d20')!, { total: 40, rolls: [[20, 20]] })).toBeNull()
+  })
+})
+
+describe('dice roller edge cases', () => {
+  it('addDie: cap at 100, negative terms stay separate', () => {
+    expect(addDie('100d6', 6)).toBe('100d6')
+    expect(addDie('1d6-1d6', 6)).toBe('2d6-1d6')
+  })
+
+  it('addModifier back to zero and from empty', () => {
+    expect(addModifier('1d20+1', -1)).toBe('1d20')
+    expect(addModifier('', -1)).toBe('-1')
+  })
+
+  it('naturalD20 with a disadvantage kept 20', () => {
+    expect(naturalD20(parseDice('d20')!, { total: 20, rolls: [[20, 20]], kept: 20 })).toBe(20)
+  })
+
+  it('naturalFromManual only for a single d20', () => {
+    expect(naturalFromManual(parseDice('d20+5')!, 20)).toBe(20)
+    expect(naturalFromManual(parseDice('d20+5')!, 1)).toBe(1)
+    expect(naturalFromManual(parseDice('d20+5')!, 12)).toBeNull()
+    expect(naturalFromManual(parseDice('2d10')!, 20)).toBeNull()
+  })
+
+  it('Critical only for damage dice, never a single d20', () => {
+    expect(canBeCritical(parseDice('2d6+3')!)).toBe(true)
+    expect(canBeCritical(parseDice('d20+5')!)).toBe(false)
+    expect(canBeCritical(parseDice('5')!)).toBe(false)
   })
 })

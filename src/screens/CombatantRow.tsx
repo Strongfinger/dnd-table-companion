@@ -8,8 +8,8 @@ import {
   addEffect, conditionsToClear, damageMonster, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
 } from '../model/encounter'
-import { CONDITIONS, deriveSheet, formatModifier, type Condition } from '../rules'
-import { Button, DiceRoll } from '../ui/kit'
+import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, toggleAction, type ActionKind, type Condition } from '../rules'
+import { ActionEconomyBar, Button, DiceRoll } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
@@ -47,6 +47,12 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   // A PC's initiative bonus follows its sheet (Alert, DEX, Exhaustion can change).
   const initBonus = isPc && character ? deriveSheet(character).initiative : c.initBonus
   const same = (combatant: Combatant, text = ''): MonsterResult => ({ combatant, text })
+  // Action economy: on the sheet for PCs, on the combatant for monsters.
+  const economy = isPc && character ? character.turn : (c.turn ?? FRESH_TURN)
+  function toggleEconomy(kind: ActionKind) {
+    if (isPc && character) onCharacter((ch) => ({ character: { ...ch, turn: toggleAction(ch.turn, kind) }, text: '' }))
+    else onUpdate((m) => same({ ...m, turn: toggleAction(m.turn ?? FRESH_TURN, kind) }))
+  }
 
   function damage() {
     if (!value) return
@@ -132,6 +138,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
             ))}
             {concentration && <span className="rounded-full bg-violet-900 px-2 text-xs">🔮 {concentration}</span>}
           </div>
+          {active && <div className="mt-1"><ActionEconomyBar economy={economy} compact /></div>}
         </div>
         <div className="text-right text-sm">
           <div className="font-bold">{hp.current}/{hp.max}{hp.temp > 0 && <span className="text-sky-300"> +{hp.temp}</span>}</div>
@@ -163,6 +170,8 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
       {open && (
         <div className="space-y-3 border-t border-stone-700 p-3">
           {missing && <p className="text-sm text-red-300">ไม่พบใบตัวละครนี้ในเครื่องแล้ว</p>}
+
+          <ActionEconomyBar economy={economy} onToggle={toggleEconomy} />
 
           {/* HP */}
           <div className="flex gap-2">

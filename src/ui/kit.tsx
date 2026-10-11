@@ -1,6 +1,6 @@
 // Small shared UI pieces so screens stay short and look consistent.
 import { useState, type ReactNode } from 'react'
-import { parseManualRoll, rollDie } from '../rules'
+import { ACTION_KINDS, parseManualRoll, rollDie, type ActionEconomy, type ActionKind } from '../rules'
 
 export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -205,6 +205,35 @@ export function DiceRoll({ sides, label, onRoll }: { sides: number; label: strin
         </Button>
       </div>
       {text && manual === null && <p className="text-xs text-amber-300">ใส่เลข 1–{sides}</p>}
+    </div>
+  )
+}
+
+const ACTION_LABEL = { action: 'Action', bonusAction: 'Bonus Action', reaction: 'Reaction' } as const
+
+/**
+ * Action / Bonus Action / Reaction for this turn. Lit = still available, dim and crossed = used.
+ * Tap to mark used (or tap again to give it back).
+ */
+export function ActionEconomyBar({ economy, onToggle, compact = false }: {
+  economy: ActionEconomy
+  onToggle?: (kind: ActionKind) => void
+  compact?: boolean
+}) {
+  return (
+    <div className="flex gap-1.5">
+      {ACTION_KINDS.map((kind) => {
+        const used = economy[kind]
+        const style = used ? 'border-stone-700 text-stone-500 line-through' : 'border-emerald-500 bg-emerald-900/60 text-emerald-100'
+        const size = compact ? 'px-1.5 text-[10px]' : 'flex-1 px-2 py-2 text-sm font-bold'
+        return onToggle ? (
+          <button key={kind} type="button" aria-pressed={used} onClick={() => onToggle(kind)} className={`rounded-lg border ${style} ${size}`}>
+            {ACTION_LABEL[kind]}
+          </button>
+        ) : (
+          <span key={kind} className={`rounded border ${style} ${size}`}>{compact ? ACTION_LABEL[kind].replace('Bonus Action', 'Bonus') : ACTION_LABEL[kind]}</span>
+        )
+      })}
     </div>
   )
 }

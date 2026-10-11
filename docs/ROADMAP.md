@@ -18,7 +18,8 @@
 - [ ] SRD monster quick-add from bundled 5e-bits data (approved; confirm file before download)
 - [x] Roll or enter initiative, sort, Next Turn, round counter, fight log by round
 - [x] HP and damage, the 15 conditions with durations, concentration reminder, death saves
-- [ ] Built-in dice roller (2d6+3, advantage/disadvantage)
+- [x] Built-in dice roller (2d6+3, advantage/disadvantage, Critical, real-dice entry, history)
+- [x] Action / Bonus Action / Reaction tracking (sheet + tracker, refreshed at the start of each turn)
 
 ## Phase 3 — DM assistant (offline)
 - [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters

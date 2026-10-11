@@ -1,14 +1,18 @@
+import { useState } from 'react'
 import { useRoute } from './app/router'
 import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
 import CreateWizard from './screens/CreateWizard'
+import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
 import Tracker from './screens/Tracker'
 
 export default function App() {
   const route = useRoute()
+  // Dice history lives here so it survives moving between screens.
+  const [rolls, setRolls] = useState<RollRecord[]>([])
   const inFights = route.name === 'fights' || route.name === 'fight'
 
   return (
@@ -20,7 +24,8 @@ export default function App() {
         </div>
       </nav>
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
-      <main className={`mx-auto min-h-dvh p-4 ${route.name === 'fight' ? 'max-w-5xl' : 'max-w-xl'}`}>
+      {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
+      <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' ? 'max-w-5xl' : 'max-w-xl'}`}>
         {route.name === 'list' && <CharacterList />}
         {route.name === 'new' && <CreateWizard />}
         {route.name === 'import' && <ImportCharacter />}
@@ -30,6 +35,7 @@ export default function App() {
         {route.name === 'fights' && <EncounterList />}
         {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
       </main>
+      <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
     </>
   )
 }

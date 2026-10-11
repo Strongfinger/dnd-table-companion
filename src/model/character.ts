@@ -1,7 +1,7 @@
 // The Character record saved on the device (IndexedDB) and used for JSON export/import.
 // Only things the player enters are stored; calculated numbers come from deriveSheet().
 
-import type { Ability, AttackInput, Condition, SheetInput } from '../rules'
+import { FRESH_TURN, type Ability, type ActionEconomy, type AttackInput, type Condition, type SheetInput } from '../rules'
 
 export interface Character extends SheetInput {
   id: string
@@ -25,6 +25,8 @@ export interface Character extends SheetInput {
   /** 0–6 (2024: −2 per level to D20 Tests, −5 ft. Speed; level 6 = death). */
   exhaustion: number
   conditions: Condition[]
+  /** Action / Bonus Action / Reaction used this turn. */
+  turn: ActionEconomy
   /** Name of the spell being concentrated on, or '' if none. */
   concentration: string
   /** Limited-use features like Second Wind or Channel Divinity. */
@@ -87,6 +89,7 @@ export function createCharacter(overrides: Partial<Character> = {}): Character {
     exhaustion: 0,
     conditions: [],
     concentration: '',
+    turn: { ...FRESH_TURN },
     features: [],
     ac: 10,
     speed: 30,

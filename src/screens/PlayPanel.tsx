@@ -8,10 +8,10 @@ import {
 } from '../model/actions'
 import type { Character } from '../model/character'
 import {
-  CONDITIONS, exhaustionPenalty, hitDieSize, longRest,
+  CONDITIONS, exhaustionPenalty, hitDieSize, longRest, startOfTurn, toggleAction,
   shortRest, spellSlotsFor, spendHitDie, type Condition,
 } from '../rules'
-import { Button, DiceRoll, Section } from '../ui/kit'
+import { ActionEconomyBar, Button, DiceRoll, Section } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
@@ -86,7 +86,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       const r = longRest(ch)
       if (!r) return null
       return {
-        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious') },
+        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious'), turn: startOfTurn() },
         text: '🌙 พักยาวเสร็จ: ทุกอย่างกลับมาเต็ม' + (ch.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : ''),
       }
     })
@@ -179,6 +179,19 @@ export default function PlayPanel({ c }: { c: Character }) {
         </label>
       )}
       {message && <p className="mt-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{message}</p>}
+
+      {/* Action economy for this turn (the combat tracker resets it automatically) */}
+      <div className="mt-3 flex items-center gap-2">
+        <div className="flex-1">
+          <ActionEconomyBar
+            economy={c.turn}
+            onToggle={(kind) => updateCharacter(c.id, (ch) => ({ character: { ...ch, turn: toggleAction(ch.turn, kind) }, text: '' }))}
+          />
+        </div>
+        <Button className="whitespace-nowrap px-2 text-sm" onClick={() => updateCharacter(c.id, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))}>
+          ↻ เทิร์นใหม่
+        </Button>
+      </div>
 
       {/* Death saves */}
       {atZero && (

@@ -121,6 +121,7 @@ export function parseCharacterImport(text: string): ImportResult {
     exhaustion: field('exhaustion', int(0, 6), 0, 'Exhaustion'),
     conditions: field('conditions', subsetOf(CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')), [], 'Conditions'),
     concentration: field('concentration', str(100), '', 'Concentration'),
+    turn: field('turn', economy, d.turn, 'Action/Bonus Action/Reaction'),
     features: field('features', arrayOf(feature, 50), [], 'ความสามารถที่ใช้ได้จำกัด'),
     ac: field('ac', int(1, 40), d.ac, 'AC'),
     speed: field('speed', int(0, 200), d.speed, 'Speed'),
@@ -221,6 +222,12 @@ function coins(v: unknown): Character['coins'] | undefined {
   const keys = ['cp', 'sp', 'ep', 'gp', 'pp'] as const
   if (!keys.every((k) => v[k] === undefined || isInt(v[k], 0, 9_999_999))) return undefined
   return Object.fromEntries(keys.map((k) => [k, (v[k] as number | undefined) ?? 0])) as Character['coins']
+}
+
+function economy(v: unknown): Character['turn'] | undefined {
+  return isObject(v) && typeof v.action === 'boolean' && typeof v.bonusAction === 'boolean' && typeof v.reaction === 'boolean'
+    ? { action: v.action, bonusAction: v.bonusAction, reaction: v.reaction }
+    : undefined
 }
 
 function deathSaves(v: unknown): Character['deathSaves'] | undefined {

@@ -9,7 +9,7 @@ import { addLog, listEncounterLog } from '../db/log'
 import { isDead, type ActionResult } from '../model/actions'
 import type { Character } from '../model/character'
 import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
-import { nextTurn, previousTurn, sortByInitiative, startCombat } from '../rules'
+import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
 import { Button, Section } from '../ui/kit'
 import AddCombatants from './AddCombatants'
 import CombatantRow from './CombatantRow'
@@ -98,18 +98,30 @@ export default function Tracker({ id }: { id: string }) {
     const first = await update((x) => {
       const r = startCombat(x.combatants)
       const who = r.combatants.find((c) => c.id === r.state.activeId)
-      return { encounter: { ...x, combatants: r.combatants, status: 'active', round: 1, activeId: r.state.activeId }, result: who?.name }
+      const combatants = freshMonster(r.combatants, r.state.activeId)
+      return { encounter: { ...x, combatants, status: 'active', round: 1, activeId: r.state.activeId }, result: { name: who?.name, combatants, activeId: r.state.activeId } }
     })
+    if (first) await refreshTurn(first.activeId, first.combatants)
     await log('⚔️ เริ่มการต่อสู้ — รอบที่ 1 —', '', 1)
-    if (first) await log(`ตาของ ${first}`, '', 1)
+    if (first?.name) await log(`ตาของ ${first.name}`, '', 1)
   }
+
+  /** Start of a creature's turn: Action, Bonus Action and Reaction come back. */
+  async function refreshTurn(activeId: string | null, combatants: Combatant[]) {
+    const who = combatants.find((c) => c.id === activeId)
+    if (who?.kind === 'pc' && who.characterId) await updateCharacter(who.characterId, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))
+  }
+  const freshMonster = (list: Combatant[], activeId: string | null) =>
+    list.map((c) => (c.id === activeId && c.kind === 'monster' ? { ...c, turn: startOfTurn() } : c))
 
   async function next() {
     const r = await update((x) => {
       const t = nextTurn(x.combatants, { round: x.round, activeId: x.activeId })
-      return { encounter: { ...x, combatants: t.combatants, round: t.state.round, activeId: t.state.activeId }, result: { t, before: x.combatants } }
+      const combatants = freshMonster(t.combatants, t.state.activeId)
+      return { encounter: { ...x, combatants, round: t.state.round, activeId: t.state.activeId }, result: { t, before: x.combatants } }
     })
     if (!r) return
+    await refreshTurn(r.t.state.activeId, r.t.combatants)
     // PC conditions live on the sheet too: when a timed condition runs out, take it off the sheet.
     for (const b of r.before) {
       if (b.kind !== 'pc' || !b.characterId) continue
@@ -132,6 +144,10 @@ export default function Tracker({ id }: { id: string }) {
   async function end() {
     await patch(() => ({ status: 'ended', activeId: null }))
     await clearPcConditions(enc.combatants)
+    // Out of combat: everyone's Action / Bonus Action / Reaction is available again.
+    for (const c of enc.combatants) {
+      if (c.kind === 'pc' && c.characterId) await updateCharacter(c.characterId, (ch) => ({ character: { ...ch, turn: startOfTurn() }, text: '' }))
+    }
     await log(`🏁 จบการต่อสู้ (${enc.round} รอบ)`)
   }
 

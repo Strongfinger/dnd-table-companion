@@ -1,6 +1,9 @@
 // Encounters for the DM's combat tracker. Monsters keep their own HP here;
 // player characters are linked to their saved sheet (HP lives on the sheet).
-import { CONDITIONS, concentrationDC, deriveSheet, rollDie, type Condition, type Rng, type TimedEffect, type TurnCombatant } from '../rules'
+import {
+  CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie,
+  type ActionEconomy, type Condition, type Rng, type TimedEffect, type TurnCombatant,
+} from '../rules'
 import { newId, type Character } from './character'
 
 export interface Combatant extends TurnCombatant {
@@ -14,6 +17,8 @@ export interface Combatant extends TurnCombatant {
   hp: { max: number; current: number; temp: number }
   concentration: string
   notes: string
+  /** Monsters only (a PC's action economy is on its sheet). Missing in older saves = fresh. */
+  turn?: ActionEconomy
 }
 
 export interface Encounter {
@@ -91,6 +96,7 @@ export function createMonsters(input: MonsterInput, count: number, existing: Com
     hp: { max: input.hpMax, current: input.hpMax, temp: 0 },
     concentration: '',
     notes: '',
+    turn: { ...FRESH_TURN },
   }))
 }
 

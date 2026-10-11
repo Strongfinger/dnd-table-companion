@@ -111,3 +111,42 @@ export function totalFromManualDice(e: DiceExpr, diceSum: number): number | null
   if (!Number.isInteger(diceSum) || diceSum < min || diceSum > max) return null
   return diceSum + e.modifier
 }
+
+/** Advantage and disadvantage cancel out; several sources don't stack (2024). */
+export function resolveRollMode(advantage: boolean, disadvantage: boolean): RollMode {
+  if (advantage === disadvantage) return 'normal'
+  return advantage ? 'advantage' : 'disadvantage'
+}
+
+/** Quick-dice button: add one die to the expression ("1d6" + d6 → "2d6", "2d6+3" + d8 → "2d6+1d8+3"). */
+export function addDie(text: string, sides: number): string {
+  const e = parseDice(text)
+  if (!e) return `1d${sides}`
+  const i = e.dice.findIndex((d) => d.sides === sides && d.sign === 1)
+  const dice = i >= 0 ? e.dice.map((d, j) => (j === i ? { ...d, count: Math.min(100, d.count + 1) } : d)) : [...e.dice, { count: 1, sides, sign: 1 as const }]
+  return formatDice({ ...e, dice })
+}
+
+/** +1 / −1 buttons for the flat modifier. */
+export function addModifier(text: string, delta: number): string {
+  const e = parseDice(text) ?? { dice: [], modifier: 0 }
+  return formatDice({ ...e, modifier: e.modifier + delta })
+}
+
+/** Typed from real dice: the d20 face on a single d20 roll tells us about natural 20s and 1s. */
+export function naturalFromManual(e: DiceExpr, diceSum: number): 20 | 1 | null {
+  if (!canUseAdvantage(e)) return null
+  return diceSum === 20 ? 20 : diceSum === 1 ? 1 : null
+}
+
+/** A Critical Hit doubles damage dice only; a single d20 (an attack roll or check) is never doubled. */
+export function canBeCritical(e: DiceExpr): boolean {
+  return e.dice.length > 0 && !canUseAdvantage(e)
+}
+
+/** A natural 20 or 1 on a single d20 roll (shown highlighted). */
+export function naturalD20(e: DiceExpr, r: RollResult): 20 | 1 | null {
+  if (!canUseAdvantage(e)) return null
+  const face = r.kept ?? r.rolls[0][0]
+  return face === 20 ? 20 : face === 1 ? 1 : null
+}

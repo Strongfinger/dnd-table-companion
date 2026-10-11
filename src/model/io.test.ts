@@ -103,6 +103,15 @@ describe('cleans up bad optional fields', () => {
     expect('hacked' in r.character).toBe(false)
   })
 
+  it('turn (action economy): kept when valid, fresh with a warning when broken, fresh when missing', () => {
+    expect(imp({ turn: { action: true, bonusAction: false, reaction: true } }).character.turn).toEqual({ action: true, bonusAction: false, reaction: true })
+    const broken = imp({ turn: { action: 'yes' } })
+    expect(broken.character.turn).toEqual({ action: false, bonusAction: false, reaction: false })
+    expect(broken.warnings.join()).toContain('Action')
+    const { turn: _t, ...noTurn } = boom
+    expect(importOk(JSON.stringify(noTurn)).character.turn).toEqual({ action: false, bonusAction: false, reaction: false })
+  })
+
   it('replaces unsafe ids', () => {
     const r = imp({ id: '<script>' })
     expect(r.character.id).not.toBe('<script>')
