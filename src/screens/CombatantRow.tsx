@@ -2,13 +2,15 @@
 import { useState } from 'react'
 import { isDead, type ActionResult } from '../model/actions'
 import type { Character } from '../model/character'
-import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
+import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
+import { actionLabel, applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import {
   addEffect, conditionsToClear, damageMonster, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
 } from '../model/encounter'
-import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, toggleAction, type ActionKind, type Condition } from '../rules'
+import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll } from '../ui/kit'
+import UseActionDialog from '../ui/UseActionDialog'
 import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
@@ -33,6 +35,8 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   const [rounds, setRounds] = useState('')
   const [ends, setEnds] = useState<'start' | 'end'>('end')
   const [confirmRemove, setConfirmRemove] = useState(false)
+  // Confirm dialog for using an Action / Bonus Action / Reaction or starting Concentration.
+  const [pending, setPending] = useState<SuggestionKind | null>(null)
 
   const isPc = c.kind === 'pc'
   const missing = isPc && !character
@@ -50,9 +54,16 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   const pcAct = (action: CharacterAction) => onCharacter((ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
   // Action economy: on the sheet for PCs, on the combatant for monsters.
   const economy = isPc && character ? character.turn : (c.turn ?? FRESH_TURN)
+  /** Using one asks what for (then logs it); tapping a used one gives it back without asking. */
   function toggleEconomy(kind: ActionKind) {
-    if (isPc && character) pcAct({ type: 'setActionUsed', kind, used: !character.turn[kind] })
-    else onUpdate((m) => same({ ...m, turn: toggleAction(m.turn ?? FRESH_TURN, kind) }))
+    if (economy[kind]) setEconomy(kind, false)
+    else setPending(kind)
+  }
+
+  function setEconomy(kind: ActionKind, used: boolean, detail = '') {
+    if (isPc && character) return pcAct({ type: 'setActionUsed', kind, used, detail: detail || undefined })
+    const label = actionLabel(kind)
+    onUpdate((m) => same({ ...m, turn: { ...(m.turn ?? FRESH_TURN), [kind]: used } }, used ? `⚡ ${c.name} ใช้ ${label}${detail ? `: ${detail}` : ''}` : ''))
   }
 
   function damage() {
@@ -234,18 +245,32 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
             </p>
           </div>
 
-          {/* Concentration */}
+          {/* Concentration: started through the confirm dialog, so it's always logged */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-stone-400">🔮</span>
-            <input
-              // key: show the new value when Concentration changes elsewhere (e.g. dropped at 0 HP).
-              key={concentration}
-              className="min-w-0 flex-1 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-base"
-              placeholder="Concentration (ชื่อคาถา)"
-              defaultValue={concentration}
-              onBlur={(e) => e.target.value !== concentration && setConcentration(e.target.value.trim())}
-            />
+            {concentration ? (
+              <>
+                <span className="flex-1 rounded-lg bg-violet-900/60 px-3 py-1.5 text-sm">🔮 Concentration: <b>{concentration}</b></span>
+                <button type="button" className="text-sm text-red-400" onClick={() => setConcentration('')}>เลิก</button>
+              </>
+            ) : (
+              <Button className="flex-1 text-sm" onClick={() => setPending('concentration')}>🔮 เริ่ม Concentration</Button>
+            )}
           </div>
+
+          {pending && (
+            <UseActionDialog
+              title={pending === 'concentration' ? `🔮 ${c.name} เริ่ม Concentration: คาถาอะไร?` : `⚡ ${c.name} ใช้ ${actionLabel(pending)} ทำอะไร?`}
+              suggestions={actionSuggestions(pending, isPc && character ? character : null)}
+              placeholder={pending === 'concentration' ? 'พิมพ์ชื่อคาถา' : 'เลือกด้านบน หรือพิมพ์เอง (เว้นว่างได้)'}
+              required={pending === 'concentration'}
+              onCancel={() => setPending(null)}
+              onConfirm={(detail) => {
+                if (pending === 'concentration') setConcentration(detail)
+                else setEconomy(pending, true, detail)
+                setPending(null)
+              }}
+            />
+          )}
 
           {/* Order and removal */}
           <div className="flex flex-wrap items-center gap-2 text-sm">

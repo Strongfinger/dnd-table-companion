@@ -2,12 +2,14 @@
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { updateCharacter } from '../db/characters'
-import { addLog } from '../db/log'
+import { logCharacterEvent } from '../db/log'
+import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, Section } from '../ui/kit'
+import UseActionDialog from '../ui/UseActionDialog'
 import { CONDITION_TH } from '../ui/labels'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
@@ -18,14 +20,8 @@ export default function PlayPanel({ c }: { c: Character }) {
   const [message, setMessage] = useState('')
   const [resting, setResting] = useState(false)
   const [confirmLong, setConfirmLong] = useState(false)
-  // Concentration text being typed; saved (and logged once) when the box loses focus.
-  const [spell, setSpell] = useState(c.concentration)
-  const [shownSpell, setShownSpell] = useState(c.concentration)
-  if (c.concentration !== shownSpell) {
-    // Changed elsewhere (e.g. dropped at 0 HP, or by the DM's tracker): show the new value.
-    setShownSpell(c.concentration)
-    setSpell(c.concentration)
-  }
+  // Which confirm dialog is open: an Action / Bonus Action / Reaction, or Concentration.
+  const [pending, setPending] = useState<SuggestionKind | null>(null)
 
   /**
    * Send one action (see model/characterActions.ts): it's applied to the newest saved copy,
@@ -35,7 +31,8 @@ export default function PlayPanel({ c }: { c: Character }) {
     const text = await updateCharacter(c.id, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
     if (text) {
       setMessage(text)
-      addLog(c.id, text)
+      // Also lands in the fight log if this character is in a running fight on this device.
+      logCharacterEvent(c.id, text)
     }
   }
   const value = Math.max(0, Math.floor(Number(amount) || 0))
@@ -142,7 +139,8 @@ export default function PlayPanel({ c }: { c: Character }) {
         <div className="flex-1">
           <ActionEconomyBar
             economy={c.turn}
-            onToggle={(kind) => act({ type: 'setActionUsed', kind, used: !c.turn[kind] })}
+            // Using one asks what for (then logs it); tapping a used one gives it back.
+            onToggle={(kind) => (c.turn[kind] ? act({ type: 'setActionUsed', kind, used: false }) : setPending(kind))}
           />
         </div>
         <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
@@ -163,18 +161,16 @@ export default function PlayPanel({ c }: { c: Character }) {
         </div>
       )}
 
-      {/* Concentration */}
+      {/* Concentration: started through the confirm dialog, so it's always logged */}
       <div className="mt-4 flex items-center gap-2">
-        <span className="text-sm text-stone-400">🔮 Concentration</span>
-        <input
-          className="min-w-0 flex-1 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-base"
-          placeholder="ชื่อคาถา"
-          value={spell}
-          onChange={(e) => setSpell(e.target.value)}
-          onBlur={() => act({ type: 'setConcentration', spell: spell.trim() })}
-          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        />
-        {c.concentration && <button type="button" className="text-sm text-red-400" onClick={() => act({ type: 'setConcentration', spell: '' })}>ยกเลิก</button>}
+        {c.concentration ? (
+          <>
+            <span className="flex-1 rounded-lg bg-violet-900/60 px-3 py-2 text-sm">🔮 Concentration: <b>{c.concentration}</b></span>
+            <button type="button" className="text-sm text-red-400" onClick={() => act({ type: 'setConcentration', spell: '' })}>เลิก</button>
+          </>
+        ) : (
+          <Button className="flex-1 text-sm" onClick={() => setPending('concentration')}>🔮 เริ่ม Concentration</Button>
+        )}
       </div>
 
       {/* Spell slots */}
@@ -282,6 +278,21 @@ export default function PlayPanel({ c }: { c: Character }) {
           })}
         </div>
       </div>
+      {pending && (
+        <UseActionDialog
+          title={pending === 'concentration' ? '🔮 เริ่ม Concentration: คาถาอะไร?' : `⚡ ใช้ ${pending === 'action' ? 'Action' : pending === 'bonusAction' ? 'Bonus Action' : 'Reaction'} ทำอะไร?`}
+          suggestions={actionSuggestions(pending, c)}
+          placeholder={pending === 'concentration' ? 'พิมพ์ชื่อคาถา เช่น Bless' : 'เลือกด้านบน หรือพิมพ์เอง (เว้นว่างได้)'}
+          required={pending === 'concentration'}
+          onCancel={() => setPending(null)}
+          onConfirm={(detail) => {
+            act(pending === 'concentration'
+              ? { type: 'setConcentration', spell: detail }
+              : { type: 'setActionUsed', kind: pending, used: true, detail })
+            setPending(null)
+          }}
+        />
+      )}
     </Section>
   )
 }

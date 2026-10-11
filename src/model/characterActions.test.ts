@@ -115,3 +115,18 @@ describe('actions that only make sense in the right state', () => {
     ]) expect(parseCharacterAction(v), JSON.stringify(v)).toBeNull()
   })
 })
+
+describe('using Action / Bonus Action / Reaction is logged with what it was for', () => {
+  it('logs the detail when used, nothing when given back', () => {
+    const used = apply({ type: 'setActionUsed', kind: 'action', used: true, detail: 'Attack: Mace' })!
+    expect(used.text).toBe('⚡ PetchYom ใช้ Action: Attack: Mace')
+    expect(apply({ type: 'setActionUsed', kind: 'action', used: false }, used.character)!.text).toBe('')
+    expect(apply({ type: 'setActionUsed', kind: 'bonusAction', used: true })!.text).toBe('⚡ PetchYom ใช้ Bonus Action')
+  })
+
+  it('the parser keeps a short detail and refuses a long one', () => {
+    expect(parseCharacterAction({ type: 'setActionUsed', kind: 'reaction', used: true, detail: 'Shield' })).toEqual({ type: 'setActionUsed', kind: 'reaction', used: true, detail: 'Shield' })
+    expect(parseCharacterAction({ type: 'setActionUsed', kind: 'reaction', used: true, detail: 'x'.repeat(101) })).toBeNull()
+    expect(parseCharacterAction({ type: 'setActionUsed', kind: 'reaction', used: true, detail: 5 })).toBeNull()
+  })
+})

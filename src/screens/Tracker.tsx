@@ -13,6 +13,7 @@ import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type
 import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
 import { Button, Section } from '../ui/kit'
 import { playerView } from '../model/playerView'
+import LogLine from '../ui/LogLine'
 import AddCombatants from './AddCombatants'
 import PlayerViewPanel from './PlayerViewPanel'
 import CombatantRow from './CombatantRow'
@@ -250,7 +251,7 @@ export default function Tracker({ id }: { id: string }) {
               <div key={round}>
                 {round > 0 && <div className="mb-1 text-xs font-bold text-amber-400">รอบที่ {round}</div>}
                 <ul className="space-y-0.5">
-                  {entries.map((x) => <li key={x.id}>{x.text}</li>)}
+                  {entries.map((x) => <li key={x.id}><LogLine id={x.id}>{x.text}</LogLine></li>)}
                 </ul>
               </div>
             ))}

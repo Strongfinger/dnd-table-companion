@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
 import { deleteCharacter, saveCharacter } from './characters'
 import { db } from './db'
-import { addLog, clearLog, listLog } from './log'
+import { createEncounter } from '../model/encounter'
+import { addLog, clearLog, deleteLog, listEncounterLog, listLog, logCharacterEvent } from './log'
 
 beforeEach(async () => {
   await db.characters.clear()
   await db.log.clear()
+  await db.encounters.clear()
 })
 
 describe('play log', () => {
@@ -36,5 +38,23 @@ describe('play log', () => {
     await addLog(c.id, 'hit')
     await deleteCharacter(c.id)
     expect(await listLog(c.id)).toEqual([])
+  })
+})
+
+describe('fight-aware logging and deleting', () => {
+  it('a character in a running fight also logs into that fight with the round', async () => {
+    const fight = { ...createEncounter('Ambush'), status: 'active' as const, round: 3, combatants: [{ characterId: 'boom' } as never] }
+    await db.encounters.put(fight)
+    await logCharacterEvent('boom', 'Boom ใช้ Action: Dash')
+    expect((await listEncounterLog(fight.id))[0]).toMatchObject({ text: 'Boom ใช้ Action: Dash', round: 3, characterId: 'boom' })
+    await logCharacterEvent('nyx', 'not in the fight')
+    expect(await listEncounterLog(fight.id)).toHaveLength(1)
+  })
+
+  it('deletes a single line', async () => {
+    const id = await addLog('a', 'oops')
+    await addLog('a', 'keep')
+    await deleteLog(id)
+    expect((await listLog('a')).map((e) => e.text)).toEqual(['keep'])
   })
 })

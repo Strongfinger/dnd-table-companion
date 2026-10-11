@@ -34,7 +34,8 @@ export type CharacterAction =
   | { type: 'setCondition'; condition: Condition; on: boolean }
   | { type: 'setInspiration'; on: boolean }
   | { type: 'setConcentration'; spell: string }
-  | { type: 'setActionUsed'; kind: ActionKind; used: boolean }
+  /** `detail`: what it was used for, e.g. "Attack: Greatsword" (logged). */
+  | { type: 'setActionUsed'; kind: ActionKind; used: boolean; detail?: string }
   | { type: 'resetTurn' }
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
@@ -124,8 +125,11 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
       }
     case 'setActionUsed':
       if (c.turn[a.kind] === a.used) return null
-      // Action economy changes are frequent and small: no log line.
-      return { character: { ...c, turn: { ...c.turn, [a.kind]: a.used } }, text: '' }
+      return {
+        character: { ...c, turn: { ...c.turn, [a.kind]: a.used } },
+        // Using it is logged with what it was for; giving it back (fixing a mistap) is not.
+        text: a.used ? `⚡ ${c.name} ใช้ ${ACTION_LABEL[a.kind]}${a.detail ? `: ${a.detail}` : ''}` : '',
+      }
     case 'resetTurn':
       return { character: { ...c, turn: startOfTurn() }, text: '' }
   }
@@ -175,7 +179,9 @@ export function parseCharacterAction(v: unknown): CharacterAction | null {
     case 'setConcentration':
       return typeof v.spell === 'string' && v.spell.length <= 100 ? { type: 'setConcentration', spell: v.spell } : null
     case 'setActionUsed':
-      return ACTION_KINDS.includes(v.kind as ActionKind) && isBool(v.used) ? { type: 'setActionUsed', kind: v.kind as ActionKind, used: v.used } : null
+      if (!ACTION_KINDS.includes(v.kind as ActionKind) || !isBool(v.used)) return null
+      if (v.detail !== undefined && (typeof v.detail !== 'string' || v.detail.length > 100)) return null
+      return { type: 'setActionUsed', kind: v.kind as ActionKind, used: v.used, ...(v.detail ? { detail: v.detail } : {}) }
     default:
       return null
   }

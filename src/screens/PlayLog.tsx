@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { clearLog, listLog } from '../db/log'
 import { Button, Section } from '../ui/kit'
+import LogLine from '../ui/LogLine'
 
 const time = (at: number) => new Date(at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
 const day = (at: number) => new Date(at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -32,10 +33,12 @@ export default function PlayLog({ characterId }: { characterId: string }) {
           return (
             <li key={e.id}>
               {newDay && <div className="mt-2 text-xs font-bold text-stone-500">{day(e.at)}</div>}
-              <div className="flex gap-2">
-                <span className="shrink-0 tabular-nums text-stone-500">{time(e.at)}</span>
-                <span>{e.text}</span>
-              </div>
+              <LogLine id={e.id}>
+                <div className="flex gap-2">
+                  <span className="shrink-0 tabular-nums text-stone-500">{time(e.at)}</span>
+                  <span>{e.text}{e.round ? <span className="ml-1 text-xs text-amber-500/80">(รอบ {e.round})</span> : null}</span>
+                </div>
+              </LogLine>
             </li>
           )
         })}

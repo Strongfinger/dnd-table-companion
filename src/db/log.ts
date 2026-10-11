@@ -15,6 +15,21 @@ export function addLog(characterId: string, text: string, fight?: { encounterId:
   return db.log.add({ id: newId(), characterId, at: nextTime(), text, ...fight })
 }
 
+/**
+ * Log something about a character. If the character is in a fight that's running on this
+ * device, it goes into that fight's log too (with the current round).
+ */
+export async function logCharacterEvent(characterId: string, text: string): Promise<string> {
+  const fights = await db.encounters.filter((e) => e.status === 'active' && e.combatants.some((c) => c.characterId === characterId)).toArray()
+  const fight = fights.sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  return addLog(characterId, text, fight ? { encounterId: fight.id, round: fight.round } : undefined)
+}
+
+/** Remove one log line added by mistake (only the line: HP and other values are not changed back). */
+export function deleteLog(id: string): Promise<void> {
+  return db.log.delete(id)
+}
+
 /** A fight's log, oldest first (reads like a story of the battle). */
 export function listEncounterLog(encounterId: string): Promise<LogEntry[]> {
   return db.log.where('encounterId').equals(encounterId).sortBy('at')
