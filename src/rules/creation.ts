@@ -41,9 +41,37 @@ export function applyBonus(base: Record<Ability, number>, bonus: BackgroundBonus
   return Object.fromEntries(ABILITIES.map((a) => [a, Math.min(20, base[a] + (bonus[a] ?? 0))])) as Record<Ability, number>
 }
 
-/** Average-roll max HP plus species extras (Dwarven Toughness +1 per level). */
-export function suggestedMaxHp(c: { className: ClassName; level: number; scores: Record<Ability, number>; species: string }): number {
+/**
+ * Average-roll max HP plus extras: Dwarven Toughness (+1 per level) and
+ * Draconic Sorcery's Draconic Resilience (+3 at Sorcerer 3, +1 per level after = +level from level 3).
+ */
+export function suggestedMaxHp(c: {
+  className: ClassName
+  level: number
+  scores: Record<Ability, number>
+  species: string
+  subclass?: string
+}): number {
   const base = maxHitPoints(CLASS_HIT_DIE[c.className], c.level, abilityModifier(c.scores.con))
   const perLevel = isSrdSpecies(c.species) ? SPECIES_INFO[c.species].hpPerLevel : 0
-  return base + perLevel * c.level
+  const draconic = c.className === 'Sorcerer' && c.level >= 3 && c.subclass?.trim().toLowerCase() === 'draconic sorcery' ? c.level : 0
+  return base + perLevel * c.level + draconic
+}
+
+/**
+ * Tap an ability while choosing a +2/+1 background bonus:
+ * tapping a chosen ability removes it, otherwise the first pick gets +2 and the second +1.
+ */
+export function tapTwoOneBonus(bonus: BackgroundBonus, ability: Ability): BackgroundBonus {
+  const next = { ...bonus }
+  if (next[ability]) delete next[ability]
+  else if (!Object.values(next).includes(2)) next[ability] = 2
+  else if (!Object.values(next).includes(1)) next[ability] = 1
+  return next
+}
+
+/** "9=1 · 10=2 · …" for showing the Point Buy price list. */
+export function pointBuyPriceList(): string {
+  const scores = Array.from({ length: POINT_BUY_MAX - POINT_BUY_MIN }, (_, i) => POINT_BUY_MIN + 1 + i)
+  return scores.map((n) => `${n}=${pointBuyCost(n)}`).join(' · ')
 }

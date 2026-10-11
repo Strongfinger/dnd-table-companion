@@ -39,7 +39,7 @@ export const SPECIES_INFO: Record<SpeciesName, SpeciesInfo> = {
   Gnome: {
     speed: 30, size: 'Small', darkvision: 60, hpPerLevel: 0, skillChoice: null, extraOriginFeat: false,
     traits: ['Gnomish Cunning', 'Gnomish Lineage'],
-    descriptionTh: 'โนมตัวเล็กหัวไว ได้เปรียบใน Saving Throw ทางจิตใจ (INT/WIS/CHA)',
+    descriptionTh: 'โนมตัวเล็กหัวไว มี Advantage ใน Saving Throw ทางจิตใจ (INT/WIS/CHA)',
   },
   Goliath: {
     speed: 35, size: 'Medium', darkvision: 0, hpPerLevel: 0, skillChoice: null, extraOriginFeat: false,
@@ -49,7 +49,7 @@ export const SPECIES_INFO: Record<SpeciesName, SpeciesInfo> = {
   Halfling: {
     speed: 30, size: 'Small', darkvision: 0, hpPerLevel: 0, skillChoice: null, extraOriginFeat: false,
     traits: ['Brave', 'Halfling Nimbleness', 'Luck', 'Naturally Stealthy'],
-    descriptionTh: 'ฮาล์ฟลิงตัวเล็กโชคดี ทอยได้ 1 ทอยใหม่ได้ (Luck) ซ่อนตัวเก่ง',
+    descriptionTh: 'ฮาล์ฟลิงตัวเล็กโชคดี ทอย d20 ได้ 1 ให้ทอยใหม่ได้ (Luck) ซ่อนตัวเก่ง',
   },
   Human: {
     speed: 30, size: 'Medium or Small', darkvision: 0, hpPerLevel: 0, skillChoice: 'any', extraOriginFeat: true,
@@ -59,7 +59,7 @@ export const SPECIES_INFO: Record<SpeciesName, SpeciesInfo> = {
   Orc: {
     speed: 30, size: 'Medium', darkvision: 120, hpPerLevel: 0, skillChoice: null, extraOriginFeat: false,
     traits: ['Adrenaline Rush', 'Relentless Endurance'],
-    descriptionTh: 'ออร์คอึดถึก เมื่อ HP จะลดเหลือ 0 ให้เหลือ 1 แทน วันละครั้ง (Relentless Endurance)',
+    descriptionTh: 'ออร์คอึดถึก เมื่อ HP ลดเหลือ 0 (แต่ไม่ตายทันที) จะเหลือ 1 HP แทน 1 ครั้งต่อ Long Rest (Relentless Endurance)',
   },
   Tiefling: {
     speed: 30, size: 'Medium or Small', darkvision: 60, hpPerLevel: 0, skillChoice: null, extraOriginFeat: false,

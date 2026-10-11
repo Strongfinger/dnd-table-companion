@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
-import { createCharacter, newId, type Character } from '../model/character'
+import { newId, type Character } from '../model/character'
 import {
-  ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
+  ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
   deriveSheet, formatModifier, isSrdBackground, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
   SKILLS, SPECIES, SPECIES_INFO, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
 } from '../rules'
@@ -14,17 +14,16 @@ const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
 const ABILITY_OPTIONS = ABILITIES.map((a) => ({ value: a, label: ABILITY_LABEL[a].short }))
 const CASTING_OPTIONS = [{ value: 'none', label: '— ไม่มี —' }, ...ABILITY_OPTIONS] as const
 
-/** id = undefined means "create a new character". */
-export default function CharacterEdit({ id }: { id?: string }) {
-  const isNew = id === undefined
+/** Edit an existing character. New characters are made in CreateWizard. */
+export default function CharacterEdit({ id }: { id: string }) {
   // The draft is a copy we edit freely; nothing is saved until "บันทึก" is pressed.
-  const [draft, setDraft] = useState<Character | null>(() => (isNew ? createCharacter() : null))
+  const [draft, setDraft] = useState<Character | null>(null)
   const [notFound, setNotFound] = useState(false)
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
 
   useEffect(() => {
-    if (id) getCharacter(id).then((c) => (c ? setDraft(c) : setNotFound(true)))
+    getCharacter(id).then((c) => (c ? setDraft(c) : setNotFound(true)))
   }, [id])
 
   if (notFound) return <p className="text-center text-stone-400">ไม่พบตัวละครนี้ในเครื่อง</p>
@@ -44,7 +43,8 @@ export default function CharacterEdit({ id }: { id?: string }) {
       className,
       subclass: '',
       saveProficiencies: classSavesAtLevel(className, c.level),
-      spellcastingAbility: CLASS_SPELLCASTING[className],
+      // Keep an existing ability (e.g. from Magic Initiate) when the new class doesn't cast.
+      spellcastingAbility: CLASS_SPELLCASTING[className] ?? c.spellcastingAbility,
     })
   }
 
@@ -57,20 +57,23 @@ export default function CharacterEdit({ id }: { id?: string }) {
     setDraft({ ...c, species, speed: isSrdSpecies(species) ? SPECIES_INFO[species].speed : c.speed })
   }
 
-  /** Swapping background swaps its 2 skills and its Origin feat. */
+  /**
+   * Swapping background adds its 2 skills and swaps its Origin feat.
+   * Old background skills are kept (they may also come from class or species);
+   * the rule check shows if there are too many, and the player taps them off.
+   */
   function changeBackground(background: string) {
     const skills = { ...c.skills }
     let feats = [...c.feats]
     if (isSrdBackground(c.background)) {
-      const old = BACKGROUND_INFO[c.background]
-      for (const k of old.skills) delete skills[k]
-      const i = feats.indexOf(old.feat)
+      const i = feats.indexOf(BACKGROUND_INFO[c.background].feat)
       if (i >= 0) feats.splice(i, 1)
     }
     if (isSrdBackground(background)) {
       const next = BACKGROUND_INFO[background]
       for (const k of next.skills) skills[k] = skills[k] === 'expertise' ? 'expertise' : 'proficient'
-      feats = [...feats, next.feat]
+      const duplicate = feats.includes(next.feat) && !FEAT_INFO[next.feat].repeatable
+      if (!duplicate) feats = [...feats, next.feat]
     }
     const hasAlert = feats.includes('Alert')
     setDraft({ ...c, background, skills, feats, initiativeProficient: hasAlert || (c.initiativeProficient && !c.feats.includes('Alert')) })
@@ -98,8 +101,8 @@ export default function CharacterEdit({ id }: { id?: string }) {
       alert('กรุณาใส่ชื่อตัวละคร')
       return
     }
-    // A new character starts at full HP; otherwise current HP can't be above the max.
-    const current = isNew ? c.hp.max : Math.min(c.hp.current, c.hp.max)
+    // Current HP can't be above the (possibly lowered) max.
+    const current = Math.min(c.hp.current, c.hp.max)
     const saved = await saveCharacter({ ...c, name: c.name.trim(), hp: { ...c.hp, current } })
     go(`/c/${saved.id}`)
   }
@@ -110,11 +113,11 @@ export default function CharacterEdit({ id }: { id?: string }) {
     go('/')
   }
 
-  const cancel = () => go(isNew ? '/' : `/c/${c.id}`)
+  const cancel = () => go(`/c/${c.id}`)
 
   return (
     <div className="space-y-4 pb-24">
-      <h1 className="text-2xl font-bold text-amber-400">{isNew ? 'สร้างตัวละครใหม่' : `แก้ไข ${c.name}`}</h1>
+      <h1 className="text-2xl font-bold text-amber-400">แก้ไข {c.name}</h1>
 
       <Section title="ตรวจกติกา">
         <RuleMessages messages={messages} />
@@ -219,7 +222,7 @@ export default function CharacterEdit({ id }: { id?: string }) {
         <button type="button" className="mt-2 text-sm text-amber-400 underline" onClick={() => set('hp', { ...c.hp, max: suggestedMaxHp(c) })}>
           ใช้ Max HP แบบค่าเฉลี่ย: {suggestedMaxHp(c)}
         </button>
-        <p className="text-xs text-stone-500">ถ้าทอยเต๋า HP ให้ใส่เอง</p>
+        <p className="text-xs text-stone-500">ถ้าทอยเต๋า HP ให้ใส่เอง · เปลี่ยน Species/Level แล้วกดปุ่มนี้อีกครั้ง (Wood Elf: Speed 35)</p>
 
         <div className="mt-3 flex items-end gap-3">
           <div className="flex-1">
@@ -321,7 +324,7 @@ export default function CharacterEdit({ id }: { id?: string }) {
         <TextArea value={c.notes} onChange={(v) => set('notes', v)} />
       </Section>
 
-      {!isNew && <Button variant="danger" className="w-full" onClick={remove}>ลบตัวละคร</Button>}
+      <Button variant="danger" className="w-full" onClick={remove}>ลบตัวละคร</Button>
 
       {/* Save bar stays at the bottom of the screen on phones. */}
       <div className="fixed inset-x-0 bottom-0 border-t border-stone-700 bg-stone-900/95 p-3">
