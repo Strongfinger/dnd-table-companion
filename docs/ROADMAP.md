@@ -6,8 +6,8 @@
 - [x] Push to GitHub and deploy to Vercel — https://dnd-table-companion.vercel.app
 
 ## Phase 1 — Character sheets (players, phone-first)
-- [ ] Data model: `Character` (ability scores, class, level, HP, AC, skills, inventory, spells)
-- [ ] Rules engine in `src/rules/`: modifiers, proficiency, skills, saves, spell DC (with tests)
+- [x] Data model: `Character` (ability scores, class, level, HP, AC, skills, inventory, spells)
+- [x] Rules engine in `src/rules/`: modifiers, proficiency, skills, saves, spell DC (with tests)
 - [ ] Create/edit sheet UI, store in IndexedDB
 - [ ] HP +/- quick buttons, short/long rest, spell slot tracking
 - [ ] Export/import a character as JSON or QR code (to hand to the DM)

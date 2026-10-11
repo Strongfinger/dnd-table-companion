@@ -13,3 +13,10 @@ export const CLASSES = [
 export type ClassName = (typeof CLASSES)[number]
 
 export type HitDie = 6 | 8 | 10 | 12
+
+/** The 15 conditions. Exhaustion is tracked separately as a level 0–6. */
+export const CONDITIONS = [
+  'Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible',
+  'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious',
+] as const
+export type Condition = Exclude<(typeof CONDITIONS)[number], 'Exhaustion'>
