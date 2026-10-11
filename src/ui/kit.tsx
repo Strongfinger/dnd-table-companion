@@ -78,10 +78,15 @@ export function NumberInput({ value, onChange, min, max }: { value: number; onCh
   )
 }
 
-export function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode }) {
+export function Checkbox({ checked, onChange, label, disabled = false }: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: ReactNode
+  disabled?: boolean
+}) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 py-1">
-      <input type="checkbox" className="h-5 w-5 accent-amber-400" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <label className={`flex items-center gap-2 py-1 ${disabled ? 'opacity-70' : 'cursor-pointer'}`}>
+      <input type="checkbox" className="h-5 w-5 accent-amber-400" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span>{label}</span>
     </label>
   )
@@ -114,5 +119,54 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
       {sub && <div className="text-xs text-stone-400">{sub}</div>}
       <div className="text-xs text-stone-400">{label}</div>
     </div>
+  )
+}
+
+const CUSTOM = '__custom'
+
+/**
+ * Pick-list with an "อื่นๆ (Homebrew)" option that reveals a text box,
+ * so non-SRD choices (e.g. Noble) can still be typed in.
+ */
+export function ChoiceField({ value, options, onChange, disabled = false }: {
+  value: string
+  options: readonly string[]
+  onChange: (v: string) => void
+  disabled?: boolean
+}) {
+  const [custom, setCustom] = useState(value !== '' && !options.includes(value))
+  return (
+    <div className="space-y-2">
+      <select
+        className={inputClass}
+        disabled={disabled}
+        value={custom ? CUSTOM : value}
+        onChange={(e) => {
+          const v = e.target.value
+          setCustom(v === CUSTOM)
+          onChange(v === CUSTOM ? '' : v)
+        }}
+      >
+        <option value="">— เลือก —</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value={CUSTOM}>อื่นๆ (Homebrew)…</option>
+      </select>
+      {custom && <input className={inputClass} value={value} placeholder="พิมพ์ชื่อเอง" onChange={(e) => onChange(e.target.value)} />}
+    </div>
+  )
+}
+
+/** Shows rule warnings (⚠️) and notes (ℹ️) from checkCharacter(). */
+export function RuleMessages({ messages }: { messages: { level: 'warning' | 'info'; message: string }[] }) {
+  if (messages.length === 0) return <p className="rounded-lg bg-emerald-950 p-3 text-sm text-emerald-300">✓ ถูกต้องตามกติกา</p>
+  return (
+    <ul className="space-y-1 rounded-lg bg-stone-900 p-3 text-sm">
+      {messages.map((m) => (
+        <li key={m.message} className={m.level === 'warning' ? 'text-amber-300' : 'text-stone-400'}>
+          {m.level === 'warning' ? '⚠️ ' : 'ℹ️ '}
+          {m.message}
+        </li>
+      ))}
+    </ul>
   )
 }

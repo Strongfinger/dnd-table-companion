@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyBonus, checkBackgroundBonus, pointBuyCost, pointBuyTotal, POINT_BUY_START } from './creation'
+import { applyBonus, checkBackgroundBonus, pointBuyCost, pointBuyTotal, POINT_BUY_START, suggestedMaxHp } from './creation'
+import { petchyom } from './fixtures/characters'
 
 describe('Point Buy', () => {
   it.each([[8, 0], [9, 1], [10, 2], [11, 3], [12, 4], [13, 5], [14, 7], [15, 9]])('score %i costs %i', (score, cost) => {
@@ -37,5 +38,16 @@ describe('background ability bonus', () => {
     const base = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 }
     expect(applyBonus(base, { str: 2, con: 1 })).toEqual({ ...base, str: 17, con: 14 })
     expect(applyBonus({ ...base, str: 20 }, { str: 2 }).str).toBe(20)
+  })
+})
+
+describe('suggestedMaxHp', () => {
+  it('adds Dwarven Toughness: PetchYom (Dwarf Cleric 1, Con 15) = 11', () => {
+    expect(suggestedMaxHp(petchyom)).toBe(11)
+  })
+
+  it('no species bonus for other or homebrew species', () => {
+    expect(suggestedMaxHp({ ...petchyom, species: 'Human' })).toBe(10)
+    expect(suggestedMaxHp({ ...petchyom, species: 'Hill Dwarf (2014)' })).toBe(10)
   })
 })

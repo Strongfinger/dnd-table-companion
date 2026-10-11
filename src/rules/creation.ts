@@ -1,5 +1,8 @@
 // Character creation rules (2024): Point Buy and background ability increases.
-import { ABILITIES, type Ability } from './types'
+import { abilityModifier } from './abilities'
+import { CLASS_HIT_DIE, maxHitPoints } from './hp'
+import { isSrdSpecies, SPECIES_INFO } from './srd/species'
+import { ABILITIES, type Ability, type ClassName } from './types'
 
 export const POINT_BUY_BUDGET = 27
 export const POINT_BUY_MIN = 8
@@ -36,4 +39,11 @@ export function checkBackgroundBonus(bonus: BackgroundBonus, allowed: readonly A
 /** Base scores + background bonus, capped at 20. */
 export function applyBonus(base: Record<Ability, number>, bonus: BackgroundBonus): Record<Ability, number> {
   return Object.fromEntries(ABILITIES.map((a) => [a, Math.min(20, base[a] + (bonus[a] ?? 0))])) as Record<Ability, number>
+}
+
+/** Average-roll max HP plus species extras (Dwarven Toughness +1 per level). */
+export function suggestedMaxHp(c: { className: ClassName; level: number; scores: Record<Ability, number>; species: string }): number {
+  const base = maxHitPoints(CLASS_HIT_DIE[c.className], c.level, abilityModifier(c.scores.con))
+  const perLevel = isSrdSpecies(c.species) ? SPECIES_INFO[c.species].hpPerLevel : 0
+  return base + perLevel * c.level
 }
