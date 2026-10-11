@@ -20,9 +20,12 @@ export default function CharacterList() {
         <p className="text-stone-400">ตัวละครที่บันทึกไว้ในเครื่องนี้</p>
       </header>
 
-      <Button variant="primary" className="w-full py-3" onClick={() => go('/new')}>
-        + สร้างตัวละครใหม่
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="primary" className="flex-1 py-3" onClick={() => go('/new')}>
+          + สร้างตัวละครใหม่
+        </Button>
+        <Button className="py-3" onClick={() => go('/import')}>📥 นำเข้า</Button>
+      </div>
 
       {characters?.length === 0 && (
         <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีตัวละคร กดปุ่มด้านบนเพื่อสร้าง</p>

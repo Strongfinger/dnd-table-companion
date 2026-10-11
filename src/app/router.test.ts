@@ -10,6 +10,7 @@ describe('parseRoute', () => {
 
   it('parses new, sheet and edit', () => {
     expect(parseRoute('#/new')).toEqual({ name: 'new' })
+    expect(parseRoute('#/import')).toEqual({ name: 'import' })
     expect(parseRoute('#/c/abc')).toEqual({ name: 'sheet', id: 'abc' })
     expect(parseRoute('#/c/abc/edit')).toEqual({ name: 'edit', id: 'abc' })
   })

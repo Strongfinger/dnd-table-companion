@@ -10,7 +10,8 @@
 - [x] Rules engine in `src/rules/`: modifiers, proficiency, skills, saves, spell DC (with tests)
 - [x] Create/edit sheet UI, store in IndexedDB
 - [x] HP +/- quick buttons, short/long rest, spell slot tracking (+ death saves, conditions, Exhaustion, concentration)
-- [ ] Export/import a character as JSON or QR code (to hand to the DM)
+- [x] Export/import a character as JSON (download, share, copy/paste)
+- [ ] QR code export/import (optional)
 
 ## Phase 2 — Initiative & combat tracker (DM, laptop/tablet)
 - [ ] Add combatants (import a player JSON, or add an SRD monster quickly)

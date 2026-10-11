@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useState } from 'react'
 import { go } from '../app/router'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
+import ExportPanel from './ExportPanel'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
 import { Button, Section, Stat } from '../ui/kit'
@@ -10,6 +12,7 @@ import { Button, Section, Stat } from '../ui/kit'
 export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
   const c = useLiveQuery(() => getCharacter(id).then((found) => found ?? null), [id])
+  const [exporting, setExporting] = useState(false)
 
   if (c === undefined) return null
   if (c === null) return <NotFound />
@@ -32,8 +35,13 @@ export default function CharacterSheet({ id }: { id: string }) {
             {c.background && ` · ${c.background}`}
           </p>
         </div>
-        <Button onClick={() => go(`/c/${c.id}/edit`)}>แก้ไข</Button>
+        <div className="flex shrink-0 gap-2">
+          <Button onClick={() => setExporting(!exporting)}>📤</Button>
+          <Button onClick={() => go(`/c/${c.id}/edit`)}>แก้ไข</Button>
+        </div>
       </header>
+
+      {exporting && <ExportPanel c={c} />}
 
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={c.ac} />
