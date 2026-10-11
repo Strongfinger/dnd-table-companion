@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { saveCharacter } from '../db/characters'
 import { addLog } from '../db/log'
+import { damageCharacter, healCharacter, tempHpCharacter } from '../model/actions'
 import type { Character } from '../model/character'
 import {
-  applyDamage, concentrationDC, CONDITIONS, exhaustionPenalty, gainTempHp, heal, hitDieSize, longRest, rollDeathSave,
+  CONDITIONS, exhaustionPenalty, hitDieSize, longRest, rollDeathSave,
   shortRest, spellSlotsFor, spendHitDie, type Condition,
 } from '../rules'
 import { Button, DiceRoll, Section } from '../ui/kit'
@@ -36,31 +37,23 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   function damage() {
     if (!value) return
-    const r = applyDamage(c, value, critical)
-    const notes: string[] = [`โดน ${value} ดาเมจ${critical ? ' (Critical)' : ''} → ${hpText(r.hp)}`]
-    if (r.dead) notes.push('💀 ตาย (Massive Damage หรือ Death Save ล้มเหลว 3 ครั้ง)')
-    else if (r.droppedToZero) notes.push('HP เหลือ 0: หมดสติ เริ่มทอย Death Save')
-    else if (atZero) notes.push(`Death Save ล้มเหลว +${critical ? 2 : 1}`)
-    if (c.concentration && (r.droppedToZero || r.dead)) notes.push(`🔮 Concentration (${c.concentration}) หลุดเพราะหมดสติ`)
-    else if (c.concentration) notes.push(`🔮 ทอย CON Save DC ${concentrationDC(value)} เพื่อรักษา Concentration (${c.concentration})`)
-    // Dropping to 0 HP adds Unconscious automatically.
-    const conditions: Condition[] = r.droppedToZero && !c.conditions.includes('Unconscious') ? [...c.conditions, 'Unconscious'] : c.conditions
-    act({ ...c, hp: r.hp, deathSaves: r.deathSaves, conditions, concentration: r.droppedToZero ? '' : c.concentration }, notes.join(' · '))
+    const r = damageCharacter(c, value, critical)
+    act(r.character, r.text)
     setAmount('')
     setCritical(false)
   }
 
   function healing() {
     if (!value) return
-    const r = heal(c, value)
-    // Regaining HP ends Unconscious from dropping to 0.
-    act({ ...c, ...r, conditions: atZero ? c.conditions.filter((x) => x !== 'Unconscious') : c.conditions }, `ฮีล ${value} → ${hpText(r.hp)}`)
+    const r = healCharacter(c, value)
+    act(r.character, r.text)
     setAmount('')
   }
 
   function tempHp() {
     if (!value) return
-    act({ ...c, ...gainTempHp(c, value) }, c.hp.temp >= value ? `Temp HP ${value} ไม่ซ้อนกัน: ยังคง ${c.hp.temp}` : `ได้ Temp HP ${value}`)
+    const r = tempHpCharacter(c, value)
+    act(r.character, r.text)
     setAmount('')
   }
 
