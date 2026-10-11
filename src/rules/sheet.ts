@@ -4,6 +4,7 @@
 import { abilityModifier, formatModifier } from './abilities'
 import { attackBonus, initiativeBonus } from './combat'
 import { CLASS_HIT_DIE, maxHitPoints } from './hp'
+import { exhaustionPenalty } from './play'
 import { proficiencyBonus } from './proficiency'
 import { checkBonus, passiveScore, SKILL_ABILITY, SKILLS, type Skill } from './skills'
 import { spellAttackBonus, spellSaveDC } from './spellcasting'
@@ -22,6 +23,10 @@ export interface SheetInput {
   initiativeMisc: number
   spellcastingAbility: Ability | null
   attacks: AttackInput[]
+  /** Exhaustion level 0–6 (optional so old data and test fixtures work). */
+  exhaustion?: number
+  /** Base Speed in feet before Exhaustion. */
+  speed?: number
 }
 
 export interface AttackInput {
@@ -61,6 +66,10 @@ export interface DerivedSheet {
   spellSaveDC: number | null
   spellAttack: number | null
   attacks: DerivedAttack[]
+  /** Speed after Exhaustion, or null if no base speed was given. */
+  speed: number | null
+  /** Amount already subtracted from every D20 Test (Exhaustion). */
+  d20Penalty: number
 }
 
 /** "2d6" + 3 → "2d6+3"; "1d6" + 0 → "1d6"; a flat "1" + 3 → "4". */
@@ -71,15 +80,17 @@ export function formatDamage(dice: string, mod: number): string {
 
 export function deriveSheet(c: SheetInput): DerivedSheet {
   const prof = proficiencyBonus(c.level)
+  // Exhaustion lowers every D20 Test: saves, checks, attacks, Initiative (not the spell save DC).
+  const penalty = exhaustionPenalty(c.exhaustion ?? 0)
+  const d20 = penalty.d20
   const modifiers = Object.fromEntries(ABILITIES.map((a) => [a, abilityModifier(c.scores[a])])) as Record<Ability, number>
 
   const saves = Object.fromEntries(
-    ABILITIES.map((a) => [a, checkBonus(modifiers[a], c.saveProficiencies.includes(a) ? 'proficient' : 'none', prof)]),
+    ABILITIES.map((a) => [a, checkBonus(modifiers[a], c.saveProficiencies.includes(a) ? 'proficient' : 'none', prof) - d20]),
   ) as Record<Ability, number>
 
-  const skills = Object.fromEntries(
-    SKILLS.map((s) => [s, checkBonus(modifiers[SKILL_ABILITY[s]], c.skills[s] ?? 'none', prof)]),
-  ) as Record<Skill, number>
+  const skillBonus = (s: Skill) => checkBonus(modifiers[SKILL_ABILITY[s]], c.skills[s] ?? 'none', prof)
+  const skills = Object.fromEntries(SKILLS.map((s) => [s, skillBonus(s) - d20])) as Record<Skill, number>
 
   const castMod = c.spellcastingAbility ? modifiers[c.spellcastingAbility] : null
 
@@ -88,19 +99,22 @@ export function deriveSheet(c: SheetInput): DerivedSheet {
     modifiers,
     saves,
     skills,
-    passivePerception: passiveScore(skills.Perception),
-    passiveInsight: passiveScore(skills.Insight),
-    passiveInvestigation: passiveScore(skills.Investigation),
-    initiative: initiativeBonus(modifiers.dex, (c.initiativeProficient ? prof : 0) + c.initiativeMisc),
+    // Passive scores involve no d20 roll, so Exhaustion's roll penalty doesn't apply.
+    passivePerception: passiveScore(skillBonus('Perception')),
+    passiveInsight: passiveScore(skillBonus('Insight')),
+    passiveInvestigation: passiveScore(skillBonus('Investigation')),
+    initiative: initiativeBonus(modifiers.dex, (c.initiativeProficient ? prof : 0) + c.initiativeMisc) - d20,
     suggestedMaxHp: maxHitPoints(CLASS_HIT_DIE[c.className], c.level, modifiers.con),
     spellSaveDC: castMod === null ? null : spellSaveDC(prof, castMod),
-    spellAttack: castMod === null ? null : spellAttackBonus(prof, castMod),
+    spellAttack: castMod === null ? null : spellAttackBonus(prof, castMod) - d20,
     attacks: c.attacks.map((a) => ({
       id: a.id,
       name: a.name,
-      hit: attackBonus(modifiers[a.ability], prof, a.proficient),
+      hit: attackBonus(modifiers[a.ability], prof, a.proficient) - d20,
       damage: formatDamage(a.damageDice, a.addModToDamage ? modifiers[a.ability] : Math.min(0, modifiers[a.ability])),
       damageType: a.damageType,
     })),
+    speed: c.speed === undefined ? null : Math.max(0, c.speed - penalty.speed),
+    d20Penalty: d20,
   }
 }

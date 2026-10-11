@@ -70,3 +70,18 @@ describe('deriveSheet', () => {
     expect(deriveSheet(clumsy).attacks[0].damage).toBe('1d4-1')
   })
 })
+
+describe('deriveSheet with Exhaustion', () => {
+  it('lowers saves, skills, Initiative, attacks, spell attack and Speed, but not spell DC or passives', () => {
+    const tired = deriveSheet({ ...base, exhaustion: 2, speed: 30 })
+    const fresh = deriveSheet({ ...base, speed: 30 })
+    expect(tired.saves.int).toBe(fresh.saves.int - 4)
+    expect(tired.skills.Arcana).toBe(fresh.skills.Arcana - 4)
+    expect(tired.initiative).toBe(fresh.initiative - 4)
+    expect(tired.spellSaveDC).toBe(fresh.spellSaveDC)
+    expect(tired.spellAttack).toBe(fresh.spellAttack! - 4)
+    expect(tired.speed).toBe(20)
+    expect(tired.passivePerception).toBe(fresh.passivePerception)
+    expect(tired.d20Penalty).toBe(4)
+  })
+})

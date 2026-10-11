@@ -22,7 +22,7 @@ export interface Character extends SheetInput {
   hitDiceSpent: number
   deathSaves: { successes: number; failures: number }
   heroicInspiration: boolean
-  /** 0–6 (2024: −2 per level to D20 Tests and spell save DC, −5 ft. Speed). */
+  /** 0–6 (2024: −2 per level to D20 Tests, −5 ft. Speed; level 6 = death). */
   exhaustion: number
   conditions: Condition[]
   /** Name of the spell being concentrated on, or '' if none. */

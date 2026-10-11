@@ -2,7 +2,7 @@
 // Pure function: the wizard collects choices, this does the assembly, tests check it.
 import {
   abilityModifier, applyBonus, BACKGROUND_INFO, CLASS_SPELLCASTING, classSavesAtLevel, ELF_LINEAGES, FEAT_INFO, maxExpertise,
-  SPECIES_INFO, suggestedMaxHp, unarmoredAC, ABILITIES,
+  SPECIES_INFO, spellSlotsFor, suggestedMaxHp, unarmoredAC, ABILITIES,
   type Ability, type BackgroundBonus, type BackgroundName, type ClassName, type ElfLineage, type OriginFeat,
   type ProficiencyLevel, type Skill, type SpeciesName,
 } from '../rules'
@@ -81,6 +81,7 @@ export function buildCharacter(c: CreationChoices): Character {
     hp: { max: hpMax, current: hpMax, temp: 0 },
     ac: unarmoredAC(c.className, mods),
     speed: lineage?.speed ?? species.speed,
+    spellSlots: spellSlotsFor(c.className, 1).map((max) => ({ max, used: 0 })),
     featuresText: [
       `${speciesName}: ${species.traits.join(', ')}`,
       darkvision ? `Darkvision ${darkvision} ft.` : '',

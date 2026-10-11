@@ -9,7 +9,7 @@
 - [x] Data model: `Character` (ability scores, class, level, HP, AC, skills, inventory, spells)
 - [x] Rules engine in `src/rules/`: modifiers, proficiency, skills, saves, spell DC (with tests)
 - [x] Create/edit sheet UI, store in IndexedDB
-- [ ] HP +/- quick buttons, short/long rest, spell slot tracking
+- [x] HP +/- quick buttons, short/long rest, spell slot tracking (+ death saves, conditions, Exhaustion, concentration)
 - [ ] Export/import a character as JSON or QR code (to hand to the DM)
 
 ## Phase 2 — Initiative & combat tracker (DM, laptop/tablet)

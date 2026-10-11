@@ -3,6 +3,7 @@ import { go } from '../app/router'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
+import PlayPanel from './PlayPanel'
 import { Button, Section, Stat } from '../ui/kit'
 
 export default function CharacterSheet({ id }: { id: string }) {
@@ -33,13 +34,18 @@ export default function CharacterSheet({ id }: { id: string }) {
         <Button onClick={() => go(`/c/${c.id}/edit`)}>แก้ไข</Button>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-        <Stat label="HP" value={`${c.hp.current}/${c.hp.max}`} sub={c.hp.temp > 0 ? `Temp ${c.hp.temp}` : undefined} />
+      <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={c.ac} />
         <Stat label="Initiative" value={mod(s.initiative)} />
-        <Stat label="Speed" value={`${c.speed} ft.`} />
+        <Stat label="Speed" value={`${s.speed ?? c.speed} ft.`} />
         <Stat label="Proficiency" value={mod(s.proficiencyBonus)} />
       </div>
+
+      {s.d20Penalty > 0 && (
+        <p className="rounded-lg bg-red-950/60 p-2 text-sm text-red-300">Exhaustion {c.exhaustion}: ทุก D20 Test −{s.d20Penalty} (ตัวเลขด้านล่างหักแล้ว)</p>
+      )}
+
+      <PlayPanel c={c} />
 
       <Section title="Ability Scores · Saving Throws">
         <div className="grid grid-cols-3 gap-2">

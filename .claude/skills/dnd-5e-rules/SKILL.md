@@ -47,7 +47,7 @@ Hit dice: d6 Sorcerer, Wizard · d8 Bard, Cleric, Druid, Monk, Rogue, Warlock ·
 ## Conditions (15)
 Blinded, Charmed, Deafened, Exhaustion, Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned, Unconscious.
 
-Exhaustion (2024): levels 1–6. Each level gives −2 to every D20 Test (ability checks, attack rolls, saving throws) and −5 ft. Speed, and lowers your spell save DC by 2 per level. Level 6 = death.
+Exhaustion (2024): levels 1–6. Each level gives −2 to every D20 Test (ability checks, attack rolls, saving throws) and −5 ft. Speed. It does **not** lower spell save DCs (that was only in the playtest). Level 6 = death.
 
 ## Skills → ability
 Str: Athletics · Dex: Acrobatics, Sleight of Hand, Stealth · Int: Arcana, History, Investigation, Nature, Religion · Wis: Animal Handling, Insight, Medicine, Perception, Survival · Cha: Deception, Intimidation, Performance, Persuasion.

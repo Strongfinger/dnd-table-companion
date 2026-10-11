@@ -5,13 +5,14 @@ import { newId, type Character } from '../model/character'
 import {
   ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
   deriveSheet, formatModifier, isSrdBackground, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
-  SKILLS, SPECIES, SPECIES_INFO, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
+  SKILLS, SPECIES, SPECIES_INFO, spellSlotsFor, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
 } from '../rules'
 import { Button, Checkbox, ChoiceField, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
 import { ABILITY_LABEL } from '../ui/labels'
 
 const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
 const ABILITY_OPTIONS = ABILITIES.map((a) => ({ value: a, label: ABILITY_LABEL[a].short }))
+const RECHARGE_OPTIONS = [{ value: 'short', label: 'Short Rest' }, { value: 'long', label: 'Long Rest' }] as const
 const CASTING_OPTIONS = [{ value: 'none', label: '— ไม่มี —' }, ...ABILITY_OPTIONS] as const
 
 /** Edit an existing character. New characters are made in CreateWizard. */
@@ -37,6 +38,11 @@ export default function CharacterEdit({ id }: { id: string }) {
   const expertiseLeft = maxExpertise(c.className, c.level) - SKILLS.filter((k) => c.skills[k] === 'expertise').length
   const subclassLocked = c.level < SUBCLASS_LEVEL && !freeEdit
 
+  /** Spell slot maximums from the class table; used slots are kept but never above the new max. */
+  function slotsFor(className: ClassName, level: number) {
+    return spellSlotsFor(className, level).map((max, i) => ({ max, used: Math.min(c.spellSlots[i]?.used ?? 0, max) }))
+  }
+
   function changeClass(className: ClassName) {
     setDraft({
       ...c,
@@ -45,12 +51,19 @@ export default function CharacterEdit({ id }: { id: string }) {
       saveProficiencies: classSavesAtLevel(className, c.level),
       // Keep an existing ability (e.g. from Magic Initiate) when the new class doesn't cast.
       spellcastingAbility: CLASS_SPELLCASTING[className] ?? c.spellcastingAbility,
+      spellSlots: freeEdit ? c.spellSlots : slotsFor(className, c.level),
     })
   }
 
   function changeLevel(level: number) {
     // Saves can change with level (Monk 14, Rogue 15) unless the DM is editing freely.
-    setDraft({ ...c, level, saveProficiencies: freeEdit ? c.saveProficiencies : classSavesAtLevel(c.className, level) })
+    setDraft({
+      ...c,
+      level,
+      saveProficiencies: freeEdit ? c.saveProficiencies : classSavesAtLevel(c.className, level),
+      spellSlots: freeEdit ? c.spellSlots : slotsFor(c.className, level),
+      hitDiceSpent: Math.min(c.hitDiceSpent, level),
+    })
   }
 
   function changeSpecies(species: string) {
@@ -250,6 +263,42 @@ export default function CharacterEdit({ id }: { id: string }) {
         {s.spellSaveDC !== null && (
           <p className="mt-2 text-sm">Spell Save DC <b>{s.spellSaveDC}</b> · Spell Attack <b>{formatModifier(s.spellAttack ?? 0)}</b></p>
         )}
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm text-stone-400">Spell Slots (สูงสุด) ต่อ Level คาถา</span>
+          <button type="button" className="text-sm text-amber-400 underline" onClick={() => set('spellSlots', slotsFor(c.className, c.level))}>
+            ตั้งตามตาราง {c.className} {c.level}
+          </button>
+        </div>
+        <div className="mt-1 grid grid-cols-5 gap-2">
+          {c.spellSlots.map((slot, i) => (
+            <Label key={i} text={`Lv${i + 1}`}>
+              <NumberInput value={slot.max} min={0} max={9} onChange={(v) => set('spellSlots', c.spellSlots.map((x, j) => (j === i ? { max: v, used: Math.min(x.used, v) } : x)))} />
+            </Label>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-stone-500">เปลี่ยน Class หรือ Level แล้ว Spell Slots จะถูกตั้งตามตารางให้อัตโนมัติ</p>
+      </Section>
+
+      <Section
+        title="ความสามารถที่ใช้ได้จำกัด"
+        action={<Button className="text-sm" onClick={() => set('features', [...c.features, { id: newId(), name: '', max: 1, used: 0, recharge: 'long' }])}>+ เพิ่ม</Button>}
+      >
+        <p className="mb-2 text-xs text-stone-500">เช่น Second Wind, Rage, Channel Divinity, Bardic Inspiration: ใช้กี่ครั้ง และฟื้นตอนพักแบบไหน</p>
+        <div className="space-y-2">
+          {c.features.map((f, i) => {
+            const update = (patch: Partial<typeof f>) => set('features', c.features.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+            return (
+              <div key={f.id} className="grid grid-cols-[1fr_4rem_7rem_auto] items-end gap-2">
+                <Label text="ชื่อ"><TextInput value={f.name} placeholder="Second Wind" onChange={(v) => update({ name: v })} /></Label>
+                <Label text="ครั้ง"><NumberInput value={f.max} min={1} max={20} onChange={(v) => update({ max: v, used: Math.min(f.used, v) })} /></Label>
+                <Label text="ฟื้นเมื่อ">
+                  <Select value={f.recharge} options={RECHARGE_OPTIONS} onChange={(v) => update({ recharge: v })} />
+                </Label>
+                <button type="button" className="px-2 pb-2 text-red-400" onClick={() => set('features', c.features.filter((_, j) => j !== i))}>✕</button>
+              </div>
+            )
+          })}
+        </div>
       </Section>
 
       <Section
