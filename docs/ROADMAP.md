@@ -11,7 +11,7 @@
 - [x] Create/edit sheet UI, store in IndexedDB
 - [x] HP +/- quick buttons, short/long rest, spell slot tracking (+ death saves, conditions, Exhaustion, concentration)
 - [x] Export/import a character as JSON (download, share, copy/paste)
-- [ ] QR code export/import (optional)
+- [ ] QR code export/import (optional, moved to Later)
 
 ## Phase 2 — Initiative & combat tracker (DM, laptop/tablet)
 - [x] Add combatants: PCs linked to their sheet, quick monsters (name/AC/HP/init, numbered copies)
@@ -24,12 +24,45 @@
 ## Offline / PWA
 - [x] Installable app (manifest + d20 icon), works fully offline after the first visit, update prompt, build time on About page
 
-## Phase 3 — DM assistant (offline)
+## Plan update (2026-10-11): campaign lobby with live sync
+Decision: **online room code on a free tier** (option C). Chosen over Wi-Fi-only options because the goal is
+avoiding paid services, not avoiding the internet; it works with the installed PWA, survives phones locking,
+and works on any Wi-Fi or mobile data. Everything outside a live session stays offline-first.
+
+Live scope: players' own sheets synced with the DM · players see initiative order, round and whose turn ·
+monsters shown to players with name and rough health only (never exact HP) · shared dice log.
+Estimates are in "sessions" (one long working block like the ones that built Phase 1 or 2).
+
+## Step A — Sync-ready foundation (no networking) · 1–2 sessions
+- [ ] Campaign: groups characters, fights and notes; a lobby is a live session of a campaign
+- [ ] Device identity (random id + device name) and ownership: a player's device owns their character, the DM owns fights/monsters/notes
+- [ ] Revision counter on every saved record; app/data version handshake
+- [ ] Every change expressed as a small serializable action (we already have pure rule functions + `updateCharacter`)
+- [ ] DM-secret flags: hidden monsters, exact HP, notes
+- [ ] Validation for incoming actions (reuse the import validation: network data is untrusted)
+
+## Step B — Realtime service trial · 1 session
+- [ ] Pick the free realtime service (compare Supabase Realtime, Firebase, Cloudflare/PartyKit: free limits, keys, Thai latency)
+- [ ] Prototype: DM creates a room code, 2 phones join, presence list, send/receive actions, lock a phone and reconnect
+- [ ] Decide how the public client key is handled (publishable keys only + access rules; never secret keys)
+
+## Phase 3 — DM assistant (offline) · 2–3 sessions
 - [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters
 - [ ] SRD monster and spell lookup
-- [ ] Session notes
+- [ ] Session notes (belong to a campaign from day one)
 
-## Phase 4 — Later
+## Phase 4 — Lobby & live sync · 3–4 sessions
+- [ ] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin
+- [ ] DM device is the source of truth during a session; players send actions, DM device applies and broadcasts
+- [ ] Players' sheets synced both ways (HP, conditions, slots, death saves, action economy)
+- [ ] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied")
+- [ ] Shared dice log: rolls from any phone appear in the fight log
+- [ ] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect
+
+## Phase 5 — Hardening · 1–2 sessions
+- [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
+
+## Later
+- [ ] Minimap / battle map (shared view for players)
 - [ ] Claude API DM helper through a Vercel serverless function (NPC dialogue, descriptions, rules Q&A)
-- [ ] Live sync between devices (Supabase), with room codes
-- [ ] Battle map
+- [ ] QR code export/import of a character (optional)
