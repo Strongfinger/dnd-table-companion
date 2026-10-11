@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLASS_HIT_DIE, fixedHitDieValue, maxHitPoints } from './hp'
+import { CLASS_HIT_DIE, fixedHitDieValue, maxHitPoints, maxHitPointsFromRolls } from './hp'
 
 describe('CLASS_HIT_DIE', () => {
   it('matches the SRD for all 12 classes', () => {
@@ -45,5 +45,27 @@ describe('maxHitPoints', () => {
     expect(() => maxHitPoints(7 as 8, 1, 0)).toThrow(RangeError)
     expect(() => maxHitPoints(8, 1, 11)).toThrow(RangeError)
     expect(() => maxHitPoints(8, 1, 1.5)).toThrow(RangeError)
+  })
+})
+
+describe('maxHitPointsFromRolls', () => {
+  it('level 1 only = max hit die + Con mod', () => {
+    expect(maxHitPointsFromRolls(10, 2, [])).toBe(12)
+  })
+
+  it('adds each roll + Con mod', () => {
+    // Fighter 3, Con +2, rolled 5 and 9: 12 + 7 + 11 = 30
+    expect(maxHitPointsFromRolls(10, 2, [5, 9])).toBe(30)
+  })
+
+  it('gives at least 1 HP per level', () => {
+    // Wizard, Con −3, rolled 1 and 2: 3 + 1 + 1 = 5
+    expect(maxHitPointsFromRolls(6, -3, [1, 2])).toBe(5)
+  })
+
+  it('rejects impossible rolls and too many levels', () => {
+    expect(() => maxHitPointsFromRolls(8, 0, [9])).toThrow(RangeError)
+    expect(() => maxHitPointsFromRolls(8, 0, [0])).toThrow(RangeError)
+    expect(() => maxHitPointsFromRolls(8, 0, Array(20).fill(4))).toThrow(RangeError)
   })
 })
