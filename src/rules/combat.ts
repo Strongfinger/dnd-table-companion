@@ -1,5 +1,5 @@
 /**
- * Initiative bonus = Dex modifier + any other bonuses (e.g. +5 from the Alert feat).
+ * Initiative bonus = Dex modifier + any other bonuses (e.g. the Alert feat adds your proficiency bonus).
  * The roll itself is d20 + this bonus.
  */
 export function initiativeBonus(dexMod: number, otherBonus = 0): number {

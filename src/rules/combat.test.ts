@@ -7,8 +7,8 @@ describe('initiativeBonus', () => {
     expect(initiativeBonus(-1)).toBe(-1)
   })
 
-  it('adds other bonuses such as Alert (+5)', () => {
-    expect(initiativeBonus(1, 5)).toBe(6)
+  it('adds other bonuses such as Alert (+ proficiency bonus)', () => {
+    expect(initiativeBonus(1, 2)).toBe(3)
     expect(initiativeBonus(2, -5)).toBe(-3)
   })
 })

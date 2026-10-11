@@ -1,4 +1,4 @@
-// Shared game-rule types (D&D 5e, SRD 5.1).
+// Shared game-rule types (D&D 5e 2024 rules, SRD 5.2.1).
 
 export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
 export type Ability = (typeof ABILITIES)[number]
