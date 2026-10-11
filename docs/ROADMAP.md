@@ -3,7 +3,7 @@
 ## Phase 0 — Setup (½ day)
 - [x] Scaffold Vite + React + TS + Tailwind, add Thai font
 - [x] Add a Vitest test that runs
-- [ ] Push to GitHub and deploy to Vercel (friends can open the link)
+- [x] Push to GitHub and deploy to Vercel — https://dnd-table-companion.vercel.app
 
 ## Phase 1 — Character sheets (players, phone-first)
 - [ ] Data model: `Character` (ability scores, class, level, HP, AC, skills, inventory, spells)
