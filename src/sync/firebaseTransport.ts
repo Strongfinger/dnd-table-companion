@@ -48,24 +48,37 @@ export function firebaseTransport(): RoomTransport | null {
         const room = `rooms/${code}`
         const memberRef = db.ref(database, `${room}/members/${user.uid}`)
         const memberData = () => ({ ...self, online: true, lastSeen: db.serverTimestamp() })
+        // Declared up front: the connection callback below uses them.
+        const byUid = new Map<string, { id: string; name: string }>()
+        const dedupe = new Deduper()
+        const joinedAt = Date.now() - 5000
+        let listening = false
 
         // Presence: write myself; Firebase marks me offline by itself if the connection drops.
         const connectedRef = db.ref(database, '.info/connected')
         cleanups.push(db.onValue(connectedRef, async (snap) => {
           if (snap.val() === true) {
-            await db.onDisconnect(memberRef).update({ online: false, lastSeen: db.serverTimestamp() })
-            await db.set(memberRef, memberData())
-            handlers.onStatus('connected')
-            // Anything sent while offline goes out now.
-            while (queue.length) sendNow?.(queue.shift()!)
+            try {
+              // Write my member record FIRST: the security rules check the "mark me offline
+              // when I disconnect" instruction against the record, so it must already exist.
+              await db.set(memberRef, memberData())
+              await db.onDisconnect(memberRef).update({ online: false, lastSeen: db.serverTimestamp() })
+              // Only members may read messages, so start listening once I'm a member.
+              listenForMessages()
+              handlers.onStatus('connected')
+              // Anything sent while offline goes out now.
+              while (queue.length) sendNow?.(queue.shift()!)
+            } catch (err) {
+              console.error('lobby: could not join room', err)
+              handlers.onStatus('offline')
+            }
           } else {
             handlers.onStatus('reconnecting')
           }
         }))
         updateSelf = () => void db.update(memberRef, { ...self, lastSeen: db.serverTimestamp() })
 
-        // Members: also remembers uid → device so we know who sent each message.
-        const byUid = new Map<string, { id: string; name: string }>()
+        // Members: also remembers uid → device (byUid) so we know who sent each message.
         cleanups.push(db.onValue(db.ref(database, `${room}/members`), (snap) => {
           const list: Member[] = []
           byUid.clear()
@@ -79,19 +92,39 @@ export function firebaseTransport(): RoomTransport | null {
         }))
 
         // Messages: only new ones (from a moment before joining); checked and de-duplicated.
-        const dedupe = new Deduper()
-        const recent = db.query(db.ref(database, `${room}/messages`), db.orderByChild('at'), db.startAt(Date.now() - 5000))
-        cleanups.push(db.onChildAdded(recent, (snap) => {
-          const raw = snap.val() as { fromUid?: string; json?: string }
-          const sender = raw?.fromUid ? byUid.get(raw.fromUid) : undefined
-          if (!sender || raw.fromUid === user.uid || typeof raw.json !== 'string') return
-          const r = parseEnvelope(raw.json, sender)
-          if (r.ok && dedupe.firstTime(r.envelope.id)) handlers.onMessage(r.envelope)
-        }))
+        // Who sent it: the member record of the sender's sign-in id. A brand-new member's
+        // first message can arrive before our member list updates, so look them up directly.
+        async function senderOf(uid: string): Promise<{ id: string; name: string } | undefined> {
+          const known = byUid.get(uid)
+          if (known) return known
+          const m = (await db.get(db.ref(database, `${room}/members/${uid}`))).val() as Member | null
+          return m && typeof m.deviceId === 'string' && typeof m.name === 'string' ? { id: m.deviceId, name: m.name.slice(0, 40) } : undefined
+        }
+        function listenForMessages() {
+          if (listening) return
+          listening = true
+          const recent = db.query(db.ref(database, `${room}/messages`), db.orderByChild('at'), db.startAt(joinedAt))
+          cleanups.push(db.onChildAdded(recent, async (snap) => {
+            const raw = snap.val() as { fromUid?: string; json?: string }
+            if (!raw?.fromUid || raw.fromUid === user.uid || typeof raw.json !== 'string') return
+            const sender = await senderOf(raw.fromUid)
+            if (!sender) return
+            const r = parseEnvelope(raw.json, sender)
+            if (r.ok && dedupe.firstTime(r.envelope.id)) handlers.onMessage(r.envelope)
+          }, (err) => {
+            // Firebase stops a listener it refuses; say so instead of going quiet.
+            console.error('lobby: message listener stopped', err)
+            listening = false
+            handlers.onStatus('offline')
+          }))
+        }
 
         sendNow = (e) => void db.push(db.ref(database, `${room}/messages`), { fromUid: user.uid, at: e.at, json: JSON.stringify(e) })
         cleanups.push(() => void db.update(memberRef, { online: false, lastSeen: db.serverTimestamp() }))
-      })().catch(() => handlers.onStatus('offline'))
+      })().catch((err) => {
+        console.error('lobby: could not connect', err)
+        handlers.onStatus('offline')
+      })
 
       return {
         code,
