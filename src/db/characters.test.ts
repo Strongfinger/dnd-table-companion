@@ -7,6 +7,8 @@ import { ALL_FIXTURES } from '../rules/fixtures/characters'
 import { deriveSheet } from '../rules'
 import { deleteCharacter, getCharacter, listCharacters, saveCharacter, saveReceivedCharacter, updateCharacter } from './characters'
 import { db } from './db'
+import { combatantFromCharacter, createEncounter } from '../model/encounter'
+import { saveEncounter, getEncounter } from './encounters'
 
 beforeEach(async () => {
   await db.characters.clear()
@@ -87,5 +89,17 @@ describe('saveReceivedCharacter (live lobby)', () => {
     const r = await saveReceivedCharacter({ ...mine, name: 'Old' }, (stored) => stored!.rev < mine.rev)
     expect(r.saved).toBe(false)
     expect(r.stored.name).toBe('Nyx 2')
+  })
+})
+
+describe('deleting a character that is in a fight', () => {
+  it('the fight row keeps its last HP and AC (not the ones from when it joined)', async () => {
+    const boom = await saveCharacter(createCharacter({ name: 'Boom', hp: { max: 19, current: 19, temp: 0 }, ac: 16 }))
+    const fight = { ...createEncounter('Ambush'), combatants: [combatantFromCharacter(boom)] }
+    await saveEncounter(fight)
+    await updateCharacter(boom.id, (c) => ({ character: { ...c, hp: { ...c.hp, current: 4 }, ac: 18 }, text: '' }))
+    await deleteCharacter(boom.id)
+    const row = (await getEncounter(fight.id))!.combatants[0]
+    expect(row).toMatchObject({ characterId: boom.id, hp: { current: 4, max: 19 }, ac: 18 })
   })
 })

@@ -62,6 +62,20 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
     setManual('')
     setOpen(true)
   }), [])
+  // On a phone the button floats over the page: it slides away while scrolling down (towards the
+  // rows it would cover) and comes back when scrolling up or at the top.
+  const [tucked, setTucked] = useState(false)
+  useEffect(() => {
+    let lastY = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      if (y < 40 || y < lastY - 8) setTucked(false)
+      else if (y > lastY + 8) setTucked(true)
+      if (Math.abs(y - lastY) > 8) lastY = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   // null = the default for my role in the room.
   const [shareChoice, setShareChoice] = useState<boolean | null>(null)
   const share = !!lobby.session && (shareChoice ?? lobby.session.role === 'player')
@@ -109,7 +123,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
           type="button"
           aria-label="เปิดตัวทอยลูกเต๋า"
           onClick={() => setOpen(true)}
-          className="fixed right-4 bottom-20 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-black/50"
+          className={`fixed right-4 bottom-20 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-black/50 transition duration-200 ${tucked ? 'pointer-events-none translate-y-24 opacity-0' : ''}`}
         >
           🎲
         </button>

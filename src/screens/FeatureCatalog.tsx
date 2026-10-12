@@ -79,7 +79,8 @@ export function FeatureCard({ c, featureId, texts }: { c: Character; featureId: 
       label,
       ...(applies && {
         resultHint: applies === 'heal' ? 'ผลรวมจะฮีลให้ตัวละครนี้อัตโนมัติ' : 'ผลรวมจะเป็น Temp HP ของตัวละครนี้อัตโนมัติ',
-        onResult: (total: number) => void act(applies === 'heal' ? { type: 'heal', amount: total } : { type: 'tempHp', amount: total }),
+        // "Minimum of 1" (Wholeness of Body, Tireless with a low WIS).
+        onResult: (total: number) => void act(applies === 'heal' ? { type: 'heal', amount: Math.max(1, total) } : { type: 'tempHp', amount: Math.max(1, total) }),
       }),
     })
   }

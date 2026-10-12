@@ -61,6 +61,11 @@ export function castPlan(c: Character, s: CastableSpell, choice: { slotLevel: nu
   if (kind && c.turn[kind]) return { actions: [], warnings, error: `ใช้ ${ACTION_LABEL[kind]} ไปแล้วในเทิร์นนี้` }
 
   if (s.level > 0 && !s.prepared && !ritual) warnings.push('คาถานี้ยังไม่ได้เตรียมไว้ (Prepared)')
+  // 2024: a Ritual needs the spell prepared, except a Wizard casting from the spellbook (Ritual Adept).
+  if (ritual && !s.prepared && c.className !== 'Wizard') warnings.push('ร่ายแบบ Ritual ได้เฉพาะคาถาที่เตรียมไว้ (Prepared) · ยกเว้น Wizard ร่ายจาก Spellbook')
+  // 2024 "One Spell with a Spell Slot per Turn". Not for a Reaction: those are usually cast on someone
+  // else's turn (a different turn), while the flag only resets when this character's own turn starts.
+  if (s.level > 0 && !ritual && kind !== 'reaction' && c.turn.spellSlot) warnings.push('ใช้ Spell Slot ไปแล้วในเทิร์นนี้: กติกา 2024 ใช้ Spell Slot ร่ายคาถาได้ 1 ครั้งต่อเทิร์น')
   if (ritual) warnings.push('ร่ายแบบ Ritual: ไม่ใช้ Spell Slot แต่ใช้เวลาเพิ่ม 10 นาที')
   else if (!kind) warnings.push(`ใช้เวลาร่าย ${s.castingTime}`)
   if (s.concentration && c.concentration && c.concentration !== s.name) warnings.push(`Concentration เดิม (${c.concentration}) จะหลุด`)

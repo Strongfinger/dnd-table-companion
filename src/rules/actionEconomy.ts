@@ -7,6 +7,14 @@ export interface ActionEconomy {
   reaction: boolean
 }
 
+/**
+ * A character's turn: the action economy, plus whether a spell slot was already spent this turn
+ * (2024 "One Spell with a Spell Slot per Turn"). A fresh turn clears both.
+ */
+export interface CharacterTurn extends ActionEconomy {
+  spellSlot?: boolean
+}
+
 export type ActionKind = keyof ActionEconomy
 
 export const ACTION_KINDS: ActionKind[] = ['action', 'bonusAction', 'reaction']

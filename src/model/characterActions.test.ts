@@ -29,6 +29,13 @@ describe('applyCharacterAction', () => {
     expect(apply({ type: 'setCondition', condition: 'Prone', on: false }, prone)!.character.conditions).toEqual([])
   })
 
+  it('spending a slot marks this turn (one slot per turn); a new turn clears it', () => {
+    const spent = apply({ type: 'setSlotUsed', level: 0, used: 1 })!.character
+    expect(spent.turn.spellSlot).toBe(true)
+    expect(apply({ type: 'setSlotUsed', level: 0, used: 0 }, spent)!.character.turn.spellSlot).toBe(true) // giving back keeps it
+    expect(apply({ type: 'resetTurn' }, spent)!.character.turn.spellSlot).toBeFalsy()
+  })
+
   it('slot and feature use is kept within limits', () => {
     expect(apply({ type: 'setSlotUsed', level: 0, used: 9 })!.character.spellSlots[0].used).toBe(2)
     expect(apply({ type: 'setSlotUsed', level: 5, used: 1 })).toBeNull() // no 6th-level slots: max 0

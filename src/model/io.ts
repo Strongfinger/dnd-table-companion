@@ -253,7 +253,7 @@ function coins(v: unknown): Character['coins'] | undefined {
 
 function economy(v: unknown): Character['turn'] | undefined {
   return isObject(v) && typeof v.action === 'boolean' && typeof v.bonusAction === 'boolean' && typeof v.reaction === 'boolean'
-    ? { action: v.action, bonusAction: v.bonusAction, reaction: v.reaction }
+    ? { action: v.action, bonusAction: v.bonusAction, reaction: v.reaction, ...(v.spellSlot === true && { spellSlot: true }) }
     : undefined
 }
 

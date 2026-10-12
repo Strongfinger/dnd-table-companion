@@ -84,7 +84,12 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
       const used = Math.min(slot.max, Math.max(0, a.used))
       if (used === slot.used) return null
       return {
-        character: { ...c, spellSlots: c.spellSlots.map((x, j) => (j === a.level ? { ...x, used } : x)) },
+        character: {
+          ...c,
+          spellSlots: c.spellSlots.map((x, j) => (j === a.level ? { ...x, used } : x)),
+          // Spending one counts for this turn's one-slot limit (giving one back doesn't undo it).
+          turn: used > slot.used ? { ...c.turn, spellSlot: true } : c.turn,
+        },
         text: `${c.name} ${used > slot.used ? 'ใช้' : 'คืน'} Spell Slot ${SLOT_LABEL[a.level]} (เหลือ ${slot.max - used}/${slot.max})`,
       }
     }

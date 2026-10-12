@@ -88,7 +88,17 @@ export function watchCharacters(ids: string[], onChange: (list: Character[]) => 
 
 /** Deletes the character and its play log. */
 export async function deleteCharacter(id: string): Promise<void> {
-  await db.transaction('rw', db.characters, db.log, async () => {
+  await db.transaction('rw', db.characters, db.log, db.encounters, async () => {
+    // Fights keep showing a deleted character with its last HP and AC (a fight row's own copy is
+    // otherwise only what it had when it joined: the sheet is the source while it exists).
+    const sheet = await db.characters.get(id)
+    if (sheet) {
+      const me = deviceId()
+      await db.encounters.filter((e) => e.combatants.some((c) => c.characterId === id)).modify((e) => {
+        const combatants = e.combatants.map((c) => (c.characterId === id ? { ...c, hp: { ...sheet.hp }, ac: sheet.ac } : c))
+        Object.assign(e, stamp({ ...e, combatants }, me))
+      })
+    }
     await db.characters.delete(id)
     await db.log.where('characterId').equals(id).delete()
   })

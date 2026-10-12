@@ -78,3 +78,31 @@ describe('castPlan: more cases', () => {
     expect(p.warnings.join()).not.toMatch(/หลุด/)
   })
 })
+
+describe('castPlan: 2024 casting rules (SRD 5.2.1)', () => {
+  const detect = spell({ name: 'Detect Magic', castingTime: 'Action', ritual: true, concentration: true, prepared: false })
+  const cleric = { ...wizard, className: 'Cleric' as const }
+
+  it('a Ritual needs the spell prepared, except for a Wizard (Ritual Adept)', () => {
+    expect(castPlan(cleric, detect, { slotLevel: null, asRitual: true }).warnings.join()).toContain('Ritual ได้เฉพาะคาถาที่เตรียมไว้')
+    expect(castPlan(wizard, detect, { slotLevel: null, asRitual: true }).warnings.join()).not.toContain('เฉพาะคาถาที่เตรียมไว้')
+    expect(castPlan(cleric, { ...detect, prepared: true }, { slotLevel: null, asRitual: true }).warnings.join()).not.toContain('เฉพาะคาถาที่เตรียมไว้')
+  })
+
+  it('One Spell with a Spell Slot per Turn: a second slot this turn is warned (not blocked)', () => {
+    const spent = { ...wizard, turn: { action: true, bonusAction: false, reaction: false, spellSlot: true } }
+    const misty = spell({ name: 'Misty Step', level: 2, castingTime: 'Bonus Action' })
+    const p = castPlan(spent, misty, { slotLevel: 2, asRitual: false })
+    expect(p.error).toBeNull()
+    expect(p.warnings.join()).toContain('1 ครั้งต่อเทิร์น')
+    // A cantrip, or a fresh turn, is fine.
+    expect(castPlan(spent, spell({ name: 'Fire Bolt', level: 0, castingTime: 'Bonus Action' }), { slotLevel: null, asRitual: false }).warnings.join()).not.toContain('ต่อเทิร์น')
+    expect(castPlan(wizard, misty, { slotLevel: 2, asRitual: false }).warnings.join()).not.toContain('ต่อเทิร์น')
+  })
+
+  it("a Reaction spell (cast on someone else's turn) isn't warned", () => {
+    const spent = { ...wizard, turn: { action: true, bonusAction: false, reaction: false, spellSlot: true } }
+    const shield = spell({ name: 'Shield', castingTime: 'Reaction, which you take when you are hit by an attack roll' })
+    expect(castPlan(spent, shield, { slotLevel: 2, asRitual: false }).warnings.join()).not.toContain('ต่อเทิร์น')
+  })
+})
