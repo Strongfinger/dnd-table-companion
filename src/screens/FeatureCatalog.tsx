@@ -71,7 +71,17 @@ export function FeatureCard({ c, featureId, texts }: { c: Character; featureId: 
       if (r.refused) return setNote(`🔒 ${r.refused}`)
     }
     setNote(`✓ ใช้ ${x!.name} แล้ว${plan.warnings.length ? ` · ${plan.warnings.join(' · ')}` : ''}`)
-    if (details?.roll) openRoller({ expression: details.roll.expression, label: details.roll.label })
+    if (!details?.roll) return
+    const { expression, label, applies } = details.roll
+    // Second Wind and the like: the roll's total goes straight onto this sheet (healing / Temp HP).
+    openRoller({
+      expression,
+      label,
+      ...(applies && {
+        resultHint: applies === 'heal' ? 'ผลรวมจะฮีลให้ตัวละครนี้อัตโนมัติ' : 'ผลรวมจะเป็น Temp HP ของตัวละครนี้อัตโนมัติ',
+        onResult: (total: number) => void act(applies === 'heal' ? { type: 'heal', amount: total } : { type: 'tempHp', amount: total }),
+      }),
+    })
   }
 
   return (

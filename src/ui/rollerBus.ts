@@ -4,6 +4,10 @@ export interface RollerRequest {
   expression: string
   /** Shown above the roll and in the log, e.g. "Rapier · ดาเมจ". */
   label: string
+  /** Called once with the total of the next roll (app roll or typed), e.g. Second Wind heals with it. */
+  onResult?: (total: number) => void
+  /** Shown under the label so the player knows what happens with the result. */
+  resultHint?: string
 }
 
 type Listener = (r: RollerRequest) => void

@@ -50,7 +50,8 @@ export interface LimitedFeature {
   /** One line in English: what it does (the full text is in the data file). */
   summary: (ctx: FeatureContext) => string
   /** Dice to roll when used, e.g. Second Wind "1d10+5". */
-  roll?: (ctx: FeatureContext) => { label: string; expression: string }
+  /** The dice it rolls. `applies`: the total goes on the user's own sheet (healing or Temp HP). */
+  roll?: (ctx: FeatureContext) => { label: string; expression: string; applies?: 'heal' | 'tempHp' }
 }
 
 export interface FeatureContext {
@@ -123,7 +124,7 @@ export const LIMITED_FEATURES: LimitedFeature[] = [
     id: 'fighter-second-wind', name: 'Second Wind', source: { className: 'Fighter' }, level: 1, activation: 'Bonus Action',
     uses: { table: [[1, 2], [4, 3], [10, 4]] }, recharge: 'shortOne',
     summary: (c) => `Regain 1d10 + ${c.level} Hit Points.`,
-    roll: (c) => ({ label: 'Second Wind (HP)', expression: `1d10+${c.level}` }),
+    roll: (c) => ({ label: 'Second Wind (HP)', expression: `1d10+${c.level}`, applies: 'heal' }),
   },
   {
     id: 'fighter-action-surge', name: 'Action Surge', source: { className: 'Fighter' }, level: 2, activation: 'Free',
@@ -145,13 +146,13 @@ export const LIMITED_FEATURES: LimitedFeature[] = [
     id: 'monk-uncanny-metabolism', name: 'Uncanny Metabolism', source: { className: 'Monk' }, level: 2, activation: 'Free',
     uses: { fixed: 1 }, recharge: 'long',
     summary: (c) => `When you roll Initiative: regain all Focus Points and heal 1d${martialArtsDie(c.level)} + ${c.level} HP.`,
-    roll: (c) => ({ label: 'Uncanny Metabolism (HP)', expression: `1d${martialArtsDie(c.level)}+${c.level}` }),
+    roll: (c) => ({ label: 'Uncanny Metabolism (HP)', expression: `1d${martialArtsDie(c.level)}+${c.level}`, applies: 'heal' }),
   },
   {
     id: 'open-hand-wholeness-of-body', name: 'Wholeness of Body', source: { className: 'Monk', subclass: 'Warrior of the Open Hand' }, level: 6,
     activation: 'Bonus Action', uses: { ability: 'wis' }, recharge: 'long',
     summary: (c) => `Heal 1d${martialArtsDie(c.level)} + WIS Hit Points (minimum 1).`,
-    roll: (c) => ({ label: 'Wholeness of Body (HP)', expression: `1d${martialArtsDie(c.level)}${plus(mod(c, 'wis'))}` }),
+    roll: (c) => ({ label: 'Wholeness of Body (HP)', expression: `1d${martialArtsDie(c.level)}${plus(mod(c, 'wis'))}`, applies: 'heal' }),
   },
   // Paladin
   {
@@ -186,7 +187,7 @@ export const LIMITED_FEATURES: LimitedFeature[] = [
     id: 'ranger-tireless', name: 'Tireless', source: { className: 'Ranger' }, level: 10, activation: 'Magic action',
     uses: { ability: 'wis' }, recharge: 'long',
     summary: () => 'Gain 1d8 + WIS Temporary Hit Points (minimum 1). (Also: a Short Rest lowers Exhaustion by 1.)',
-    roll: (c) => ({ label: 'Tireless (Temp HP)', expression: `1d8${plus(mod(c, 'wis'))}` }),
+    roll: (c) => ({ label: 'Tireless (Temp HP)', expression: `1d8${plus(mod(c, 'wis'))}`, applies: 'tempHp' }),
   },
   {
     id: 'ranger-natures-veil', name: "Nature's Veil", source: { className: 'Ranger' }, level: 14, activation: 'Bonus Action',

@@ -1,7 +1,7 @@
 // Floating dice roller: any expression ("2d6+3"), advantage/disadvantage, Critical Hit,
 // rolled in the app or typed in from real dice. History stays while the app is open.
 // In a live lobby, rolls can be shared with the room (players: on by default; DM: off, DM rolls are often secret).
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   addDie, addModifier, canBeCritical, canUseAdvantage, criticalDice, diceRange, formatDice, naturalD20, naturalFromManual,
   parseDice, resolveRollMode, rollDice, totalFromManualDice, type RollMode,
@@ -9,7 +9,7 @@ import {
 import { useLobby } from '../app/useLobby'
 import { rollEventText } from '../model/rollEvent'
 import { Button } from '../ui/kit'
-import { onRollerRequest } from '../ui/rollerBus'
+import { onRollerRequest, type RollerRequest } from '../ui/rollerBus'
 
 export interface RollRecord {
   id: number
@@ -37,8 +37,23 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
   /** Set when a sheet button opened the roller; cleared when the expression is edited by hand. */
   const [label, setLabel] = useState('')
   const lobby = useLobby()
+  /** What the next roll's total is for (e.g. Second Wind heals with it); used once, dropped on a hand edit. */
+  const pendingResult = useRef<RollerRequest['onResult']>(undefined)
+  const [resultHint, setResultHint] = useState('')
+  const dropPending = () => {
+    pendingResult.current = undefined
+    setResultHint('')
+  }
+  /** Hand the total to whoever asked for it (once). */
+  const deliver = (total: number) => {
+    const done = pendingResult.current
+    dropPending()
+    done?.(total)
+  }
   // A sheet button (attack, damage…) opens the roller with its dice filled in.
   useEffect(() => onRollerRequest((r) => {
+    pendingResult.current = r.onResult
+    setResultHint(r.onResult ? r.resultHint ?? '' : '')
     setText(r.expression)
     setLabel(r.label)
     setAdvantage(false)
@@ -75,6 +90,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
     if (!expr) return
     const r = rollDice(expr, effectiveMode)
     record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: r.rolls, total: r.total, natural: naturalD20(expr, r), ...(label ? { label } : {}) })
+    deliver(r.total)
   }
 
   function useManual() {
@@ -82,6 +98,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
     // With advantage at the table, the player rolls two d20s and types the one they keep.
     record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: null, total: manualTotal, natural: naturalFromManual(expr, manualSum), ...(label ? { label } : {}) })
     setManual('')
+    deliver(manualTotal)
   }
 
   return (
@@ -128,15 +145,17 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
                 onChange={(e) => {
                   setText(e.target.value)
                   setLabel('')
+                  dropPending()
                 }}
               />
-              <Button className="px-3" onClick={() => { setText(''); setLabel('') }}>ล้าง</Button>
+              <Button className="px-3" onClick={() => { setText(''); setLabel(''); dropPending() }}>ล้าง</Button>
             </div>
             {label && <p className="text-sm font-bold text-amber-300">{label}</p>}
+            {resultHint && <p className="text-xs text-emerald-300">{resultHint}</p>}
             {!parsed && <p className="text-xs text-red-300">พิมพ์แบบ 2d6+3, d20+5 หรือ 1d8+1d6</p>}
             <div className="flex flex-wrap gap-1.5">
               {QUICK_DICE.map((d) => (
-                <button key={d} type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => { setText(addDie(text, d)); setLabel('') }}>d{d}</button>
+                <button key={d} type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => { setText(addDie(text, d)); setLabel(''); dropPending() }}>d{d}</button>
               ))}
               <button type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => setText(addModifier(text, -1))}>−1</button>
               <button type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => setText(addModifier(text, 1))}>+1</button>
