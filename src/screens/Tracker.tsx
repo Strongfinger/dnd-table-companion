@@ -7,7 +7,7 @@ import { listCharacters } from '../db/characters'
 import { deleteEncounter, getEncounter, updateEncounter } from '../db/encounters'
 import { addLog, listEncounterLog } from '../db/log'
 import { playAction } from '../db/play'
-import { advanceTurn } from '../db/turns'
+import { advanceTurn, makeCharacterFromCombatant } from '../db/turns'
 import { isDead } from '../model/actions'
 import type { CharacterAction } from '../model/characterActions'
 import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
@@ -239,6 +239,7 @@ export default function Tracker({ id }: { id: string }) {
               onUpdate={(fn) => updateCombatant(c.id, fn)}
               onPcAction={(action) => c.characterId && pcAction(c.characterId, action)}
               onRemove={() => remove(c.id)}
+              onMakeCharacter={() => void makeCharacterFromCombatant(enc.id, c.id)}
             />
           ))}
         </div>

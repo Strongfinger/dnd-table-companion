@@ -57,3 +57,11 @@ export function maxHitPointsFromRolls(hitDie: HitDie, conMod: number, laterLevel
   const laterLevels = laterLevelRolls.reduce((sum, roll) => sum + Math.max(1, roll + conMod), 0)
   return firstLevel + laterLevels
 }
+
+/**
+ * A stat block's average HP: each Hit Die counts as its average (rounded down overall) plus the
+ * Constitution modifier per die. "3d6" → 10; "9d8 + 18" (CON +2) → 58. At least 1.
+ */
+export function monsterAverageHp(hitDie: number, dice: number, conMod: number): number {
+  return Math.max(1, Math.floor((dice * (hitDie + 1)) / 2) + dice * conMod)
+}

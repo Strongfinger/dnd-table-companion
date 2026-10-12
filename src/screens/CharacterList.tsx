@@ -3,6 +3,7 @@ import { go } from '../app/router'
 import { listCampaigns } from '../db/campaigns'
 import { listCharacters, saveCharacter } from '../db/characters'
 import { Button } from '../ui/kit'
+import { classLabel } from '../model/monsterCharacter'
 
 export default function CharacterList() {
   // useLiveQuery re-runs automatically whenever the characters table changes.
@@ -41,7 +42,7 @@ export default function CharacterList() {
               <div>
                 <div className="text-lg font-bold">{c.name || '(ไม่มีชื่อ)'}</div>
                 <div className="text-sm text-stone-400">
-                  {c.className} {c.level}
+                  {classLabel(c)}
                   {c.species && ` · ${c.species}`}
                   {c.background && ` · ${c.background}`}
                 </div>

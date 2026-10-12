@@ -234,14 +234,14 @@ export default function PlayPanel({ c }: { c: Character }) {
       )}
 
       {/* Rests */}
-      <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c.className)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
+      <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
       {asPlayer ? (
         lobby.shortRestSince ? (
           // The DM started a short rest: Hit Dice can be spent until the DM ends it.
           <div id="short-rest" className="mt-2 space-y-2 rounded-lg bg-sky-950 p-3">
             <p className="text-sm font-bold text-sky-200">☕ กำลังพักสั้น (DM เริ่มแล้ว)</p>
-            <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c.className)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก · DM จะกดจบการพักให้</p>
-            <DiceRoll sides={hitDieSize(c.className)} label="Hit Die" onRoll={useHitDie} />
+            <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก · DM จะกดจบการพักให้</p>
+            <DiceRoll sides={hitDieSize(c)} label="Hit Die" onRoll={useHitDie} />
           </div>
         ) : (
           <p className="mt-2 rounded-lg bg-stone-900 p-2 text-xs text-stone-400">🔒 พักสั้น/พักยาว: DM เป็นคนเริ่มให้ทั้งปาร์ตี้ · ใช้ Hit Dice ได้ระหว่างพักสั้นที่ DM เริ่ม</p>
@@ -260,8 +260,8 @@ export default function PlayPanel({ c }: { c: Character }) {
       )}
       {resting && (
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
-          <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c.className)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก</p>
-          <DiceRoll sides={hitDieSize(c.className)} label="Hit Die" onRoll={useHitDie} />
+          <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก</p>
+          <DiceRoll sides={hitDieSize(c)} label="Hit Die" onRoll={useHitDie} />
           <Button variant="primary" className="w-full" onClick={finishShortRest}>จบการพักสั้น</Button>
         </div>
       )}

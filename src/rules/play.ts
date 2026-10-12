@@ -93,8 +93,9 @@ export function hitDieHealing(roll: number, conScore: number): number {
   return Math.max(0, roll + abilityModifier(conScore))
 }
 
-export function hitDieSize(className: ClassName): number {
-  return CLASS_HIT_DIE[className]
+/** Hit Die size: from the class, or from the stat block for a creature played as a character. */
+export function hitDieSize(c: { className: ClassName; monster?: { hitDie: number } }): number {
+  return c.monster ? c.monster.hitDie : CLASS_HIT_DIE[c.className]
 }
 
 /** Exhaustion (2024): −2 per level to D20 Tests, −5 ft. Speed per level. */

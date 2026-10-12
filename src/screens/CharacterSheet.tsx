@@ -11,6 +11,7 @@ import PlayPanel from './PlayPanel'
 import SpellList from './SpellList'
 import { Button, Section, Stat } from '../ui/kit'
 import { Term } from '../ui/help'
+import { classLabel } from '../model/monsterCharacter'
 
 export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
@@ -32,7 +33,7 @@ export default function CharacterSheet({ id }: { id: string }) {
         <div>
           <h1 className="text-3xl font-bold text-amber-400">{c.name || '(ไม่มีชื่อ)'}</h1>
           <p className="text-stone-400">
-            {c.className} {c.level}
+            {classLabel(c)}
             {c.subclass && ` (${c.subclass})`}
             {c.species && <> · <Term name={c.species} /></>}
             {c.background && <> · <Term name={c.background} /></>}

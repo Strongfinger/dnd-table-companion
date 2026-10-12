@@ -16,7 +16,7 @@ import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
 
-export default function CombatantRow({ c, character, active, open, onToggle, onInitiative, onUpdate, onPcAction, onRemove }: {
+export default function CombatantRow({ c, character, active, open, onToggle, onInitiative, onUpdate, onPcAction, onRemove, onMakeCharacter }: {
   c: Combatant
   character: Character | undefined
   active: boolean
@@ -28,6 +28,8 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   /** Change the linked PC sheet with a character action (checked and logged by the tracker). */
   onPcAction: (action: CharacterAction) => void
   onRemove: () => void
+  /** Monster/NPC → a character sheet (to export, or for a player to control). */
+  onMakeCharacter: () => void
 }) {
   const [amount, setAmount] = useState('')
   const [initText, setInitText] = useState('')
@@ -38,6 +40,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   const [confirmRemove, setConfirmRemove] = useState(false)
   // Confirm dialog for using an Action / Bonus Action / Reaction or starting Concentration.
   const [pending, setPending] = useState<SuggestionKind | null>(null)
+  const [confirmMake, setConfirmMake] = useState(false)
 
   const isPc = c.kind === 'pc'
   const missing = isPc && !character
@@ -299,9 +302,24 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
                 {c.hidden ? '👁 ให้ผู้เล่นเห็น' : '🙈 ซ่อนจากผู้เล่น'}
               </button>
             )}
+            {!isPc && (
+              <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={() => setConfirmMake(!confirmMake)}>🧑 เป็นตัวละคร</button>
+            )}
             <button type="button" className="ml-auto text-red-400" onClick={() => setConfirmRemove(!confirmRemove)}>เอาออก</button>
             {confirmRemove && <Button variant="danger" className="text-sm" onClick={onRemove}>ยืนยันเอาออก</Button>}
           </div>
+          {confirmMake && !isPc && (
+            <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-2 text-sm">
+              <p className="text-stone-300">
+                สร้างใบตัวละครจาก {c.name} (Stat block เต็มถ้าเป็นมอนสเตอร์ SRD) แถวนี้จะกลายเป็นตัวละคร: HP อยู่ในใบตัวละคร
+                · จากนั้นส่งออกไฟล์ (📤 ในใบตัวละคร) หรือให้ผู้เล่นควบคุมในห้องได้
+              </p>
+              <div className="flex gap-2">
+                <Button variant="primary" className="flex-1" onClick={() => { setConfirmMake(false); onMakeCharacter() }}>🧑 สร้างตัวละคร</Button>
+                <Button className="flex-1" onClick={() => setConfirmMake(false)}>ยกเลิก</Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

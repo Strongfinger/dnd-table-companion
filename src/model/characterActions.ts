@@ -60,7 +60,7 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
     case 'revive':
       return reviveCharacter(c)
     case 'spendHitDie': {
-      const size = hitDieSize(c.className)
+      const size = hitDieSize(c)
       if (a.roll > size) return null // a d6 can't roll 7
       const r = spendHitDie(c, a.roll, c.scores.con)
       if (!r) return null

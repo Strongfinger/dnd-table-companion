@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rollDie } from './dice'
 import {
-  applyDamage, concentrationDC, exhaustionPenalty, gainTempHp, heal, hitDieHealing, longRest, rollDeathSave,
+  applyDamage, concentrationDC, exhaustionPenalty, gainTempHp, heal, hitDieHealing, hitDieSize, longRest, rollDeathSave,
   shortRest, spendHitDie, type HpState, type RestState,
 } from './play'
 
@@ -172,5 +172,12 @@ describe('death save resets', () => {
 
   it('no Hit Dice at 0 HP', () => {
     expect(spendHitDie({ ...fighter, hp: { ...fighter.hp, current: 0 } }, 6, 14)).toBeNull()
+  })
+})
+
+describe('hitDieSize', () => {
+  it('from the class, or the stat block for a monster', () => {
+    expect(hitDieSize({ className: 'Wizard' })).toBe(6)
+    expect(hitDieSize({ className: 'Fighter', monster: { hitDie: 12 } })).toBe(12)
   })
 })

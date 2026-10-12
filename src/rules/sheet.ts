@@ -3,7 +3,7 @@
 
 import { abilityModifier, formatModifier } from './abilities'
 import { attackBonus, initiativeBonus } from './combat'
-import { CLASS_HIT_DIE, maxHitPoints } from './hp'
+import { CLASS_HIT_DIE, maxHitPoints, monsterAverageHp } from './hp'
 import { exhaustionPenalty } from './play'
 import { proficiencyBonus } from './proficiency'
 import { checkBonus, passiveScore, SKILL_ABILITY, SKILLS, type Skill } from './skills'
@@ -27,6 +27,11 @@ export interface SheetInput {
   exhaustion?: number
   /** Base Speed in feet before Exhaustion. */
   speed?: number
+  /**
+   * A creature from a stat block played as a character (e.g. a monster companion): it has no class
+   * levels, so its Proficiency Bonus comes from its CR and its Hit Dice from its stat block.
+   */
+  monster?: { pb: number; hitDie: number }
 }
 
 export interface AttackInput {
@@ -79,7 +84,7 @@ export function formatDamage(dice: string, mod: number): string {
 }
 
 export function deriveSheet(c: SheetInput): DerivedSheet {
-  const prof = proficiencyBonus(c.level)
+  const prof = c.monster ? c.monster.pb : proficiencyBonus(c.level)
   // Exhaustion lowers every D20 Test: saves, checks, attacks, Initiative (not the spell save DC).
   const penalty = exhaustionPenalty(c.exhaustion ?? 0)
   const d20 = penalty.d20
@@ -104,7 +109,10 @@ export function deriveSheet(c: SheetInput): DerivedSheet {
     passiveInsight: passiveScore(skillBonus('Insight')),
     passiveInvestigation: passiveScore(skillBonus('Investigation')),
     initiative: initiativeBonus(modifiers.dex, (c.initiativeProficient ? prof : 0) + c.initiativeMisc) - d20,
-    suggestedMaxHp: maxHitPoints(CLASS_HIT_DIE[c.className], c.level, modifiers.con),
+    // Characters: the class formula. A creature from a stat block: its average (Hit Dice = level).
+    suggestedMaxHp: c.monster
+      ? monsterAverageHp(c.monster.hitDie, c.level, modifiers.con)
+      : maxHitPoints(CLASS_HIT_DIE[c.className], c.level, modifiers.con),
     spellSaveDC: castMod === null ? null : spellSaveDC(prof, castMod),
     spellAttack: castMod === null ? null : spellAttackBonus(prof, castMod) - d20,
     attacks: c.attacks.map((a) => ({

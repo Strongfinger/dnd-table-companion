@@ -7,6 +7,7 @@ import { newId, type Character } from '../model/character'
 import { MAX_IMPORT_BYTES, parseCharacterImport } from '../model/io'
 import { deriveSheet, formatModifier } from '../rules'
 import { Button, Section, Stat, TextArea } from '../ui/kit'
+import { classLabel } from '../model/monsterCharacter'
 
 export default function ImportCharacter() {
   const [text, setText] = useState('')
@@ -74,7 +75,7 @@ export default function ImportCharacter() {
         <Section title="2. ตรวจสอบก่อนบันทึก">
           <p className="text-lg font-bold">{c.name}</p>
           <p className="mb-3 text-sm text-stone-400">
-            {c.className} {c.level}{c.species && ` · ${c.species}`}{c.background && ` · ${c.background}`}{c.player && ` · ผู้เล่น: ${c.player}`}
+            {classLabel(c)}{c.species && ` · ${c.species}`}{c.background && ` · ${c.background}`}{c.player && ` · ผู้เล่น: ${c.player}`}
           </p>
           <div className="grid grid-cols-3 gap-2">
             <Stat label="HP" value={`${c.hp.current}/${c.hp.max}`} />

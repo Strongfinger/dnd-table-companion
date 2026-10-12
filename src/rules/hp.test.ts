@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLASS_HIT_DIE, fixedHitDieValue, maxHitPoints, maxHitPointsFromRolls } from './hp'
+import { CLASS_HIT_DIE, fixedHitDieValue, maxHitPoints, maxHitPointsFromRolls, monsterAverageHp } from './hp'
 
 describe('CLASS_HIT_DIE', () => {
   it('matches the SRD for all 12 classes', () => {
@@ -67,5 +67,13 @@ describe('maxHitPointsFromRolls', () => {
     expect(() => maxHitPointsFromRolls(8, 0, [9])).toThrow(RangeError)
     expect(() => maxHitPointsFromRolls(8, 0, [0])).toThrow(RangeError)
     expect(() => maxHitPointsFromRolls(8, 0, Array(20).fill(4))).toThrow(RangeError)
+  })
+})
+
+describe('monsterAverageHp (stat block average)', () => {
+  it('matches SRD 5.2.1 stat blocks', () => {
+    expect(monsterAverageHp(6, 3, 0)).toBe(10) // Goblin Warrior: 10 (3d6)
+    expect(monsterAverageHp(8, 9, 2)).toBe(58) // Hobgoblin Captain: 58 (9d8 + 18)
+    expect(monsterAverageHp(4, 1, -1)).toBe(1) // tiny creature: 1d4 − 1 = 1.5 → at least 1
   })
 })

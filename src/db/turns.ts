@@ -3,9 +3,12 @@
 // - adding monsters: the tracker, and the SRD lookup's "add to fight"
 import { isDead } from '../model/actions'
 import { withDefaults } from '../model/character'
-import { conditionsToClear, createMonsters, type MonsterInput } from '../model/encounter'
+import { conditionsToClear, createMonsters, isConditionName, type MonsterInput } from '../model/encounter'
+import { characterFromCombatant, characterFromMonster } from '../model/monsterCharacter'
+import { findMonsterForCombatant, loadFullMonsters } from '../model/monsterDetails'
 import { isTurnEventForPlayers } from '../model/playerView'
 import { nextTurn, sortByInitiative, startOfTurn } from '../rules'
+import { saveCharacter } from './characters'
 import { db } from './db'
 import { getEncounter, updateEncounter } from './encounters'
 import { addLog } from './log'
@@ -56,4 +59,32 @@ export async function addMonstersToFight(encounterId: string, input: MonsterInpu
   if (!added) return []
   for (const c of added.list) await addLog('', `➕ ${c.name} เข้าร่วมการต่อสู้`, { encounterId, round: added.round }, true)
   return added.list.map((c) => c.name)
+}
+
+/**
+ * A monster/NPC in a fight becomes a character (saved on this device), so the DM can hand it to a
+ * player or export it. Its fight row stays where it is (same initiative, same effects) but is now
+ * linked to the new sheet like any player character. SRD monsters keep their full stat block.
+ * Returns the new character's id, or null if it was already a character.
+ */
+export async function makeCharacterFromCombatant(encounterId: string, combatantId: string): Promise<string | null> {
+  const e = await getEncounter(encounterId)
+  const c = e?.combatants.find((x) => x.id === combatantId)
+  if (!e || !c || c.kind === 'pc') return null
+  const statBlock = findMonsterForCombatant(await loadFullMonsters(), c.name)
+  const base = statBlock ? characterFromMonster(statBlock, { name: c.name, hp: c.hp }) : characterFromCombatant(c)
+  const character = await saveCharacter({
+    ...base,
+    campaignId: e.campaignId,
+    // Conditions from the fight go on the sheet too (like a player character's).
+    conditions: [...new Set(c.effects.map((ef) => ef.name).filter(isConditionName))],
+    turn: { ...(c.turn ?? base.turn) },
+  })
+  const done = await updateEncounter(encounterId, (x) => ({
+    encounter: { ...x, combatants: x.combatants.map((m) => (m.id === combatantId && m.kind !== 'pc' ? { ...m, kind: 'pc' as const, characterId: character.id } : m)) },
+    result: x.round,
+  }))
+  if (done === undefined) return null
+  await addLog('', `🧑 ${c.name} เป็นตัวละครแล้ว (ส่งออกไฟล์ หรือให้ผู้เล่นควบคุมได้)`, { encounterId, round: done }, false)
+  return character.id
 }

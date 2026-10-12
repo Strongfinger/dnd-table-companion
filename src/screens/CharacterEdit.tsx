@@ -36,6 +36,8 @@ export default function CharacterEdit({ id }: { id: string }) {
       if (!c) return setNotFound(true)
       setDraft(c)
       setOriginal(c)
+      // A creature from a stat block doesn't follow class rules: don't let them overwrite its numbers.
+      if (c.monster) setFreeEdit(true)
     })
   }, [id])
 
@@ -44,7 +46,8 @@ export default function CharacterEdit({ id }: { id: string }) {
 
   const c = draft
   const s = deriveSheet(c)
-  const messages = checkCharacter(c)
+  // Class rules don't apply to a creature from a stat block (its className is only a placeholder).
+  const messages = c.monster ? [] : checkCharacter(c)
   const set = <K extends keyof Character>(key: K, value: Character[K]) => setDraft({ ...c, [key]: value })
   const { classChoices, backgroundSkills } = skillSources(c)
   const expertiseLeft = maxExpertise(c.className, c.level) - SKILLS.filter((k) => c.skills[k] === 'expertise').length
@@ -148,6 +151,12 @@ export default function CharacterEdit({ id }: { id: string }) {
   return (
     <div className="space-y-4 pb-24">
       <h1 className="text-2xl font-bold text-amber-400">แก้ไข {c.name}</h1>
+      {c.monster && (
+        <p className="rounded-lg bg-stone-900 p-3 text-sm text-stone-300">
+          🐾 ตัวละครนี้มาจาก Stat block ({c.monster.source}): Proficiency Bonus +{c.monster.pb} และ Hit Die d{c.monster.hitDie} มาจาก Stat block
+          (ไม่ใช่ Class/Level) · Level = จำนวน Hit Dice · เปิดโหมดแก้ไขอิสระไว้ให้แล้ว
+        </p>
+      )}
 
       <Section title="ตรวจกติกา">
         <RuleMessages messages={messages} />
@@ -169,11 +178,16 @@ export default function CharacterEdit({ id }: { id: string }) {
           <Label text="Alignment"><TextInput value={c.alignment} onChange={(v) => set('alignment', v)} /></Label>
           <Label text="ผู้เล่น"><TextInput value={c.player} onChange={(v) => set('player', v)} /></Label>
           <Label text="แคมเปญ">
-            <Select
-              value={c.campaignId ?? ''}
-              options={[{ value: '', label: '— ไม่มี —' }, ...campaigns.map((x) => ({ value: x.id, label: x.name }))]}
-              onChange={(v) => set('campaignId', v || null)}
-            />
+            {lobby.session?.role === 'player' ? (
+              // In a room the campaign is the DM's choice.
+              <p className="py-2 text-sm text-stone-400">🔒 {campaigns.find((x) => x.id === c.campaignId)?.name ?? '— ไม่มี —'} (ตามห้องของ DM)</p>
+            ) : (
+              <Select
+                value={c.campaignId ?? ''}
+                options={[{ value: '', label: '— ไม่มี —' }, ...campaigns.map((x) => ({ value: x.id, label: x.name }))]}
+                onChange={(v) => set('campaignId', v || null)}
+              />
+            )}
           </Label>
         </div>
         <p className="mt-2 text-xs text-stone-500">เปลี่ยน Class แล้ว Saving Throw และ Spellcasting จะถูกตั้งให้ตาม Class · เลือก Background แล้วจะได้ Skill และ Feat ของ Background ให้อัตโนมัติ</p>

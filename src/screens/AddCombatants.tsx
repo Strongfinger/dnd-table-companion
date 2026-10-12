@@ -4,6 +4,7 @@ import type { Character } from '../model/character'
 import { combatantFromCharacter, createMonsters, type Combatant, type Encounter } from '../model/encounter'
 import { formatCR, loadSrdMonsters, monsterInput, rollMonsterHp, searchMonsters, type SrdMonster } from '../model/monsters'
 import { Button, Label, NumberInput, Section, TextInput } from '../ui/kit'
+import { classLabel } from '../model/monsterCharacter'
 
 export default function AddCombatants({ encounter, characters, onAdd }: {
   encounter: Encounter
@@ -58,7 +59,7 @@ export default function AddCombatants({ encounter, characters, onAdd }: {
                 onChange={(e) => setPicked(e.target.checked ? [...picked, c.id] : picked.filter((x) => x !== c.id))}
               />
               <span className="flex-1">{c.name}</span>
-              <span className="text-xs text-stone-400">{c.className} {c.level} · HP {c.hp.current}/{c.hp.max}</span>
+              <span className="text-xs text-stone-400">{classLabel(c)} · HP {c.hp.current}/{c.hp.max}</span>
             </label>
           ))}
         </div>

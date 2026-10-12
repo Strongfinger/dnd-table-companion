@@ -14,6 +14,7 @@ import { Term } from '../ui/help'
 import { ActionEconomyBar } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
 import type { PartyCard as RoomCard } from '../sync/party'
+import { classLabel } from '../model/monsterCharacter'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 
@@ -65,7 +66,7 @@ function PartyCard({ c }: { c: Character }) {
             {c.name} {c.heroicInspiration && <Term name="Heroic Inspiration"><span className="text-amber-400">★</span></Term>}
           </div>
           <div className="text-xs text-stone-400">
-            {c.className} {c.level}
+            {classLabel(c)}
             {c.species && <> · <Term name={c.species} /></>}
             {c.background && <> · <Term name={c.background} /></>}
             {c.player && ` · ${c.player}`}
@@ -100,7 +101,7 @@ function PartyCard({ c }: { c: Character }) {
         <span><Term name="Speed" /> {s.speed ?? c.speed} ft.</span>
         <span><Term name="Passive Perception" /> {s.passivePerception}</span>
         {s.spellSaveDC !== null && <span><Term name="Spell Save DC" /> {s.spellSaveDC}</span>}
-        <span><Term name="Hit Dice" /> d{hitDieSize(c.className)} {c.level - c.hitDiceSpent}/{c.level}</span>
+        <span><Term name="Hit Dice" /> d{hitDieSize(c)} {c.level - c.hitDiceSpent}/{c.level}</span>
       </div>
 
       {/* Conditions, exhaustion, concentration */}
@@ -167,7 +168,7 @@ function RoomPartyCard({ c, mine }: { c: RoomCard; mine: boolean }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-lg font-bold">{c.name}{mine && <span className="ml-2 text-xs text-amber-400">(ฉัน)</span>}</div>
-          <div className="text-xs text-stone-400">{c.className} {c.level}</div>
+          <div className="text-xs text-stone-400">{c.className}</div>
         </div>
         <div className="text-right text-xs text-stone-400"><Term name="AC" /> <b className="text-base text-stone-100">{c.ac}</b></div>
       </div>

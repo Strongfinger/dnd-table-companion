@@ -6,7 +6,7 @@ import { ALL_FIXTURES } from '../rules/fixtures/characters'
 
 export function sampleCharacters(): Character[] {
   return ALL_FIXTURES.map((f) => {
-    const { expected, hpRolls: _rolls, hpBonusPerLevel: _bonus, ...fields } = f
+    const { expected, hpRolls: _rolls, hpBonusPerLevel: _bonus, monster: _monster, ...fields } = f
     return createCharacter({
       ...fields,
       hp: { max: expected.maxHp, current: expected.maxHp, temp: 0 },

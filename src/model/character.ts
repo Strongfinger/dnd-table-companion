@@ -54,6 +54,11 @@ export interface Character extends SheetInput {
   /** Free text: class features, species traits, feats. */
   featuresText: string
   notes: string
+  /**
+   * Set when this character is a creature from a stat block (a monster or NPC the DM handed to a
+   * player): shown as "Monster · CR x" instead of a class; PB and Hit Dice come from here.
+   */
+  monster?: { cr: number; pb: number; hitDie: number; source: string }
 
   createdAt: number
   updatedAt: number

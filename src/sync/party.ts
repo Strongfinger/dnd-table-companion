@@ -4,11 +4,13 @@
 // else of other players' sheets (no slots, features, abilities or notes).
 import type { Character } from '../model/character'
 import { isConditionName } from '../model/encounter'
+import { classLabel } from '../model/monsterCharacter'
 import type { ActionEconomy, Condition } from '../rules'
 
 export interface PartyCard {
   characterId: string
   name: string
+  /** "Rogue 3", or "Monster · CR 1/4" (see classLabel). */
   className: string
   level: number
   ac: number
@@ -24,7 +26,7 @@ export function partyCard(c: Character): PartyCard {
   return {
     characterId: c.id,
     name: c.name,
-    className: c.className,
+    className: classLabel(c),
     level: c.level,
     ac: c.ac,
     hp: { current: c.hp.current, max: c.hp.max, temp: c.hp.temp },

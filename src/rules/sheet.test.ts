@@ -27,6 +27,28 @@ const base: SheetInput = {
   attacks: [],
 }
 
+describe('deriveSheet: a creature from a stat block played as a character', () => {
+  // Goblin Warrior (CR 1/4, PB +2): DEX 15, Stealth +6 = DEX +2 + Expertise (2 × PB), 3d6 Hit Dice.
+  const goblin: SheetInput = {
+    ...base,
+    className: 'Fighter',
+    level: 3,
+    scores: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 },
+    saveProficiencies: [],
+    skills: { Stealth: 'expertise' },
+    spellcastingAbility: null,
+    monster: { pb: 2, hitDie: 6 },
+  }
+  it('Proficiency Bonus comes from the CR, not the level', () => {
+    expect(deriveSheet({ ...goblin, level: 9 }).proficiencyBonus).toBe(2)
+  })
+  it('skills use it; suggested HP is the stat block average', () => {
+    const s = deriveSheet(goblin)
+    expect(s.skills.Stealth).toBe(6)
+    expect(s.suggestedMaxHp).toBe(10)
+  })
+})
+
 describe('deriveSheet', () => {
   it('computes a level 5 Wizard', () => {
     const s = deriveSheet(base)

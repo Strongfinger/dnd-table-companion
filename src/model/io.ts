@@ -137,6 +137,7 @@ export function parseCharacterImport(text: string): ImportResult {
     proficienciesText: field('proficienciesText', str(20000), '', 'ความชำนาญอื่นๆ'),
     featuresText: field('featuresText', str(20000), '', 'Features & Traits'),
     notes: field('notes', str(20000), '', 'โน้ต'),
+    ...(raw.monster === undefined ? {} : { monster: field('monster', monsterMeta, undefined, 'Monster') }),
     createdAt: field('createdAt', int(0, 8.64e15), d.createdAt, 'วันที่สร้าง'),
     updatedAt: d.updatedAt,
   }
@@ -172,6 +173,13 @@ function subsetOf<T extends string>(allowed: readonly T[]) {
 
 // Item ids are only used as list keys, so any short text without control characters is fine.
 const noControlChars = (v: string) => [...v].every((ch) => ch.charCodeAt(0) >= 32)
+/** A creature played as a character: CR 0–30, PB 2–9, a real Hit Die size, where it came from. */
+function monsterMeta(v: unknown): Character['monster'] | undefined {
+  if (!isObject(v)) return undefined
+  const ok = typeof v.cr === 'number' && v.cr >= 0 && v.cr <= 30 && isInt(v.pb, 2, 9) && [4, 6, 8, 10, 12, 20].includes(v.hitDie as number)
+  return ok ? { cr: v.cr as number, pb: v.pb as number, hitDie: v.hitDie as number, source: typeof v.source === 'string' ? v.source.slice(0, 100) : '' } : undefined
+}
+
 const itemId = (v: unknown) => (typeof v === 'string' && v.length >= 1 && v.length <= 64 && noControlChars(v) ? v : newId())
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : undefined)
 
