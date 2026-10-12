@@ -3,6 +3,15 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Research pass — 2026-10-13 (see docs/RESEARCH.md)
+Findings for the implementor:
+1. **Bug (rules): Short Rest gives back all uses of every "short" feature.** 2024: Second Wind, Rage,
+   Channel Divinity and Wild Shape regain **one** use on a Short Rest (all on a Long Rest). `shortRest()` in
+   `src/rules/play.ts` needs a third recharge kind (`shortOne`). Plan step F1.
+2. **Limit:** `io.ts` rejects features with max > 20, so Lay On Hands (pool of 5 × level HP) can't be stored. F1.
+3. **Data errors in 5e-bits 2024 equipment** to correct when importing: Trident 1d8 / Versatile 1d10, Sling
+   Bludgeoning, Morningstar missing range. Step E1.
+
 ## Pass 4 — owner reports, 2026-10-12
 | Report | Fix |
 |---|---|

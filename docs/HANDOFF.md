@@ -95,7 +95,8 @@ Action uses per round, some spell notes like "(level 5 version)".
 0. **QA findings:** see [docs/QA.md](QA.md) (bugs fixed, open findings for the implementor; top one: attacks/weapons
    and class features on the sheet).
 0b. **Content plan:** [docs/RESEARCH.md](RESEARCH.md) (2026-10-13): SRD 5.2.1 sources checked, data errors to correct,
-   steps E1–E7 (weapons/attacks, armor AC, class features, starting gear, monster Initiative) + 4 questions for the owner.
+   owner decisions, limited-use feature catalog (F1–F2), steps E1–E7 (weapons/attacks, equipped armor AC, class features,
+   starting gear, monster Initiative). Order: E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7.
 1. **Phase 5:** a real session with friends on several phones; collect what broke or felt clunky; fix.
 2. Firebase room cleanup (needs a rules change + re-publish).
 3. "Later" list in `docs/ROADMAP.md`: SRD weapons/armor help and data, class-feature actions, QR export.
