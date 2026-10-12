@@ -8,9 +8,11 @@ import { useLobby } from '../app/useLobby'
 import { listCampaigns } from '../db/campaigns'
 import { listCharacters } from '../db/characters'
 import { listEncounters } from '../db/encounters'
+import { restParty } from '../db/play'
 import { liveFight } from '../model/playerView'
 import { currentDevice, getSetting, setDeviceName } from '../db/device'
-import { joinLink, visibleMembers } from '../sync/lobby'
+import { isKicked, joinLink, visibleMembers } from '../sync/lobby'
+import { playedCharacterIds } from '../sync/sheets'
 import { isValidRoomCode, normalizeRoomCode } from '../sync/roomCode'
 import type { ConnectionStatus } from '../sync/transport'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
@@ -160,6 +162,8 @@ function InRoom() {
         </p>
       )}
 
+      {s.role === 'dm' && <PartyRest characterIds={playedCharacterIds(lobby.members, (id) => isKicked(s.kicked, id)).filter((id) => characters.some((c) => c.id === id))} />}
+
       {s.role === 'player' && lobby.fight && (
         <PlayerViewPanel view={lobby.fight} title={`⚔️ ${lobby.fight.name} · รอบที่ ${lobby.fight.round}`} myCharacterId={s.characterId} />
       )}
@@ -224,5 +228,49 @@ function InRoom() {
         )}
       </Section>
     </>
+  )
+}
+
+/** DM: rest everyone playing in the room at once (players can't rest themselves in a room). */
+function PartyRest({ characterIds }: { characterIds: string[] }) {
+  const [confirm, setConfirm] = useState<'shortRest' | 'longRest' | null>(null)
+  const [result, setResult] = useState('')
+
+  async function rest(kind: 'shortRest' | 'longRest') {
+    setConfirm(null)
+    const r = await restParty(characterIds, kind)
+    setResult([
+      r.rested.length ? `${kind === 'longRest' ? '🌙 Long Rest' : '☕ Short Rest'} เสร็จ: ${r.rested.join(', ')}` : '',
+      r.skipped.length ? `ไม่ได้พัก: ${r.skipped.join(', ')}${kind === 'longRest' ? ' (HP 0 พักยาวไม่ได้)' : ''}` : '',
+    ].filter(Boolean).join(' · '))
+  }
+
+  return (
+    <Section title="พักทั้งปาร์ตี้">
+      {characterIds.length === 0 ? (
+        <p className="text-sm text-stone-500">ยังไม่มีตัวละครของผู้เล่นในห้อง (รอผู้เล่นเลือกตัวละคร)</p>
+      ) : (
+        <>
+          <p className="mb-2 text-xs text-stone-400">
+            ทุกตัวละครที่ผู้เล่นในห้องเลือกไว้ ({characterIds.length} ตัว) · ระหว่างพักสั้นผู้เล่นใช้ Hit Dice ในมือถือเองได้
+          </p>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={() => setConfirm(confirm === 'shortRest' ? null : 'shortRest')}>☕ พักสั้น</Button>
+            <Button className="flex-1" onClick={() => setConfirm(confirm === 'longRest' ? null : 'longRest')}>🌙 พักยาว</Button>
+          </div>
+          {confirm && (
+            <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
+              <p className="text-sm">
+                {confirm === 'longRest'
+                  ? 'พักยาว 8 ชม.: HP, Hit Dice, Spell Slots และความสามารถทั้งหมดกลับมาเต็ม · Exhaustion −1'
+                  : 'พักสั้น 1 ชม.: ความสามารถแบบ Short Rest กลับมา (Warlock: Spell Slots ด้วย)'}
+              </p>
+              <Button variant="primary" className="w-full" onClick={() => rest(confirm)}>ยืนยัน{confirm === 'longRest' ? 'พักยาว' : 'พักสั้น'}ทั้งปาร์ตี้</Button>
+            </div>
+          )}
+          {result && <p className="mt-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{result}</p>}
+        </>
+      )}
+    </Section>
   )
 }

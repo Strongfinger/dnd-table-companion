@@ -4,7 +4,8 @@ import { createCharacter } from '../model/character'
 import { combatantFromCharacter, createEncounter } from '../model/encounter'
 import { getCharacter, saveCharacter } from './characters'
 import { db } from './db'
-import { playAction } from './play'
+import { listLog } from './log'
+import { playAction, restParty } from './play'
 
 beforeEach(async () => {
   await db.characters.clear()
@@ -72,5 +73,16 @@ describe('playAction: Action on my turn only (players)', () => {
     const c = await wizard()
     expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: true, myTurn: false })).refused).not.toBeNull()
     expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: false })).refused).toBeNull()
+  })
+})
+
+describe('restParty', () => {
+  it('rests everyone it can, logs it, and lists who could not (Long Rest at 0 HP)', async () => {
+    const a = await saveCharacter(createCharacter({ name: 'A', hp: { max: 10, current: 3, temp: 0 } }))
+    const b = await saveCharacter(createCharacter({ name: 'B', hp: { max: 10, current: 0, temp: 0 } }))
+    const r = await restParty([a.id, b.id, 'missing'], 'longRest')
+    expect(r).toEqual({ rested: ['A'], skipped: ['B'] })
+    expect((await getCharacter(a.id))?.hp.current).toBe(10)
+    expect((await listLog(a.id))[0].text).toMatch(/Long Rest/)
   })
 })

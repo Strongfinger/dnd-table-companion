@@ -2,9 +2,10 @@
 // Every play change goes through here: the sheet, the tracker, and players' changes arriving at the DM's device.
 import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
 import { playerMay, recordUses, refundAllowed, refundKeys, useKeys, type FightRound, type TurnInfo, type UseRounds } from '../model/permissions'
-import { updateCharacter } from './characters'
+import { getCharacter, updateCharacter } from './characters'
 import { db } from './db'
 import { runningFightOf } from './encounters'
+import { logCharacterEvent } from './log'
 
 /** Settings key: when each use was spent (fight and round), so the DM can only give it back that round. */
 const USES = 'useRounds'
@@ -46,4 +47,23 @@ export async function playAction(characterId: string, action: CharacterAction, a
     return r
   })
   return { text: refused ? '' : text, refused }
+}
+
+/**
+ * The DM rests the whole party at once (players in a live room can't rest themselves).
+ * Logs each rest; returns who rested and who couldn't (e.g. a Long Rest at 0 HP).
+ */
+export async function restParty(characterIds: string[], kind: 'shortRest' | 'longRest'): Promise<{ rested: string[]; skipped: string[] }> {
+  const rested: string[] = []
+  const skipped: string[] = []
+  for (const id of characterIds) {
+    const c = await getCharacter(id)
+    if (!c) continue
+    const r = await playAction(id, { type: kind }, 'dm')
+    if (r.text) {
+      rested.push(c.name)
+      await logCharacterEvent(id, r.text)
+    } else skipped.push(c.name)
+  }
+  return { rested, skipped }
 }
