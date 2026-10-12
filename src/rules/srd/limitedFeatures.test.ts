@@ -8,7 +8,7 @@ const uses = (id: string, level: number, s = scores()) => featureUses(findLimite
 describe('limited-use feature catalog (SRD 5.2.1)', () => {
   it('every entry has its SRD text, and ids are unique', () => {
     const ids = new Set([...features.classFeatures, ...features.traits, ...features.feats].map((f) => f.id))
-    for (const f of LIMITED_FEATURES) expect(ids.has(f.id), f.id).toBe(true)
+    for (const f of LIMITED_FEATURES) expect(ids.has(f.textId ?? f.id), f.id).toBe(true)
     expect(new Set(LIMITED_FEATURES.map((f) => f.id)).size).toBe(LIMITED_FEATURES.length)
   })
 
@@ -52,5 +52,12 @@ describe('limited-use feature catalog (SRD 5.2.1)', () => {
       .toEqual(['monk-monks-focus', 'monk-uncanny-metabolism', 'open-hand-wholeness-of-body', 'magic-initiate'])
     // Species names on sheets may carry a lineage ("Dragonborn (Red)").
     expect(names({ className: 'Wizard', subclass: '', level: 5, species: 'Dragonborn (Red)', feats: [] })).toContain('draconic-flight')
+  })
+
+  it('free casts: lineage spells at character levels 3 and 5, Mystic Arcanum per spell level', () => {
+    const elf = availableFeatures({ className: 'Wizard', subclass: '', level: 5, species: 'Elf (High Elf)', feats: [] }).map((f) => f.id)
+    expect(elf).toEqual(expect.arrayContaining(['elven-lineage-level-3', 'elven-lineage-level-5']))
+    const warlock = availableFeatures({ className: 'Warlock', subclass: '', level: 15, species: 'Human', feats: [] }).map((f) => f.id)
+    expect(warlock.filter((id) => id.startsWith('warlock-mystic-arcanum'))).toEqual(['warlock-mystic-arcanum-6', 'warlock-mystic-arcanum-7', 'warlock-mystic-arcanum-8'])
   })
 })

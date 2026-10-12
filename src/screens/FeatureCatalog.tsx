@@ -61,7 +61,8 @@ export function FeatureCard({ c, featureId, texts }: { c: Character; featureId: 
   if (!x) return null
   const details = featureDetails(c, x.srdId)
   const plan = planFeatureUse(c, featureId, Number(amount) || 1)
-  const text = x.srdId ? findFeatureText(texts, x.srdId) : null
+  const textId = details?.feature.textId ?? x.srdId
+  const text = textId ? findFeatureText(texts, textId) : null
 
   async function use() {
     if (plan.error) return setNote(plan.error)

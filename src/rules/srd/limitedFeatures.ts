@@ -31,8 +31,10 @@ export interface FeatureSource {
 }
 
 export interface LimitedFeature {
-  /** Same id as the text in srd-features.json. */
+  /** Same id as the text in srd-features.json, unless `textId` says where the text is. */
   id: string
+  /** Text shared with another entry (e.g. both Elven Lineage spells use the "elven-lineage" text). */
+  textId?: string
   name: string
   source: FeatureSource
   /** Class level (or character level for species) the feature starts at. */
@@ -275,6 +277,37 @@ export const LIMITED_FEATURES: LimitedFeature[] = [
     id: 'relentless-endurance', name: 'Relentless Endurance', source: { species: 'Orc' }, level: 1, activation: 'Free',
     uses: { fixed: 1 }, recharge: 'long', summary: () => 'When reduced to 0 HP but not killed outright, drop to 1 HP instead.',
   },
+  // Free casts once per Long Rest (spells from lineage, legacy and Mystic Arcanum)
+  {
+    id: 'elven-lineage-level-3', textId: 'elven-lineage', name: 'Elven Lineage spell (level 3)', source: { species: 'Elf' }, level: 3,
+    activation: 'Special', uses: { fixed: 1 }, recharge: 'long',
+    summary: () => 'Cast your lineage spell once without a slot: Drow Faerie Fire, High Elf Detect Magic, Wood Elf Longstrider.',
+  },
+  {
+    id: 'elven-lineage-level-5', textId: 'elven-lineage', name: 'Elven Lineage spell (level 5)', source: { species: 'Elf' }, level: 5,
+    activation: 'Special', uses: { fixed: 1 }, recharge: 'long',
+    summary: () => 'Cast your lineage spell once without a slot: Drow Darkness, High Elf Misty Step, Wood Elf Pass without Trace.',
+  },
+  {
+    id: 'fiendish-legacy-level-3', textId: 'fiendish-legacy', name: 'Fiendish Legacy spell (level 3)', source: { species: 'Tiefling' }, level: 3,
+    activation: 'Special', uses: { fixed: 1 }, recharge: 'long',
+    summary: () => 'Cast your legacy spell once without a slot: Abyssal Ray of Sickness, Chthonic False Life, Infernal Hellish Rebuke.',
+  },
+  {
+    id: 'fiendish-legacy-level-5', textId: 'fiendish-legacy', name: 'Fiendish Legacy spell (level 5)', source: { species: 'Tiefling' }, level: 5,
+    activation: 'Special', uses: { fixed: 1 }, recharge: 'long',
+    summary: () => 'Cast your legacy spell once without a slot: Abyssal Hold Person, Chthonic Ray of Enfeeblement, Infernal Darkness.',
+  },
+  {
+    id: 'gnomish-lineage-forest-gnome', name: 'Forest Gnome: Speak with Animals', source: { species: 'Gnome' }, level: 1,
+    activation: 'Special', uses: { pb: true }, recharge: 'long',
+    summary: () => 'Forest Gnome only: cast Speak with Animals without a spell slot.',
+  },
+  ...[[6, 11], [7, 13], [8, 15], [9, 17]].map(([spell, level]): LimitedFeature => ({
+    id: `warlock-mystic-arcanum-${spell}`, textId: 'warlock-mystic-arcanum', name: `Mystic Arcanum (level ${spell})`,
+    source: { className: 'Warlock' }, level, activation: 'Special', uses: { fixed: 1 }, recharge: 'long',
+    summary: () => `Cast your level ${spell} arcanum spell once without a spell slot.`,
+  })),
   // Feats
   {
     id: 'magic-initiate', name: 'Magic Initiate (free cast)', source: { feat: 'Magic Initiate' }, level: 1, activation: 'Special',

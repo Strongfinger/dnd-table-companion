@@ -154,7 +154,7 @@ Each step: build script / pure rules in `src/rules/` with tests → UI → `rule
 | **E7** ✅ | Lookup tabs: Equipment, Weapon Mastery & Properties, Feats, Class features, Poisons | S | |
 | Q | QA #2 (🎲 button covers buttons), QA #3 (`React.lazy` DM screens) | S | |
 
-E1–E7, F1, F2 all done 2026-10-13 (not modelled yet: the once-per-Long-Rest lineage spells of Elf/Gnome/Tiefling, Warlock Mystic Arcanum uses) (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
+E1–E7, F1, F2 all done 2026-10-13 (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
 Order: **E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7**. Before Phase 5 (first real session): E1–F2.
 
 ## 6. Open decisions for the owner (collected 2026-10-13, nothing blocked on them)
