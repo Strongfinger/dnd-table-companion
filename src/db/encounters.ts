@@ -1,5 +1,8 @@
 // Read/write encounters for the combat tracker.
+import { liveQuery } from 'dexie'
+import { withDefaults } from '../model/character'
 import { withEncounterDefaults, type Encounter } from '../model/encounter'
+import { liveFight, playerView, type PlayerEncounterView } from '../model/playerView'
 import { stamp } from '../model/sync'
 import { db } from './db'
 import { deviceId } from './device'
@@ -39,4 +42,19 @@ export async function deleteEncounter(id: string): Promise<void> {
     await db.encounters.delete(id)
     await db.log.where('encounterId').equals(id).filter((e) => e.characterId === '').delete()
   })
+}
+
+/**
+ * Live lobby (DM device): call `onChange` with what players should see of the running fight
+ * (or null when none is running), now and after every change to fights or the PCs in them.
+ */
+export function watchPlayerFight(campaignId: string | null, onChange: (view: PlayerEncounterView | null) => void): () => void {
+  const sub = liveQuery(async () => {
+    const e = liveFight((await db.encounters.toArray()).map(withEncounterDefaults), campaignId)
+    if (!e) return null
+    const ids = e.combatants.flatMap((c) => (c.characterId ? [c.characterId] : []))
+    const characters = (await db.characters.where('id').anyOf(ids).toArray()).map(withDefaults)
+    return playerView(e, new Map(characters.map((c) => [c.id, c])))
+  }).subscribe({ next: onChange, error: (err) => console.error('watchPlayerFight', err) })
+  return () => sub.unsubscribe()
 }

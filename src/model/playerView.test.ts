@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { createEncounter, createMonsters } from './encounter'
-import { healthStatus, playerView } from './playerView'
+import { activeTurn, healthStatus, liveFight, parsePlayerView, playerView } from './playerView'
 
 describe('healthStatus', () => {
   it('full, hurt, Bloodied at half or below, down at 0', () => {
@@ -55,5 +55,43 @@ describe('playerView keeps DM secrets out', () => {
 
   it('PCs show their sheet HP to the party', () => {
     expect(view.combatants[1].pc).toEqual({ characterId: boom.id, hp: { max: 19, current: 12, temp: 0 } })
+  })
+})
+
+describe('liveFight', () => {
+  const fight = (id: string, status: 'setup' | 'active' | 'ended', updatedAt: number, campaignId: string | null = null) =>
+    ({ ...createEncounter(id, campaignId), id, status, updatedAt })
+
+  it('picks the newest running fight, preferring the room campaign', () => {
+    const list = [fight('a', 'active', 1, 'camp'), fight('b', 'active', 5), fight('c', 'setup', 9, 'camp'), fight('d', 'ended', 9, 'camp')]
+    expect(liveFight(list, 'camp')?.id).toBe('a')
+    expect(liveFight(list, 'other')?.id).toBe('b')
+    expect(liveFight(list, null)?.id).toBe('b')
+    expect(liveFight([fight('c', 'setup', 9)], null)).toBeNull()
+  })
+})
+
+describe('parsePlayerView', () => {
+  const boom = createCharacter({ name: 'Boom', hp: { max: 19, current: 12, temp: 3 } })
+  const [g1] = createMonsters({ name: 'Goblin', ac: 15, hpMax: 10, initBonus: 2 }, 1)
+  const pc = { ...createMonsters({ name: 'x', ac: 1, hpMax: 1, initBonus: 0 }, 1)[0], kind: 'pc' as const, characterId: boom.id, name: 'Boom' }
+  const enc = { ...createEncounter('Ambush'), status: 'active' as const, round: 3, activeId: pc.id, combatants: [{ ...g1, initiative: 12 }, { ...pc, initiative: 9 }] }
+  const view = playerView(enc, new Map([[boom.id, boom]]))
+
+  it('accepts a real view unchanged (after travelling as JSON)', () => {
+    expect(parsePlayerView(JSON.parse(JSON.stringify(view)))).toEqual(view)
+  })
+
+  it('rejects broken views', () => {
+    expect(parsePlayerView(null)).toBeNull()
+    expect(parsePlayerView({ ...view, status: 'boss' })).toBeNull()
+    expect(parsePlayerView({ ...view, combatants: [{ ...view.combatants[0], health: 'full' }] })).toBeNull()
+    expect(parsePlayerView({ ...view, combatants: 'all' })).toBeNull()
+  })
+
+  it('finds whose turn it is', () => {
+    expect((activeTurn(view) as { name: string }).name).toBe('Boom')
+    expect(activeTurn({ ...view, hiddenTurn: true })).toBe('hidden')
+    expect(activeTurn({ ...view, combatants: [] })).toBeNull()
   })
 })

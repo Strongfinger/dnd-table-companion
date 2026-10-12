@@ -1,16 +1,16 @@
-# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync done; next: 4.3 initiative/player view)
+# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync, 4.3 live fight view done; next: 4.4 shared dice log)
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (360 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (364 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
 | Rules engine | `src/rules/` (sheet, play, turns, diceExpr, spellslots, classes, srd/, checks, creation, challenge) |
 | Character model & actions | `src/model/character.ts`, `characterActions.ts` (one reducer for every play change + `parseCharacterAction`), `actions.ts` |
 | Fights | `src/model/encounter.ts`, `src/screens/Tracker.tsx`, `CombatantRow.tsx`, `AddCombatants.tsx` |
-| Player view (no DM secrets) | `src/model/playerView.ts`, `src/screens/PlayerViewPanel.tsx` |
+| Player view (no DM secrets) | `src/model/playerView.ts` (+ `liveFight`, `parsePlayerView`, `activeTurn`), `src/screens/PlayerViewPanel.tsx`, `src/screens/LiveFightBar.tsx` (players' bar under the nav) |
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION, stamp, newerOf), `src/model/campaign.ts`, `src/db/device.ts` |
 | Lobby transport | `src/sync/` (`envelope.ts`, `roomCode.ts`, `transport.ts`, `localTransport.ts`, `firebaseTransport.ts`) |
 | Lobby (real) | `src/app/lobby.tsx` (LobbyProvider: one connection for the whole app, `send`/`subscribe` for later steps), `src/app/useLobby.ts`, `src/sync/lobby.ts` (saved session, join link, kick), `src/screens/Lobby.tsx` (`#/lobby`, `#/lobby/CODE` from the QR) |
@@ -50,6 +50,12 @@
    it twice (listener replays the last 5 s, Deduper is fresh); (c) the phone's log only gets the player's
    own actions, not DM-made changes; (d) whole-sheet "higher rev wins", no per-field merge; (e) sheets
    over ~64 KB can't be sent.
+3. ✅ Step 4.3 (2026-10-12): live fight view. DM device: `watchPlayerFight` (db/encounters.ts) picks the newest
+   *running* fight (setup stays secret; prefers the room's campaign), builds `playerView`, and sends
+   `fight {view|null}` on every change (skips repeats) and again on each player `hello`. Players accept it only
+   from the DM, check it with `parsePlayerView`, and show `LiveFightBar` (round, whose turn, "🎯 ตาของคุณ!",
+   vibrate; tap = initiative list) and the list on the lobby screen. DM's lobby screen says which fight players
+   see. Verified over Firebase both ways (hidden monster left out, no HP/AC leak, turn changes arrive).
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

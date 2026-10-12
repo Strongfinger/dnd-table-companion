@@ -12,6 +12,7 @@ import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
+import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
 import PartyOverview from './screens/PartyOverview'
@@ -33,6 +34,7 @@ export default function App() {
           <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
           <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
         </div>
+        <LiveFightBar />
       </nav>
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}

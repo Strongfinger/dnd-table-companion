@@ -5,13 +5,16 @@
 //
 // Character sheets are synced here too (protocol in src/sync/sheets.ts). The DM device is the
 // source of truth: it applies players' actions and sends its copy of every played character back.
-// Later steps (initiative, dice log) use `send` and `subscribe` from here.
+// The running fight is sent to players too, as the secret-free player view ('fight' messages).
+// Later steps (dice log) use `send` and `subscribe` from here.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getCharacter, saveReceivedCharacter, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
+import { watchPlayerFight } from '../db/encounters'
 import { logCharacterEvent } from '../db/log'
 import type { Character } from '../model/character'
 import { applyCharacterAction } from '../model/characterActions'
+import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { makeEnvelope, type Envelope } from '../sync/envelope'
 import { firebaseTransport } from '../sync/firebaseTransport'
 import { isDm, isKicked, parseKick, parseLobbySession, type LobbySession } from '../sync/lobby'
@@ -43,6 +46,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>('offline')
   const [members, setMembers] = useState<Member[]>([])
   const [kickedNotice, setKickedNotice] = useState<string | null>(null)
+  const [fight, setFight] = useState<PlayerEncounterView | null>(null)
   // Refs: the message handler below runs long after render, so it reads the latest values here.
   const conn = useRef<RoomConnection | null>(null)
   const sessionRef = useRef<LobbySession | null>(null)
@@ -50,6 +54,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const listeners = useRef(new Set<(e: Envelope) => void>())
   /** DM: the revision of each character last sent to the room, so each change goes out once. */
   const lastSent = useRef(new Map<string, number>())
+  /** DM: the fight view last sent (as JSON), to skip repeats and to resend to players who (re)join. */
+  const lastFight = useRef<string | null>(null)
   const online = firebaseTransport()
 
   /** Remember the session (state for the screen, ref for handlers, settings for a reload). */
@@ -69,6 +75,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     conn.current = null
     membersRef.current = []
     setMembers([])
+    setFight(null)
   }
 
   function onMessage(e: Envelope) {
@@ -86,6 +93,12 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       }
       return
     }
+    if (e.kind === 'fight' && s.role === 'player' && isDm(membersRef.current, e.from)) {
+      const body = e.body as { view?: unknown } | null
+      setFight(body?.view == null ? null : parsePlayerView(body.view))
+    }
+    // DM: a player (re)connected; give them the running fight too.
+    if (e.kind === 'hello' && s.role === 'dm' && lastFight.current !== null) send('fight', { view: JSON.parse(lastFight.current) })
     void syncSheet(e, s).catch((err) => console.error('lobby: sheet sync', err))
     listeners.current.forEach((listen) => listen(e))
   }
@@ -137,6 +150,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   function connect(s: LobbySession) {
     disconnect()
     lastSent.current.clear()
+    lastFight.current = null
     const transport = s.local || !online ? localTransport() : online
     const me = deviceFor(s.local)
     conn.current = transport.join(s.code, { id: me.id, name: me.name, role: s.role, characterId: s.characterId, characterName: s.characterName }, {
@@ -192,6 +206,19 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sendState reads refs
   }, [played])
 
+  // DM: send what players see of the running fight whenever it changes (turns, rounds, HP...).
+  const dmCampaign = session?.role === 'dm' ? session.campaignId ?? '' : null
+  useEffect(() => {
+    if (dmCampaign === null) return
+    return watchPlayerFight(dmCampaign || null, (view) => {
+      const json = JSON.stringify(view)
+      if (json === lastFight.current) return
+      lastFight.current = json
+      send('fight', { view })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
+  }, [dmCampaign])
+
   const mine = (characterId: string) => {
     const s = sessionRef.current
     return s?.role === 'player' && s.characterId === characterId
@@ -204,6 +231,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     me: deviceFor(session?.local ?? false),
     onlineAvailable: !!online,
     kickedNotice,
+    fight,
     create: (campaignId, local) =>
       connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [] }),
     join: (code, character, local) =>

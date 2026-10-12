@@ -56,7 +56,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)
 - [x] DM device is the source of truth during a session; players send actions, DM device applies and broadcasts (step 4.2)
 - [x] Players' sheets synced both ways (HP, conditions, slots, death saves, action economy) (step 4.2, 2026-10-12)
-- [ ] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied")
+- [x] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied") (step 4.3, 2026-10-12)
 - [ ] Shared dice log: rolls from any phone appear in the fight log
 - [ ] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect
 - [x] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character (rate limits: not yet)

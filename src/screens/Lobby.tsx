@@ -7,12 +7,15 @@ import { renderSVG } from 'uqr'
 import { useLobby } from '../app/useLobby'
 import { listCampaigns } from '../db/campaigns'
 import { listCharacters } from '../db/characters'
+import { listEncounters } from '../db/encounters'
+import { liveFight } from '../model/playerView'
 import { currentDevice, getSetting, setDeviceName } from '../db/device'
 import { joinLink, visibleMembers } from '../sync/lobby'
 import { isValidRoomCode, normalizeRoomCode } from '../sync/roomCode'
 import type { ConnectionStatus } from '../sync/transport'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Button, Section, TextInput } from '../ui/kit'
+import PlayerViewPanel from './PlayerViewPanel'
 
 const STATUS_TEXT: Record<ConnectionStatus, string> = {
   connecting: '⏳ กำลังเชื่อมต่อ…',
@@ -115,6 +118,8 @@ function InRoom() {
   const campaigns = useLiveQuery(listCampaigns) ?? []
   const characters = useLiveQuery(listCharacters) ?? []
   const campaign = campaigns.find((c) => c.id === s.campaignId)
+  const encounters = useLiveQuery(listEncounters) ?? []
+  const shownFight = s.role === 'dm' ? liveFight(encounters, s.campaignId) : null
   const link = joinLink(window.location.origin + window.location.pathname, s.code)
   const shown = visibleMembers(lobby.members, s.kicked)
 
@@ -139,6 +144,18 @@ function InRoom() {
           )}
         </div>
       </Section>
+
+      {s.role === 'dm' && (
+        <p className="rounded-lg bg-stone-900 p-3 text-sm text-stone-300">
+          {shownFight
+            ? <>⚔️ ผู้เล่นเห็นการต่อสู้: <a href={`#/fight/${shownFight.id}`} className="underline">{shownFight.name}</a> (รอบที่ {shownFight.round}) · มอนสเตอร์แสดงแค่สถานะคร่าวๆ</>
+            : '⚔️ ผู้เล่นจะเห็นลำดับ Initiative เมื่อคุณเริ่มการต่อสู้ในแท็บ การต่อสู้'}
+        </p>
+      )}
+
+      {s.role === 'player' && lobby.fight && (
+        <PlayerViewPanel view={lobby.fight} title={`⚔️ ${lobby.fight.name} · รอบที่ ${lobby.fight.round}`} myCharacterId={s.characterId} />
+      )}
 
       {s.role === 'player' && (
         <Section title="ตัวละครของฉันในห้องนี้">

@@ -2,6 +2,7 @@
 // fast refresh keeps working while editing the provider.
 import { createContext, useContext } from 'react'
 import type { CharacterAction } from '../model/characterActions'
+import type { PlayerEncounterView } from '../model/playerView'
 import type { Envelope, MessageKind } from '../sync/envelope'
 import type { LobbySession } from '../sync/lobby'
 import type { ConnectionStatus, Member } from '../sync/transport'
@@ -19,6 +20,8 @@ export interface LobbyApi {
   me: { id: string; name: string }
   /** False when Firebase isn't set up (then only the local test mode works). */
   onlineAvailable: boolean
+  /** Players: the running fight as the DM's device shows it to players (null = no fight running). */
+  fight: PlayerEncounterView | null
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
