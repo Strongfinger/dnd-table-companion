@@ -2,6 +2,7 @@
 // Every game term has help (hover with a mouse, tap / press-and-hold on a phone).
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
+import { useLobby } from '../app/useLobby'
 import { listCharacters } from '../db/characters'
 import { getSetting } from '../db/device'
 import { isDead, isDying } from '../model/actions'
@@ -12,10 +13,12 @@ import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Term } from '../ui/help'
 import { ActionEconomyBar } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
+import type { PartyCard as RoomCard } from '../sync/party'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 
 export default function PartyOverview() {
+  const lobby = useLobby()
   const characters = useLiveQuery(listCharacters)
   const [campaignId, setCampaignId] = useState(ALL)
   useEffect(() => {
@@ -23,6 +26,9 @@ export default function PartyOverview() {
   }, [])
   const shown = (campaignId === ALL ? characters : characters?.filter((c) => c.campaignId === campaignId))
     ?.slice().sort((a, b) => a.name.localeCompare(b.name))
+
+  // A player in a live room: everyone's basic cards from the DM's device, read-only.
+  if (lobby.session?.role === 'player') return <RoomParty cards={lobby.party} myCharacterId={lobby.session.characterId} />
 
   return (
     <div className="space-y-4">
@@ -133,5 +139,56 @@ function PartyCard({ c }: { c: Character }) {
         </div>
       )}
     </a>
+  )
+}
+
+/** Players in a room: the party as the DM's device sends it. Only my own card opens a sheet. */
+function RoomParty({ cards, myCharacterId }: { cards: RoomCard[]; myCharacterId: string | null }) {
+  return (
+    <div className="space-y-4">
+      <a href="#/" className="text-sm text-stone-400">← ตัวละครทั้งหมด</a>
+      <header>
+        <h1 className="text-2xl font-bold text-amber-400">👥 ภาพรวมปาร์ตี้</h1>
+        <p className="text-sm text-stone-400">ตัวละครทุกคนในห้อง (ดูอย่างเดียว) · อัปเดตจากเครื่อง DM</p>
+      </header>
+      {cards.length === 0 && <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีข้อมูลปาร์ตี้จาก DM (รอเชื่อมต่อ หรือยังไม่มีใครเลือกตัวละคร)</p>}
+      <div className="grid gap-3 md:grid-cols-2">
+        {cards.map((c) => <RoomPartyCard key={c.characterId} c={c} mine={c.characterId === myCharacterId} />)}
+      </div>
+    </div>
+  )
+}
+
+function RoomPartyCard({ c, mine }: { c: RoomCard; mine: boolean }) {
+  const pct = Math.round((c.hp.current / Math.max(1, c.hp.max)) * 100)
+  const status = healthStatus(c.hp)
+  return (
+    <div className={`space-y-2 rounded-xl border-2 bg-stone-800 p-3 ${mine ? 'border-amber-500/60' : 'border-transparent'}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-lg font-bold">{c.name}{mine && <span className="ml-2 text-xs text-amber-400">(ฉัน)</span>}</div>
+          <div className="text-xs text-stone-400">{c.className} {c.level}</div>
+        </div>
+        <div className="text-right text-xs text-stone-400"><Term name="AC" /> <b className="text-base text-stone-100">{c.ac}</b></div>
+      </div>
+      <div>
+        <div className="flex items-baseline justify-between text-sm">
+          <span className="font-bold">HP {c.hp.current}/{c.hp.max}{c.hp.temp > 0 && <span className="text-sky-300"> +<Term name="Temp HP">{c.hp.temp}</Term></span>}</span>
+          <span className={status === 'down' || status === 'bloodied' ? 'text-red-300' : status === 'hurt' ? 'text-amber-300' : 'text-emerald-300'}>
+            {status === 'bloodied' ? <Term name="Bloodied">{HEALTH_LABEL.bloodied}</Term> : HEALTH_LABEL[status]}
+          </span>
+        </div>
+        <div className="mt-1 h-2 overflow-hidden rounded bg-stone-900">
+          <div className={`h-full ${pct > 50 ? 'bg-emerald-500' : pct > 25 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      {c.conditions.length > 0 && (
+        <div className="flex flex-wrap gap-1 text-xs">
+          {c.conditions.map((x) => <span key={x} className="rounded-full bg-red-900 px-2 py-0.5"><Term name={x}>{x} {CONDITION_TH[x]}</Term></span>)}
+        </div>
+      )}
+      <ActionEconomyBar economy={c.turn} compact />
+      {mine && <a href={`#/c/${c.characterId}`} className="block text-sm text-amber-400 underline">เปิดใบตัวละครของฉัน</a>}
+    </div>
   )
 }

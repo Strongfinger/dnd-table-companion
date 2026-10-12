@@ -7,6 +7,7 @@ import type { RollEvent } from '../model/rollEvent'
 import type { Envelope, MessageKind } from '../sync/envelope'
 import type { FightSummary, PlayerLogEntry } from '../sync/fights'
 import type { LobbySession } from '../sync/lobby'
+import type { PartyCard } from '../sync/party'
 import type { ConnectionStatus, Member } from '../sync/transport'
 
 export interface CharacterPick {
@@ -29,11 +30,17 @@ export interface LobbyApi {
   /** Player: the DM's started fights (read-only) and their player-safe log lines. */
   fightList: FightSummary[]
   fightLogs: Record<string, PlayerLogEntry[]>
+  /** Player: read-only cards of every character played in the room (from the DM's device). */
+  party: PartyCard[]
   /** Dice rolls shared in the room this session, newest first (mine included). */
   rolls: RoomRoll[]
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
+  /** The room's campaign: the DM's choice (players get it from the DM), or null. */
+  campaignId: string | null
+  /** DM: switch the room to another campaign (players' phones follow it). */
+  setCampaign: (campaignId: string) => Promise<void>
   join: (code: string, character: CharacterPick | null, local: boolean) => void
   leave: () => void
   kick: (deviceId: string) => void

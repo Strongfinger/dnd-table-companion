@@ -31,6 +31,7 @@ import {
   applyLogMessage, fullLog, logDiff, parseFights, parseLogBody, type FightSummary, type LogTarget, type PlayerLogEntry,
 } from '../sync/fights'
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
+import { parseParty, partyCards, type PartyCard } from '../sync/party'
 import {
   isEditHello, mayChange, mergeEdit, parseActionBody, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
 } from '../sync/sheets'
@@ -91,8 +92,12 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   /** Player: the DM's started fights and their player-safe logs. */
   const [fightList, setFightList] = useState<FightSummary[]>([])
   const [fightLogs, setFightLogs] = useState<Record<string, PlayerLogEntry[]>>({})
+  /** Player: the party cards from the DM. DM: the cards last sent (JSON), to skip repeats and resend on (re)join. */
+  const [party, setParty] = useState<PartyCard[]>([])
+  const lastParty = useRef<string | null>(null)
   /** Player: the room's campaign (from the DM), so a character picked later joins it too. */
   const roomCampaign = useRef<string | null>(null)
+  const [roomCampaignId, setRoomCampaignId] = useState<string | null>(null)
   /** DM: the fight list as last sent to players, and each log as last sent (fights' and played characters'). */
   const sentFights = useRef<FightSummary[] | null>(null)
   const sentLogs = useRef(new Map<string, { target: LogTarget; entries: PlayerLogEntry[] }>())
@@ -140,6 +145,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     setRolls([])
     setFightList([])
     setFightLogs({})
+    setParty([])
     setRestSince(null)
   }
 
@@ -191,6 +197,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     for (const { target, entries } of sentLogs.current.values()) {
       if (target.kind === 'fight' || target.id === theirCharacter) send('log', { ...logKey(target), ...fullLog(entries) })
     }
+    if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
     if (campaign) send('campaign', { id: campaign.id, name: campaign.name })
@@ -231,6 +238,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
         // My character's log follows the DM's (lines the DM deletes go away here too).
         void applyCharacterLog(m.target.id, m)
       }
+    } else if (e.kind === 'party') {
+      const cards = parseParty(e.body)
+      if (cards) setParty(cards)
     } else if (e.kind === 'rest') {
       const since = (e.body as { since?: unknown } | null)?.since
       setRestSince(Number.isFinite(since) ? (since as number) : null)
@@ -238,6 +248,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       const b = e.body as { id?: unknown; name?: unknown } | null
       if (typeof b?.id !== 'string' || b.id.length > 64 || typeof b.name !== 'string') return
       roomCampaign.current = b.id
+      setRoomCampaignId(b.id)
       // The DM's campaign on this phone too, with my character in it (party overview, lists).
       void adoptCampaign(b.id, b.name, e.from).then(async () => {
         if (s.characterId) await setCharacterCampaign(s.characterId, b.id as string)
@@ -384,9 +395,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     const run = connectRun.current
     lastSent.current.clear()
     lastFight.current = null
+    lastParty.current = null
     sentFights.current = null
     sentLogs.current = new Map()
     roomCampaign.current = null
+    setRoomCampaignId(null)
     needHello.current = false
     save(s)
     setKickedNotice(null)
@@ -457,9 +470,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   // an edit), send the new copy to the room.
   const played = session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id)).join(',') : ''
   useEffect(() => {
-    if (!played) return
+    if (!played) {
+      // Nobody plays a character any more: clear the party cards on phones too.
+      if (lastParty.current !== null && lastParty.current !== '[]') {
+        lastParty.current = '[]'
+        send('party', { cards: [] })
+      }
+      return
+    }
     return watchCharacters(played.split(','), (list) => {
       for (const c of list) if (lastSent.current.get(c.id) !== c.rev) sendState(c)
+      // Everyone's read-only party cards (only when one of them changed).
+      const json = JSON.stringify(partyCards(list))
+      if (json !== lastParty.current) {
+        lastParty.current = json
+        send('party', { cards: JSON.parse(json) })
+      }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sendState reads refs
   }, [played])
@@ -532,8 +558,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     },
     fightList,
     fightLogs,
+    party,
+    campaignId: session?.role === 'dm' ? session.campaignId : session ? roomCampaignId : null,
     create: (campaignId, local) =>
       connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null }),
+    setCampaign: async (campaignId) => {
+      const s = sessionRef.current
+      if (s?.role !== 'dm' || s.campaignId === campaignId) return
+      const campaign = await getCampaign(campaignId)
+      if (!campaign) return
+      // The fight and log watchers restart for the new campaign (they depend on session.campaignId).
+      lastFight.current = null
+      save({ ...s, campaignId })
+      // The characters played right now belong to the new campaign too (party overview, lists).
+      for (const id of playedNow()) await setCharacterCampaign(id, campaignId)
+      send('campaign', { id: campaign.id, name: campaign.name })
+    },
     join: (code, character, local) =>
       connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null }),
     leave: () => {

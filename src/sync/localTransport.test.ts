@@ -7,10 +7,10 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const open: RoomConnection[] = []
 afterEach(() => open.splice(0).forEach((c) => c.leave()))
 
-function device(id: string, role: 'dm' | 'player', code = 'TEST22') {
+function device(id: string, role: 'dm' | 'player', code = 'TEST22', heartbeatMs = 20) {
   const got: Envelope[] = []
   let members: Member[] = []
-  const conn = localTransport({ heartbeatMs: 20, timeoutMs: 80 }).join(code, { id, name: id, role, characterId: null, characterName: null }, {
+  const conn = localTransport({ heartbeatMs, timeoutMs: heartbeatMs * 4 }).join(code, { id, name: id, role, characterId: null, characterName: null }, {
     onMessage: (e) => got.push(e),
     onMembers: (m) => (members = m),
     onStatus: () => {},
@@ -53,5 +53,17 @@ describe('local lobby connection (BroadcastChannel)', () => {
     open.splice(open.indexOf(p.conn), 1)
     await wait(50)
     expect(dm.members().find((m) => m.deviceId === 'p')).toBeUndefined()
+  })
+
+  it('a reloaded tab sees the DM right away (not only at the next heartbeat)', async () => {
+    const slow = 10_000 // no heartbeat during the test: only the answer to the first hello counts
+    device('dm', 'dm', 'RELOAD', slow)
+    const before = device('p', 'player', 'RELOAD', slow)
+    await wait(30)
+    // A reload: the same device joins again; the DM already knew it, so it isn't "new" to the DM.
+    open.splice(open.indexOf(before.conn), 1)
+    const after = device('p', 'player', 'RELOAD', slow)
+    await wait(30)
+    expect(after.members().map((m) => m.deviceId).sort()).toEqual(['dm', 'p'])
   })
 })

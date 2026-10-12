@@ -101,14 +101,16 @@ const buttonStyles = {
   danger: 'bg-red-800 text-white hover:bg-red-700',
 }
 
-export function Button({ children, onClick, variant = 'secondary', className = '' }: {
+export function Button({ children, onClick, variant = 'secondary', className = '', 'aria-label': ariaLabel }: {
   children: ReactNode
   onClick: () => void
   variant?: keyof typeof buttonStyles
   className?: string
+  /** For icon-only buttons (e.g. ⚙️), so screen readers say what they do. */
+  'aria-label'?: string
 }) {
   return (
-    <button type="button" onClick={onClick} className={`rounded-lg px-4 py-2 font-bold ${buttonStyles[variant]} ${className}`}>
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`rounded-lg px-4 py-2 font-bold ${buttonStyles[variant]} ${className}`}>
       {children}
     </button>
   )

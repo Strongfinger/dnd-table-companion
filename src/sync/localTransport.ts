@@ -5,7 +5,7 @@ import { Deduper, parseEnvelope, type Envelope } from './envelope'
 import type { Me, Member, RoomConnection, RoomHandlers, RoomTransport } from './transport'
 
 type Wire =
-  | { type: 'presence'; member: Omit<Member, 'online'> }
+  | { type: 'presence'; member: Omit<Member, 'online'>; first?: boolean }
   | { type: 'bye'; deviceId: string }
   | { type: 'msg'; from: { id: string; name: string }; envelope: Envelope }
 
@@ -26,7 +26,7 @@ export function localTransport(options: { heartbeatMs?: number; timeoutMs?: numb
         const others = [...lastSeen.values()].map(({ member, at }) => ({ ...member, online: now - at < timeoutMs }))
         handlers.onMembers([{ ...self, online: true }, ...others])
       }
-      const announce = () => channel.postMessage({ type: 'presence', member: self } satisfies Wire)
+      const announce = (first = false) => channel.postMessage({ type: 'presence', member: self, first } satisfies Wire)
 
       channel.onmessage = (ev: MessageEvent<Wire>) => {
         const w = ev.data
@@ -34,7 +34,9 @@ export function localTransport(options: { heartbeatMs?: number; timeoutMs?: numb
         if (w.type === 'presence' && w.member?.deviceId && w.member.deviceId !== me.id) {
           const isNew = !lastSeen.has(w.member.deviceId)
           lastSeen.set(w.member.deviceId, { member: w.member, at: Date.now() })
-          if (isNew) announce() // say hello back so the newcomer sees us right away
+          // Say hello back so the newcomer sees us right away; also to a reloaded tab we already knew
+          // (`first`), or it can't tell who the DM is and drops the DM's catch-up messages.
+          if (isNew || w.first) announce()
           publishMembers()
         } else if (w.type === 'bye') {
           lastSeen.delete(w.deviceId)
@@ -47,7 +49,7 @@ export function localTransport(options: { heartbeatMs?: number; timeoutMs?: numb
       }
 
       handlers.onStatus('connected')
-      announce()
+      announce(true)
       publishMembers()
       const beat = setInterval(() => {
         announce()

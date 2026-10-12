@@ -119,7 +119,7 @@ function InRoom() {
   const s = lobby.session!
   const campaigns = useLiveQuery(listCampaigns) ?? []
   const characters = useLiveQuery(listCharacters) ?? []
-  const campaign = campaigns.find((c) => c.id === s.campaignId)
+  const campaign = campaigns.find((c) => c.id === lobby.campaignId)
   const encounters = useLiveQuery(listEncounters) ?? []
   const shownFight = s.role === 'dm' ? liveFight(encounters, s.campaignId) : null
   const link = joinLink(window.location.origin + window.location.pathname, s.code)
@@ -136,6 +136,23 @@ function InRoom() {
           {STATUS_TEXT[lobby.status]}{s.local && ' · โหมดทดสอบในเครื่อง'}
           {s.role === 'player' && lobby.pending > 0 && ` · ⏳ รอ DM ยืนยัน ${lobby.pending} การเปลี่ยนแปลง`}
         </p>
+        {/* The campaign this room plays: the DM can switch it any time (e.g. after importing a campaign pack). */}
+        {s.role === 'dm' ? (
+          <label className="mb-3 block text-sm">
+            <span className="text-stone-400">แคมเปญที่เล่นในห้องนี้</span>
+            <select
+              className="mt-1 w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-base"
+              aria-label="แคมเปญของห้อง"
+              value={s.campaignId ?? ''}
+              onChange={(e) => void lobby.setCampaign(e.target.value)}
+            >
+              {!campaign && <option value="">(ยังไม่เลือก)</option>}
+              {campaigns.map((c) => <option key={c.id} value={c.id}>🗺 {c.name}</option>)}
+            </select>
+          </label>
+        ) : (
+          campaign && <p className="mb-2 text-sm text-stone-400">🗺 แคมเปญ: <b className="text-stone-200">{campaign.name}</b> (DM เป็นคนเลือก)</p>
+        )}
         <div className="rounded-lg bg-stone-900 p-3 text-center">
           <div className="text-xs text-stone-400">รหัสห้อง{s.role === 'dm' && ' (ให้ผู้เล่นพิมพ์ หรือสแกน QR)'}</div>
           <div className="font-mono text-4xl font-bold tracking-widest text-amber-400">{s.code}</div>
