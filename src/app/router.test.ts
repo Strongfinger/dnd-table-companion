@@ -22,6 +22,7 @@ describe('parseRoute', () => {
     expect(parseRoute('#/lookup/monster/goblin-warrior')).toEqual({ name: 'monster', id: 'goblin-warrior' })
     expect(parseRoute('#/lookup/spells')).toEqual({ name: 'lookup', tab: 'spells' })
     expect(parseRoute('#/lookup/spell/fireball')).toEqual({ name: 'spell', id: 'fireball' })
+    expect(parseRoute('#/dm/import')).toEqual({ name: 'packImport' })
     expect(parseRoute('#/dm/note/n1')).toEqual({ name: 'note', id: 'n1' })
     expect(parseRoute('#/lobby/K7QX4M')).toEqual({ name: 'lobby', code: 'K7QX4M' })
     expect(parseRoute('#/fight/x1')).toEqual({ name: 'fight', id: 'x1' })

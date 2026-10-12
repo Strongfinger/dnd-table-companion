@@ -15,6 +15,8 @@ export type Route =
   /** The DM's tools: notes, generators, lookup. */
   | { name: 'dm' }
   | { name: 'note'; id: string }
+  /** Import a campaign pack (prepared pages, session plans, fights). */
+  | { name: 'packImport' }
   /** SRD lookup: #/lookup, #/lookup/monsters, #/lookup/spells, #/lookup/rules */
   | { name: 'lookup'; tab: 'monsters' | 'spells' | 'rules' | null }
   | { name: 'monster'; id: string }
@@ -37,7 +39,10 @@ export function parseRoute(hash: string): Route {
     if (id === 'spell' && action) return { name: 'spell', id: action }
     return { name: 'lookup', tab: id === 'monsters' || id === 'spells' || id === 'rules' ? id : null }
   }
-  if (first === 'dm') return id === 'note' && action ? { name: 'note', id: action } : { name: 'dm' }
+  if (first === 'dm') {
+    if (id === 'note' && action) return { name: 'note', id: action }
+    return id === 'import' ? { name: 'packImport' } : { name: 'dm' }
+  }
   if (first === 'fight' && id) return { name: 'fight', id }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
   return { name: 'list' }

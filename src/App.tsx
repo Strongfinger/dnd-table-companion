@@ -9,6 +9,7 @@ import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
 import DmHome from './screens/DmHome'
+import ImportPack from './screens/ImportPack'
 import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
@@ -48,6 +49,7 @@ export default function App() {
         {route.name === 'lab' && <LobbyLab />}
         {route.name === 'lobby' && <Lobby code={route.code} />}
         {route.name === 'dm' && <DmHome />}
+        {route.name === 'packImport' && <ImportPack />}
         {route.name === 'note' && <NotePageRoute key={route.id} id={route.id} />}
         {route.name === 'lookup' && <Lookup tab={route.tab} />}
         {route.name === 'monster' && <MonsterView key={route.id} id={route.id} />}
@@ -89,7 +91,7 @@ function FightRoute({ id }: { id: string }) {
 function NavBar({ route }: { route: Route }) {
   const lobby = useLobby()
   const inFights = route.name === 'fights' || route.name === 'fight'
-  const inDm = route.name === 'dm' || route.name === 'note' || route.name === 'lookup' || route.name === 'monster' || route.name === 'spell'
+  const inDm = route.name === 'dm' || route.name === 'packImport' || route.name === 'note' || route.name === 'lookup' || route.name === 'monster' || route.name === 'spell'
   const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
   return (
     <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
