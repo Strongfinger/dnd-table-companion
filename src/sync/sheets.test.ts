@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
-import { isEditHello, mayChange, parseControl, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
+import { isEditHello, mayChange, parseControl, takenBack, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
 import type { Member } from './transport'
 
 const nyx = createCharacter({ name: 'Nyx', className: 'Rogue', level: 3, scores: { str: 8, dex: 17, con: 14, int: 12, wis: 10, cha: 13 }, rev: 7 })
@@ -129,5 +129,13 @@ describe('characters the DM hands to a player (grants)', () => {
     expect(parseControl(body, 'p1')).toEqual(['goblin'])
     expect(parseControl(body, 'p3')).toEqual([])
     expect(parseControl({ grants: 'x' }, 'p1')).toBeNull()
+  })
+})
+
+describe('takenBack', () => {
+  it('handed-over characters the DM took back, never my own', () => {
+    expect(takenBack(['gob', 'wolf'], ['wolf'], 'c1')).toEqual(['gob'])
+    expect(takenBack(['gob'], [], 'gob')).toEqual([])
+    expect(takenBack([], ['gob'], 'c1')).toEqual([])
   })
 })

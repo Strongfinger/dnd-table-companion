@@ -13,7 +13,7 @@
 // applied, so a re-sent change, or one replayed after a reload, is only confirmed again.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { adoptCampaign, getCampaign } from '../db/campaigns'
-import { getCharacter, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
+import { deleteCharacter, getCharacter, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { getEncounter, watchPlayerFight } from '../db/encounters'
 import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs, watchFightsForPlayers } from '../db/log'
@@ -33,7 +33,7 @@ import {
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
 import {
-  isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
+  isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet, takenBack,
 } from '../sync/sheets'
 import { LobbyContext, type LobbyApi, type RoomRoll } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
@@ -255,8 +255,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
         void applyCharacterLog(m.target.id, m)
       }
     } else if (e.kind === 'control') {
-      const ids = parseControl(e.body, deviceFor(s.local).id)
-      if (ids) setControlled(ids)
+      const me = deviceFor(s.local).id
+      const ids = parseControl(e.body, me)
+      if (!ids) return
+      // The DM took some back: their copies leave this phone (also ones taken back while I was offline).
+      const gone = takenBack(s.grants.map((g) => g.characterId), ids, s.characterId)
+      setControlled(ids)
+      save({ ...(sessionRef.current ?? s), grants: ids.map((characterId) => ({ characterId, deviceId: me })) })
+      // Test mode: the tabs share one database with the DM's, so nothing is deleted there.
+      if (!s.local) for (const id of gone) void deleteCharacter(id)
     } else if (e.kind === 'party') {
       const cards = parseParty(e.body)
       if (cards) setParty(cards)
@@ -420,6 +427,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     sentLogs.current = new Map()
     roomCampaign.current = null
     setRoomCampaignId(null)
+    // Player: the characters the DM handed to this phone (saved, so a reload still knows them).
+    if (s.role === 'player') setControlled(s.grants.map((g) => g.characterId))
     needHello.current = false
     save(s)
     setKickedNotice(null)
@@ -608,6 +617,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null, grants: [] }),
     leave: () => {
       const s = sessionRef.current
+      // Player: handed-over characters belong to the DM; their copies leave with me (they come back on rejoin).
+      if (s?.role === 'player' && !s.local) for (const id of takenBack(s.grants.map((g) => g.characterId), [], s.characterId)) void deleteCharacter(id)
       disconnect()
       if (s) {
         store(OUTBOX, null, s.local)

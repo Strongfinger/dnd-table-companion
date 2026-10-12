@@ -47,6 +47,14 @@ export function mayChange(members: Member[], senderId: string, characterId: stri
   return player.characterId === characterId || grants.some((g) => g.deviceId === senderId && g.characterId === characterId)
 }
 
+/**
+ * Player: handed-over characters the DM took back (in `before`, not in `now`): their copies leave this
+ * phone. Never the character the player picked themselves.
+ */
+export function takenBack(before: string[], now: string[], picked: string | null): string[] {
+  return before.filter((id) => !now.includes(id) && id !== picked)
+}
+
 /** Player: the characters the DM handed to this device, from a 'control' message. Null = invalid. */
 export function parseControl(body: unknown, myDeviceId: string): string[] | null {
   const list = typeof body === 'object' && body !== null ? (body as Record<string, unknown>).grants : null

@@ -3,6 +3,14 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 4 — owner reports, 2026-10-12
+| Report | Fix |
+|---|---|
+| A handed-over monster stayed on the player's phone after "เอาคืน" | The phone remembers its handed-over characters (saved in its room session) and deletes the copy when the DM's `control` list drops it, also after being offline; leaving the room removes them too (they come back on rejoin if still granted). Not in test mode (shared database with the DM) |
+| No way to refresh in the installed app (home screen) | Pull down at the top of the page → "ปล่อยเพื่อรีเฟรช" → reload (checks for a new app version first). Only in the installed app; browser tabs keep their own pull-to-refresh |
+
+**Needs a real-phone check:** the delete-on-take-back itself (test mode skips it by design).
+
 ## Pass 3 — owner requests, 2026-10-12
 | Request | Done |
 |---|---|

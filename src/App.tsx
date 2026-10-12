@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
+import PullToRefresh from './ui/PullToRefresh'
 import { HelpProvider } from './ui/help'
 import { LobbyProvider } from './app/lobby'
 import { useLobby } from './app/useLobby'
@@ -59,6 +60,7 @@ export default function App() {
         </footer>
       </main>
       <UpdatePrompt />
+      <PullToRefresh />
       <RoomRollToast />
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
     </LobbyProvider>
