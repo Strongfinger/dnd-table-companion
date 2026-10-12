@@ -112,13 +112,17 @@ const fighter: RestState = {
   features: [
     { id: 'sw', name: 'Second Wind', max: 2, used: 2, recharge: 'long' },
     { id: 'as', name: 'Action Surge', max: 1, used: 1, recharge: 'short' },
+    { id: 'cd', name: 'Rage', max: 3, used: 3, recharge: 'shortOne' },
   ],
 }
 
 describe('rests', () => {
-  it('Short Rest restores "short" features only', () => {
+  it('Short Rest restores "short" features, gives one use of "shortOne" features back (2024)', () => {
     const r = shortRest(fighter)
-    expect(r.features.map((f) => f.used)).toEqual([2, 0])
+    expect(r.features.map((f) => f.used)).toEqual([2, 0, 2])
+    expect(shortRest(r).features[2].used).toBe(1)
+    // Never below zero.
+    expect(shortRest({ ...fighter, features: [{ ...fighter.features[2], used: 0 }] }).features[0].used).toBe(0)
     expect(r.hp).toEqual(fighter.hp)
   })
 

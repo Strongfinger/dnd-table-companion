@@ -36,6 +36,11 @@ describe('applyCharacterAction', () => {
     expect(apply({ type: 'setFeatureUsed', featureId: 'nope', used: 1 })).toBeNull()
   })
 
+  it('logs a pool spend with the number of points', () => {
+    const pally = createCharacter({ name: 'Ser', features: [{ id: 'loh', name: 'Lay On Hands', max: 25, used: 0, recharge: 'long', pool: true }] })
+    expect(applyCharacterAction(pally, { type: 'setFeatureUsed', featureId: 'loh', used: 7 })!.text).toBe('Ser ใช้ Lay On Hands 7 แต้ม (เหลือ 18/25)')
+  })
+
   it('rests, Hit Dice, exhaustion, inspiration, concentration, action economy', () => {
     const hurt = apply({ type: 'damage', amount: 8, critical: false })!.character // 3/11
     expect(apply({ type: 'spendHitDie', roll: 5, manual: true }, hurt)!.character.hp.current).toBe(3 + 5 + 2)

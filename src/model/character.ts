@@ -1,7 +1,7 @@
 // The Character record saved on the device (IndexedDB) and used for JSON export/import.
 // Only things the player enters are stored; calculated numbers come from deriveSheet().
 
-import { FRESH_TURN, type Ability, type ActionEconomy, type AttackInput, type Condition, type SheetInput } from '../rules'
+import { FRESH_TURN, type FeatureUses, type Ability, type ActionEconomy, type AttackInput, type Condition, type SheetInput } from '../rules'
 
 export interface Character extends SheetInput {
   id: string
@@ -37,7 +37,7 @@ export interface Character extends SheetInput {
   /** Name of the spell being concentrated on, or '' if none. */
   concentration: string
   /** Limited-use features like Second Wind or Channel Divinity. */
-  features: { id: string; name: string; max: number; used: number; recharge: 'short' | 'long' }[]
+  features: FeatureUses[]
   /**
    * The Armor Class shown everywhere (sheet, tracker, party). With acAuto it is worked out from the
    * equipped SRD armor and Shield (model/inventory.ts `applyAutoAC`) whenever those or the edit page change;

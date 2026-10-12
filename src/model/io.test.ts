@@ -35,6 +35,17 @@ describe('export → import round trip', () => {
     expect(r.conditions).toEqual(['Poisoned'])
   })
 
+  it('keeps pools, "shortOne" recharge and big pools (Lay On Hands 100)', () => {
+    const c = createCharacter({
+      name: 'Paladin', className: 'Paladin', level: 20,
+      features: [
+        { id: 'loh', name: 'Lay On Hands', max: 100, used: 30, recharge: 'long', pool: true, srdId: 'paladin-lay-on-hands' },
+        { id: 'cd', name: 'Channel Divinity', max: 3, used: 1, recharge: 'shortOne' },
+      ],
+    })
+    expect(importOk(exportCharacter(c)).character.features).toEqual(c.features)
+  })
+
   it('accepts a bare character object without the wrapper', () => {
     expect(importOk(JSON.stringify(boom)).character.name).toBe('Boom')
   })

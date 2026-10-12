@@ -10,7 +10,7 @@ import { applyAutoAC, characterArmorClass } from '../model/inventory'
 import { useEquipment } from './useSrdData'
 import {
   ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
-  deriveSheet, formatModifier, isSrdBackground, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
+  deriveSheet, formatModifier, isSrdBackground, MAX_FEATURE_USES, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
   SKILLS, SPECIES, SPECIES_INFO, spellSlotsFor, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
 } from '../rules'
 import { Button, Checkbox, ChoiceField, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
@@ -18,7 +18,11 @@ import { ABILITY_LABEL } from '../ui/labels'
 
 const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
 const ABILITY_OPTIONS = ABILITIES.map((a) => ({ value: a, label: ABILITY_LABEL[a].short }))
-const RECHARGE_OPTIONS = [{ value: 'short', label: 'Short Rest' }, { value: 'long', label: 'Long Rest' }] as const
+const RECHARGE_OPTIONS = [
+  { value: 'long', label: 'Long Rest' },
+  { value: 'short', label: 'Short Rest (หมด)' },
+  { value: 'shortOne', label: 'Short +1 / Long หมด' },
+] as const
 const CASTING_OPTIONS = [{ value: 'none', label: '— ไม่มี —' }, ...ABILITY_OPTIONS] as const
 
 /** Edit an existing character. New characters are made in CreateWizard. */
@@ -341,18 +345,21 @@ export default function CharacterEdit({ id }: { id: string }) {
         title="ความสามารถที่ใช้ได้จำกัด"
         action={<Button className="text-sm" onClick={() => set('features', [...c.features, { id: newId(), name: '', max: 1, used: 0, recharge: 'long' }])}>+ เพิ่ม</Button>}
       >
-        <p className="mb-2 text-xs text-stone-500">เช่น Second Wind, Rage, Channel Divinity, Bardic Inspiration: ใช้กี่ครั้ง และฟื้นตอนพักแบบไหน</p>
+        <p className="mb-2 text-xs text-stone-500">เช่น Second Wind, Rage, Channel Divinity, Bardic Inspiration: ใช้กี่ครั้ง และฟื้นตอนพักแบบไหน (2024: Second Wind, Rage, Channel Divinity, Wild Shape = Short Rest คืน 1, Long Rest คืนหมด)</p>
         <div className="space-y-2">
           {c.features.map((f, i) => {
             const update = (patch: Partial<typeof f>) => set('features', c.features.map((x, j) => (j === i ? { ...x, ...patch } : x)))
             return (
               <div key={f.id} className="grid grid-cols-[1fr_4rem_7rem_auto] items-end gap-2">
                 <Label text="ชื่อ"><TextInput value={f.name} placeholder="Second Wind" onChange={(v) => update({ name: v })} /></Label>
-                <Label text="ครั้ง"><NumberInput value={f.max} min={1} max={20} onChange={(v) => update({ max: v, used: Math.min(f.used, v) })} /></Label>
+                <Label text={f.pool ? 'แต้ม' : 'ครั้ง'}><NumberInput value={f.max} min={1} max={MAX_FEATURE_USES} onChange={(v) => update({ max: v, used: Math.min(f.used, v) })} /></Label>
                 <Label text="ฟื้นเมื่อ">
                   <Select value={f.recharge} options={RECHARGE_OPTIONS} onChange={(v) => update({ recharge: v })} />
                 </Label>
                 <button type="button" className="px-2 pb-2 text-red-400" onClick={() => set('features', c.features.filter((_, j) => j !== i))}>✕</button>
+                <div className="col-span-4 -mt-1">
+                  <Checkbox checked={!!f.pool} onChange={(v) => update({ pool: v || undefined })} label={<span className="text-xs">แบบแต้ม ใช้ทีละหลายแต้มได้ (Lay On Hands, Focus Points, Sorcery Points)</span>} />
+                </div>
               </div>
             )
           })}

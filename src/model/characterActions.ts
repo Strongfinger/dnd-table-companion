@@ -2,7 +2,7 @@
 // One function applies them all, so the sheet, the tracker and (later) a live lobby
 // change characters the same way: in a lobby, phones will send these to the DM's device.
 import {
-  ACTION_KINDS, CONDITIONS, hitDieSize, longRest, shortRest, spellSlotsFor, spendHitDie, startOfTurn,
+  ACTION_KINDS, CONDITIONS, hitDieSize, longRest, MAX_FEATURE_USES, shortRest, spellSlotsFor, spendHitDie, startOfTurn,
   type ActionKind, type Condition,
 } from '../rules'
 import { CONDITION_TH } from './thai'
@@ -98,7 +98,9 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
       if (used === f.used) return null
       return {
         character: { ...c, features: c.features.map((x) => (x.id === f.id ? { ...x, used } : x)) },
-        text: `${c.name} ${used > f.used ? 'ใช้' : 'คืน'} ${f.name} (เหลือ ${f.max - used}/${f.max})`,
+        text: f.pool
+          ? `${c.name} ${used > f.used ? 'ใช้' : 'คืน'} ${f.name} ${Math.abs(used - f.used)} แต้ม (เหลือ ${f.max - used}/${f.max})`
+          : `${c.name} ${used > f.used ? 'ใช้' : 'คืน'} ${f.name} (เหลือ ${f.max - used}/${f.max})`,
       }
     }
     case 'setExhaustion': {
@@ -167,7 +169,7 @@ export function parseCharacterAction(v: unknown): CharacterAction | null {
     case 'setSlotUsed':
       return isInt(v.level, 0, 8) && isInt(v.used, 0, 9) ? { type: 'setSlotUsed', level: v.level, used: v.used } : null
     case 'setFeatureUsed':
-      return typeof v.featureId === 'string' && v.featureId.length >= 1 && v.featureId.length <= 64 && isInt(v.used, 0, 20)
+      return typeof v.featureId === 'string' && v.featureId.length >= 1 && v.featureId.length <= 64 && isInt(v.used, 0, MAX_FEATURE_USES)
         ? { type: 'setFeatureUsed', featureId: v.featureId, used: v.used }
         : null
     case 'setExhaustion':

@@ -19,3 +19,10 @@ export const PROFICIENCY_LABEL: Record<ProficiencyLevel, string> = {
 
 // Thai condition names live in the model (log lines need them too).
 export { CONDITION_TH } from '../model/thai'
+
+/** When a limited-use feature comes back, in short Thai. */
+export const RECHARGE_LABEL: Record<'short' | 'long' | 'shortOne', string> = {
+  short: 'คืนเมื่อ Short/Long Rest',
+  long: 'คืนเมื่อ Long Rest',
+  shortOne: 'Short Rest คืน 1 · Long Rest คืนหมด',
+}

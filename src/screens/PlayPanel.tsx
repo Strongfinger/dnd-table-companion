@@ -6,12 +6,12 @@ import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestio
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import type { CharacterAction } from '../model/characterActions'
-import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
+import { CONDITIONS, exhaustionPenalty, hitDieSize, MAX_FEATURE_USES, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
 import UseActionDialog from '../ui/UseActionDialog'
 import { useCharacterAct } from './useCharacterAct'
-import { CONDITION_TH } from '../ui/labels'
+import { CONDITION_TH, RECHARGE_LABEL } from '../ui/labels'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 
@@ -215,7 +215,9 @@ export default function PlayPanel({ c }: { c: Character }) {
       {c.features.length > 0 && (
         <div className="mt-4">
           <div className="mb-1 text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · {asPlayer ? 'แตะเพื่อใช้ (DM เป็นคนคืน)' : 'แตะเพื่อใช้/คืน'}</div>
-          {c.features.map((f) => (
+          {c.features.map((f) => f.pool || f.max > 10 ? (
+            <PoolRow key={f.id} f={f} canGiveBack={!asPlayer} onSet={(used) => act({ type: 'setFeatureUsed', featureId: f.id, used })} />
+          ) : (
             <div key={f.id} className="flex flex-wrap items-center gap-2 py-1">
               <span className="min-w-28 text-sm">{f.name}</span>
               {Array.from({ length: f.max }, (_, i) => (
@@ -227,7 +229,7 @@ export default function PlayPanel({ c }: { c: Character }) {
                   className={`h-7 w-7 rounded border-2 border-amber-400 ${i < f.used ? 'bg-transparent' : 'bg-amber-500'}`}
                 />
               ))}
-              <span className="text-xs text-stone-400">{f.recharge === 'short' ? 'Short Rest' : 'Long Rest'}</span>
+              <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
             </div>
           ))}
         </div>
@@ -314,5 +316,28 @@ export default function PlayPanel({ c }: { c: Character }) {
         />
       )}
     </Section>
+  )
+}
+
+/** A pool of points (Lay On Hands, Focus Points…): spend any amount; the DM (or offline play) can give some back. */
+function PoolRow({ f, canGiveBack, onSet }: { f: Character['features'][number]; canGiveBack: boolean; onSet: (used: number) => void }) {
+  const [amount, setAmount] = useState('1')
+  const n = Math.max(1, Math.min(MAX_FEATURE_USES, Number(amount) || 1))
+  const left = f.max - f.used
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-1">
+      <span className="min-w-28 text-sm">{f.name}</span>
+      <span className="font-bold text-amber-300">{left}/{f.max}</span>
+      <input
+        className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-center text-base"
+        inputMode="numeric"
+        aria-label={`จำนวน ${f.name}`}
+        value={amount}
+        onChange={(e) => setAmount(e.target.value.replace(/\D/g, '').slice(0, 3))}
+      />
+      <Button className={`px-3 py-1 text-sm ${left < n ? 'opacity-40' : ''}`} onClick={() => left >= n && onSet(f.used + n)}>ใช้</Button>
+      {canGiveBack && <Button className={`px-3 py-1 text-sm ${f.used < n ? 'opacity-40' : ''}`} onClick={() => f.used >= n && onSet(f.used - n)}>คืน</Button>}
+      <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
+    </div>
   )
 }

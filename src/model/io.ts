@@ -1,7 +1,7 @@
 // Character export/import as JSON. Imported files come from other people's devices,
 // so every field is checked and limited before it is saved: never trust the file.
 import {
-  ABILITIES, CLASSES, CONDITIONS, SKILLS,
+  ABILITIES, CLASSES, CONDITIONS, MAX_FEATURE_USES, SKILLS,
   type Ability, type AttackInput, type ClassName, type Condition, type ProficiencyLevel, type Skill,
 } from '../rules'
 import { createCharacter, newId, type Character } from './character'
@@ -212,10 +212,13 @@ function attack(v: unknown): AttackInput | undefined {
 }
 
 function feature(v: unknown): Character['features'][number] | undefined {
-  if (!isObject(v) || !isInt(v.max, 1, 20) || (v.recharge !== 'short' && v.recharge !== 'long')) return undefined
+  if (!isObject(v) || !isInt(v.max, 1, MAX_FEATURE_USES) || (v.recharge !== 'short' && v.recharge !== 'long' && v.recharge !== 'shortOne')) return undefined
   const name = text(v.name, 100)
   if (name === undefined) return undefined
-  return { id: itemId(v.id), name, max: v.max, used: isInt(v.used, 0, v.max) ? v.used : 0, recharge: v.recharge }
+  const out: Character['features'][number] = { id: itemId(v.id), name, max: v.max, used: isInt(v.used, 0, v.max) ? v.used : 0, recharge: v.recharge }
+  if (v.pool === true) out.pool = true
+  if (typeof v.srdId === 'string' && /^[a-z0-9-]{1,64}$/.test(v.srdId)) out.srdId = v.srdId
+  return out
 }
 
 function spellSlots(v: unknown): Character['spellSlots'] | undefined {

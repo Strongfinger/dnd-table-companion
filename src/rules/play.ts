@@ -104,20 +104,45 @@ export function exhaustionPenalty(level: number): { d20: number; speed: number }
   return { d20: 2 * l, speed: 5 * l }
 }
 
+/**
+ * When a limited-use feature comes back: 'long' = all on a Long Rest; 'short' = all on a Short or Long Rest;
+ * 'shortOne' = one use on a Short Rest, all on a Long Rest (2024: Second Wind, Rage, Channel Divinity, Wild Shape).
+ */
+export type FeatureRecharge = 'short' | 'long' | 'shortOne'
+
+/** A limited-use feature on the sheet. */
+export interface FeatureUses {
+  id: string
+  name: string
+  max: number
+  used: number
+  recharge: FeatureRecharge
+  /** A pool of points spent in any amount (Lay On Hands HP, Focus Points, Sorcery Points) instead of single uses. */
+  pool?: boolean
+  /** The SRD feature this comes from (the feature catalog), if any. */
+  srdId?: string
+}
+
+/** Largest number of uses or points (Lay On Hands: 5 × Paladin level 20 = 100). */
+export const MAX_FEATURE_USES = 200
+
 export interface RestState extends HpState {
   className: ClassName
   level: number
   hitDiceSpent: number
   exhaustion: number
   spellSlots: { max: number; used: number }[]
-  features: { id: string; name: string; max: number; used: number; recharge: 'short' | 'long' }[]
+  features: FeatureUses[]
 }
 
-/** Short Rest: limited-use features marked "short" come back (and Warlock Pact slots). Hit Dice are spent separately. */
+/**
+ * Short Rest: "short" features come back fully, "shortOne" features get one use back (and Warlock Pact
+ * slots come back). Hit Dice are spent separately.
+ */
 export function shortRest<T extends RestState>(c: T): T {
   return {
     ...c,
-    features: c.features.map((f) => (f.recharge === 'short' ? { ...f, used: 0 } : f)),
+    features: c.features.map((f) => (f.recharge === 'short' ? { ...f, used: 0 } : f.recharge === 'shortOne' ? { ...f, used: Math.max(0, f.used - 1) } : f)),
     spellSlots: c.className === 'Warlock' ? c.spellSlots.map((s) => ({ ...s, used: 0 })) : c.spellSlots,
   }
 }
