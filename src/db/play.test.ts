@@ -71,8 +71,8 @@ describe('playAction: Action on my turn only (players)', () => {
 
   it('a phone passes where it is in the fight (it has no copy of the fight)', async () => {
     const c = await wizard()
-    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: true, myTurn: false })).refused).not.toBeNull()
-    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: false })).refused).toBeNull()
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { turn: { inFight: true, myTurn: false } })).refused).not.toBeNull()
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { turn: { inFight: false } })).refused).toBeNull()
   })
 })
 

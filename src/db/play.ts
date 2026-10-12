@@ -20,21 +20,23 @@ export type Actor = 'player' | 'dm' | 'system'
 
 /**
  * Returns the log line ('' = nothing to log) or why it was refused. Null text = character not found.
- * `turn`: where the character is in a fight, for a player's phone (which has no copy of the fight);
- * otherwise it's read from the fights on this device.
+ * For a player: `turn` = where the character is in a fight (a phone passes it, having no copy of the
+ * fight; otherwise it's read from the fights on this device), `shortRest` = the DM started a short rest.
  */
-export async function playAction(characterId: string, action: CharacterAction, actor: Actor, turn?: TurnInfo): Promise<{ text: string | null; refused: string | null }> {
+export async function playAction(
+  characterId: string, action: CharacterAction, actor: Actor, opts: { turn?: TurnInfo; shortRest?: boolean } = {},
+): Promise<{ text: string | null; refused: string | null }> {
   const running = await runningFightOf(characterId)
   const fight: FightRound = running && { id: running.id, round: running.round }
   const myTurn = !!running && running.combatants.some((c) => c.id === running.activeId && c.characterId === characterId)
-  const turnInfo: TurnInfo = turn ?? (running ? { inFight: true, myTurn } : { inFight: false })
+  const turn: TurnInfo = opts.turn ?? (running ? { inFight: true, myTurn } : { inFight: false })
   let refused: string | null = null
   let spent: string[] = []
   const text = await db.transaction('rw', db.characters, db.settings, async () => {
     const uses = ((await db.settings.get(USES))?.value as UseRounds | undefined) ?? {}
     const r = await updateCharacter(characterId, (c) => {
       if (actor !== 'system') {
-        const check = actor === 'player' ? playerMay(c, action, turnInfo) : refundAllowed(characterId, refundKeys(c, action), uses, fight)
+        const check = actor === 'player' ? playerMay(c, action, { turn, shortRest: opts.shortRest ?? false }) : refundAllowed(characterId, refundKeys(c, action), uses, fight)
         if (!check.ok) {
           refused = check.reason
           return { character: c, text: '' }
@@ -47,6 +49,18 @@ export async function playAction(characterId: string, action: CharacterAction, a
     return r
   })
   return { text: refused ? '' : text, refused }
+}
+
+/** The DM starts the party's short rest: noted in each character's log. Returns the names. */
+export async function logShortRestStart(characterIds: string[]): Promise<string[]> {
+  const names: string[] = []
+  for (const id of characterIds) {
+    const c = await getCharacter(id)
+    if (!c) continue
+    names.push(c.name)
+    await logCharacterEvent(id, `☕ ${c.name} เริ่มพักสั้น: ใช้ Hit Dice ฟื้น HP ได้จนจบการพัก`)
+  }
+  return names
 }
 
 /**

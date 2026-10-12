@@ -96,6 +96,12 @@ function NavBar({ route }: { route: Route }) {
         <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
       </div>
       <LiveFightBar />
+      {lobby.session?.role === 'player' && lobby.shortRestSince && (
+        // Players: the DM started a short rest. Tap to roll Hit Dice on my sheet.
+        <a href={lobby.session.characterId ? `#/c/${lobby.session.characterId}` : '#/lobby'} className="mx-auto block max-w-5xl bg-sky-900 px-4 py-2 text-sm font-bold text-sky-100">
+          ☕ กำลังพักสั้น · แตะเพื่อทอย Hit Dice ฟื้น HP
+        </a>
+      )}
     </nav>
   )
 }

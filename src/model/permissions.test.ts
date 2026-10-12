@@ -49,7 +49,7 @@ describe('playerMay: Action and Bonus Action on my turn only', () => {
   const use = (kind: 'action' | 'bonusAction' | 'reaction') => ({ type: 'setActionUsed' as const, kind, used: true })
   const fresh = { ...cleric, turn: { action: false, bonusAction: false, reaction: false } }
   it('in a fight, not on my turn: only the Reaction', () => {
-    const notMine = { inFight: true as const, myTurn: false }
+    const notMine = { turn: { inFight: true as const, myTurn: false }, shortRest: false }
     expect(playerMay(fresh, use('action'), notMine).ok).toBe(false)
     expect(playerMay(fresh, use('bonusAction'), notMine).ok).toBe(false)
     expect(playerMay(fresh, use('reaction'), notMine).ok).toBe(true)
@@ -57,8 +57,16 @@ describe('playerMay: Action and Bonus Action on my turn only', () => {
   })
 
   it('on my turn, or outside a fight: all of them', () => {
-    expect(playerMay(fresh, use('action'), { inFight: true, myTurn: true }).ok).toBe(true)
-    expect(playerMay(fresh, use('bonusAction'), { inFight: false }).ok).toBe(true)
+    expect(playerMay(fresh, use('action'), { turn: { inFight: true, myTurn: true }, shortRest: false }).ok).toBe(true)
+    expect(playerMay(fresh, use('bonusAction'), { turn: { inFight: false }, shortRest: false }).ok).toBe(true)
+  })
+})
+
+describe('playerMay: Hit Dice only in a short rest the DM started', () => {
+  const hitDie = { type: 'spendHitDie' as const, roll: 5, manual: false }
+  it('refused outside it, allowed during it', () => {
+    expect(playerMay(cleric, hitDie).ok).toBe(false)
+    expect(playerMay(cleric, hitDie, { turn: { inFight: false }, shortRest: true }).ok).toBe(true)
   })
 })
 

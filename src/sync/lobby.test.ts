@@ -8,7 +8,7 @@ const member = (deviceId: string, name: string, role: Member['role'], online = t
 describe('parseLobbySession', () => {
   it('accepts a saved session and fills missing fields', () => {
     expect(parseLobbySession({ code: 'K7QX4M', role: 'player', characterId: 'c1' })).toEqual({
-      code: 'K7QX4M', role: 'player', campaignId: null, characterId: 'c1', characterName: null, local: false, kicked: [],
+      code: 'K7QX4M', role: 'player', campaignId: null, characterId: 'c1', characterName: null, local: false, kicked: [], shortRestSince: null,
     })
   })
 

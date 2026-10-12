@@ -16,6 +16,8 @@ export interface LobbySession {
   local: boolean
   /** DM: devices removed from this session (their messages are ignored). */
   kicked: Kicked[]
+  /** DM: when the party's short rest started (players may spend Hit Dice until it ends), or null. */
+  shortRestSince: number | null
 }
 
 export interface Kicked {
@@ -38,6 +40,7 @@ export function parseLobbySession(v: unknown): LobbySession | null {
     characterId: shortString(s.characterId, 64),
     characterName: shortString(s.characterName, 60),
     local: s.local === true,
+    shortRestSince: Number.isFinite(s.shortRestSince) ? (s.shortRestSince as number) : null,
     kicked: Array.isArray(s.kicked) ? s.kicked.flatMap((k) => {
       const deviceId = shortString(k?.deviceId, 64)
       return deviceId ? [{ deviceId, name: shortString(k.name, 40) ?? '' }] : []

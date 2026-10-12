@@ -17,7 +17,7 @@ import { getCharacter, saveReceivedCharacter, setCharacterCampaign, updateCharac
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { getEncounter, watchPlayerFight } from '../db/encounters'
 import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs, watchFightsForPlayers } from '../db/log'
-import { playAction } from '../db/play'
+import { logShortRestStart, playAction, restParty } from '../db/play'
 import { advanceTurn } from '../db/turns'
 import type { Character } from '../model/character'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
@@ -80,6 +80,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Member[]>([])
   const [kickedNotice, setKickedNotice] = useState<string | null>(null)
   const [fight, setFightState] = useState<PlayerEncounterView | null>(null)
+  /** Player: the short rest the DM started (from 'rest' messages). The DM keeps it in the session. */
+  const [restSince, setRestSince] = useState<number | null>(null)
   const fightRef = useRef<PlayerEncounterView | null>(null)
   const setFight = (f: PlayerEncounterView | null) => {
     fightRef.current = f
@@ -138,6 +140,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     setRolls([])
     setFightList([])
     setFightLogs({})
+    setRestSince(null)
   }
 
   function onMessage(e: Envelope) {
@@ -188,8 +191,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     for (const { target, entries } of sentLogs.current.values()) {
       if (target.kind === 'fight' || target.id === theirCharacter) send('log', { ...logKey(target), ...fullLog(entries) })
     }
+    send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
     if (campaign) send('campaign', { id: campaign.id, name: campaign.name })
+  }
+
+  /** DM: characters played in the room right now. */
+  const playedNow = () => {
+    const s = sessionRef.current
+    return s ? playedCharacterIds(membersRef.current, (id) => isKicked(s.kicked, id)) : []
   }
 
   const logKey = (t: LogTarget) => (t.kind === 'fight' ? { encounterId: t.id } : { characterId: t.id })
@@ -221,6 +231,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
         // My character's log follows the DM's (lines the DM deletes go away here too).
         void applyCharacterLog(m.target.id, m)
       }
+    } else if (e.kind === 'rest') {
+      const since = (e.body as { since?: unknown } | null)?.since
+      setRestSince(Number.isFinite(since) ? (since as number) : null)
     } else if (e.kind === 'campaign') {
       const b = e.body as { id?: unknown; name?: unknown } | null
       if (typeof b?.id !== 'string' || b.id.length > 64 || typeof b.name !== 'string') return
@@ -343,7 +356,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       // Already applied (sent again, or replayed after a reload): just confirm it again.
       if (markApplied(e.id, s)) {
         // The same permissions as on the player's phone: a changed (or old) app can't give itself points back.
-        const r = await playAction(a.characterId, a.action, 'player')
+        const r = await playAction(a.characterId, a.action, 'player', { shortRest: !!sessionRef.current?.shortRestSince })
         if (r.refused) {
           const c = await getCharacter(a.characterId)
           if (c) sendState(c) // the phone goes back to the DM's copy
@@ -500,12 +513,29 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     fight,
     rolls,
     pending,
+    shortRestSince: session?.role === 'dm' ? session.shortRestSince : restSince,
+    startShortRest: async () => {
+      const s = sessionRef.current
+      if (s?.role !== 'dm' || s.shortRestSince) return
+      const since = Date.now()
+      save({ ...s, shortRestSince: since })
+      send('rest', { since })
+      await logShortRestStart(playedNow())
+    },
+    endShortRest: async () => {
+      const s = sessionRef.current
+      if (s?.role !== 'dm') return { rested: [], skipped: [] }
+      // End it first, so Hit Dice still on their way are refused rather than counted after the rest.
+      save({ ...s, shortRestSince: null })
+      send('rest', { since: null })
+      return restParty(playedNow(), 'shortRest')
+    },
     fightList,
     fightLogs,
     create: (campaignId, local) =>
-      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [] }),
+      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null }),
     join: (code, character, local) =>
-      connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [] }),
+      connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null }),
     leave: () => {
       const s = sessionRef.current
       disconnect()

@@ -1,7 +1,7 @@
 // Who may change what during play (pure checks; src/db/play.ts applies them).
 // - Players in a live room may spend (Action, slots, feature uses) but never give anything back to
 //   themselves, start a new turn or rest: the DM does those. In a fight, Action and Bonus Action only
-//   on their own turn.
+//   on their own turn. Hit Dice only during a short rest the DM started.
 // - The DM (or any device outside a room) may give a use back only in the same round of the fight it
 //   was spent in, to fix a mistake; outside a fight, any time.
 import type { Character } from './character'
@@ -53,13 +53,23 @@ const DM_ONLY: CharacterAction['type'][] = ['shortRest', 'longRest', 'resetTurn'
 /** Where the character is in a fight: not in one, or in one (and whether it's their turn now). */
 export type TurnInfo = { inFight: false } | { inFight: true; myTurn: boolean }
 
+/** What a player's action is checked against: their place in a fight, and whether the DM started a short rest. */
+export interface PlayContext {
+  turn: TurnInfo
+  shortRest: boolean
+}
+
+export const NO_CONTEXT: PlayContext = { turn: { inFight: false }, shortRest: false }
+
 /**
  * May a player in a live room do this to their own character? Spending yes, giving back no.
  * In a fight, Action and Bonus Action only on their own turn (a Reaction, slot or feature can be
  * used on someone else's turn, e.g. Shield or an Opportunity Attack).
  */
-export function playerMay(c: Character, a: CharacterAction, turn: TurnInfo = { inFight: false }): Permission {
+export function playerMay(c: Character, a: CharacterAction, ctx: PlayContext = NO_CONTEXT): Permission {
   if (DM_ONLY.includes(a.type)) return { ok: false, reason: 'พักสั้น/พักยาว และเริ่มเทิร์นใหม่: DM เป็นคนกดให้' }
+  if (a.type === 'spendHitDie' && !ctx.shortRest) return { ok: false, reason: 'ใช้ Hit Dice ได้เฉพาะระหว่างพักสั้นที่ DM เริ่ม' }
+  const turn = ctx.turn
   if (a.type === 'setActionUsed' && a.used && a.kind !== 'reaction' && turn.inFight && !turn.myTurn) {
     return { ok: false, reason: 'ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)' }
   }

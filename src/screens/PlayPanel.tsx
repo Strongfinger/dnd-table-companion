@@ -39,7 +39,7 @@ export default function PlayPanel({ c }: { c: Character }) {
    * the newest saved copy, shown, and logged. In a live lobby a player's action also goes to the DM's device.
    */
   const act = async (action: CharacterAction) => {
-    const { text, refused } = asPlayer ? await playAction(c.id, action, 'player', turn) : await playAction(c.id, action, 'dm')
+    const { text, refused } = asPlayer ? await playAction(c.id, action, 'player', { turn, shortRest: !!lobby.shortRestSince }) : await playAction(c.id, action, 'dm')
     if (refused) return setMessage(`🔒 ${refused}`)
     lobby.shareAction(c.id, action)
     if (text) {
@@ -249,10 +249,16 @@ export default function PlayPanel({ c }: { c: Character }) {
       {/* Rests */}
       <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c.className)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
       {asPlayer ? (
-        <div className="mt-2 space-y-2">
-          <p className="rounded-lg bg-stone-900 p-2 text-xs text-stone-400">🔒 พักสั้น/พักยาว: DM เป็นคนกดให้ทั้งปาร์ตี้ · ระหว่างพักสั้นใช้ Hit Dice ได้เอง</p>
-          <HelpButton term="Hit Dice" className="w-full rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>🎲 ใช้ Hit Die (ตอนพักสั้น)</HelpButton>
-        </div>
+        lobby.shortRestSince ? (
+          // The DM started a short rest: Hit Dice can be spent until the DM ends it.
+          <div id="short-rest" className="mt-2 space-y-2 rounded-lg bg-sky-950 p-3">
+            <p className="text-sm font-bold text-sky-200">☕ กำลังพักสั้น (DM เริ่มแล้ว)</p>
+            <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c.className)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก · DM จะกดจบการพักให้</p>
+            <DiceRoll sides={hitDieSize(c.className)} label="Hit Die" onRoll={useHitDie} />
+          </div>
+        ) : (
+          <p className="mt-2 rounded-lg bg-stone-900 p-2 text-xs text-stone-400">🔒 พักสั้น/พักยาว: DM เป็นคนเริ่มให้ทั้งปาร์ตี้ · ใช้ Hit Dice ได้ระหว่างพักสั้นที่ DM เริ่ม</p>
+        )
       ) : (
         <div className="mt-2 flex gap-2">
           <HelpButton term="Short Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>☕ พักสั้น</HelpButton>
@@ -269,9 +275,7 @@ export default function PlayPanel({ c }: { c: Character }) {
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
           <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c.className)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก</p>
           <DiceRoll sides={hitDieSize(c.className)} label="Hit Die" onRoll={useHitDie} />
-          {asPlayer
-            ? <Button className="w-full" onClick={() => setResting(false)}>ปิด</Button>
-            : <Button variant="primary" className="w-full" onClick={finishShortRest}>จบการพักสั้น</Button>}
+          <Button variant="primary" className="w-full" onClick={finishShortRest}>จบการพักสั้น</Button>
         </div>
       )}
 

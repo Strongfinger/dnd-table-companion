@@ -45,6 +45,12 @@ export interface LobbyApi {
   shareSheet: (characterId: string) => void
   /** Share a roll from the dice roller with the room (named by the room, e.g. my character). */
   shareRoll: (roll: Omit<RollEvent, 'type' | 'by'>) => void
+  /** When the party's short rest started (players may spend Hit Dice until the DM ends it), or null. */
+  shortRestSince: number | null
+  /** DM: start the party's short rest. */
+  startShortRest: () => Promise<void>
+  /** DM: end it: short-rest abilities come back. Returns who rested and who couldn't. */
+  endShortRest: () => Promise<{ rested: string[]; skipped: string[] }>
   /** Player: end my character's turn in the running fight (the DM's device checks it's really my turn). */
   endTurn: () => void
   send: (kind: MessageKind, body: unknown) => void

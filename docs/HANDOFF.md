@@ -3,7 +3,7 @@
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (406 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (414 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -101,6 +101,10 @@
    (`fullLog` with `from`), for fight logs and for each played character's log: the phone's character log
    mirrors the DM's (`applyCharacterLog`, lines marked `fromDm`); the phone no longer logs its own taps in a
    room (the DM's line arrives instead). Test: `scripts/lobby-test/logs-player.cjs`, `permissions-dm.cjs --not-my-turn`.
+   Party rest (same day): the DM's room screen rests everyone played in the room. Long Rest = one tap.
+   Short Rest = a period: "เริ่มพักสั้น" (session `shortRestSince`, sent as `rest {since}`, resent on hello)
+   → players may spend Hit Dice only then (`playerMay` ctx.shortRest; phone and DM device) → "จบการพักสั้น"
+   applies the short-rest recovery to all. Test: `scripts/lobby-test/rest-player.cjs`.
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose
