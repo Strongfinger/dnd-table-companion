@@ -8,6 +8,7 @@ import { ABILITY_LABEL } from '../ui/labels'
 import ExportPanel from './ExportPanel'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
+import SpellList from './SpellList'
 import { Button, Section, Stat } from '../ui/kit'
 import { Term } from '../ui/help'
 
@@ -126,6 +127,9 @@ export default function CharacterSheet({ id }: { id: string }) {
           </div>
         </Section>
       )}
+
+      {/* Spells: shown for casters, or anyone who already has spells (e.g. from a feat). */}
+      {(c.spellcastingAbility || c.spells.length > 0) && <SpellList c={c} />}
 
       {(c.inventory.length > 0 || coins.length > 0) && (
         <Section title="ของในกระเป๋า (Inventory)">
