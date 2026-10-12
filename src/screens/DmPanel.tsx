@@ -1,6 +1,7 @@
 // The DM's side panel next to the fight tracker (Phase 3.3), so nothing at the table needs leaving the fight:
 // - Stat block: follows the active monster's turn (or pick one of this fight's monsters)
 // - Lookup: monsters, spells and rules, opened right here
+// - Generators: NPCs, places, loot, encounters (added to this fight)…
 // - Notebook: this campaign's pages (sessions, NPCs, places, quests…), read and edited in place
 // - Fight log
 import { useState, type ReactNode } from 'react'
@@ -11,13 +12,15 @@ import { monsterInput } from '../model/monsters'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { Button } from '../ui/kit'
 import { MonsterSearch, RulesSearch, SpellCard, SpellSearch, type OpenResult } from './Lookup'
+import Generators from './Generators'
 import { NotebookList, NotebookPage } from './Notebook'
 import { useMonsters, useSpells } from './useSrdData'
 
-type PanelTab = 'stats' | 'lookup' | 'notes' | 'log'
+type PanelTab = 'stats' | 'lookup' | 'gen' | 'notes' | 'log'
 const TABS: { id: PanelTab; label: string }[] = [
   { id: 'stats', label: '👹 Stat block' },
   { id: 'lookup', label: '🔎 ค้นหา' },
+  { id: 'gen', label: '🎲 สุ่ม' },
   { id: 'notes', label: '📒 สมุด' },
   { id: 'log', label: '📜 บันทึก' },
 ]
@@ -61,6 +64,7 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
       <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {tab === 'stats' && <StatsTab encounter={encounter} />}
         {tab === 'lookup' && <LookupTab encounter={encounter} />}
+        {tab === 'gen' && <Generators campaignId={encounter.campaignId} encounter={encounter} />}
         {tab === 'notes' && <NotesTab campaignId={encounter.campaignId} />}
         {tab === 'log' && log}
       </div>

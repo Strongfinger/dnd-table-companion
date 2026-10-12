@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2 lookup, 3.3 DM panel, 3.4 notebook done; next: 3.5 generators (save to notebook), then 3.6 planner
+# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2 lookup, 3.3 DM panel, 3.4 notebook, 3.5 generators done; next: 3.6 session planner
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (447 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (452 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -24,6 +24,7 @@
 | DM tools (Phase 3) | `src/screens/DmHome.tsx` (`#/dm`, hidden for players in a room), `Notebook.tsx` (list + page view/edit, `#/dm/note/<id>`); `src/model/note.ts` (page kinds, KIND_FIELDS, [[link]] parsing, backlinks), `src/db/notes.ts` (DB version 5 `notes`; old notes read as Session pages) |
 | Character spells | `src/screens/SpellList.tsx` (sheet section + SRD picker + cast panel), `src/model/characterSpells.ts`, `src/model/castSpell.ts` (cast plan), `src/rules/preparedSpells.ts` (2024 limits, rules-reviewed), `src/screens/useCharacterAct.ts` (shared checked actions); spells match SRD cards by name (homebrew = name only); in a room, changes go to the DM as sheet edits |
 | DM panel (3.3) | `src/screens/DmPanel.tsx` (in `Tracker.tsx`; tabs remembered in localStorage), `findMonsterForCombatant` (name → SRD, strips the copy number), notebook components from `Notebook.tsx`, search pieces exported from `Lookup.tsx`, data hooks in `useSrdData.ts` |
+| Generators (3.5) | `src/model/generators/` (`index.ts` pure generators with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` (DM tab + panel 🎲 tab), data `src/data/srd-magic-items.json` (`scripts/srd/magic-items.mjs`, rules-reviewed) |
 | SRD lookup | `src/screens/Lookup.tsx` (`#/lookup`, `#/lookup/monster/<id>`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `src/model/spells.ts`, data `src/data/srd-monster-details.json` + `srd-spells.json` (built by `scripts/srd/*.mjs`); `addMonstersToFight` in `src/db/turns.ts` |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 

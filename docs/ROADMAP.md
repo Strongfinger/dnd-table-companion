@@ -58,8 +58,8 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] 3.2b Spells in the lookup: 339 SRD 5.2.1 spells, search by name/school, Level and Class filters (players start on their class) (2026-10-12)
 - [x] 3.3 DM screen: panel next to the tracker (wide fight page on laptops): stat block that follows the active monster's turn, lookup opened in place (+ add monster to this fight), campaign notes edited in place, fight log (2026-10-12)
 - [x] 3.4 Campaign notebook: pages for sessions, NPCs, places, quests, factions, items (a few key fields + text), [[links]] with "ถูกพูดถึงใน" backlinks, view/edit, on the DM tab and in the fight panel; DM only (2026-10-12)
-- [ ] 3.5 Generators: NPC, tavern/shop, loot, quick encounter, plot hook, weather/event. Reroll parts, then save to
-      the notebook in one tap. Proper names in English, descriptions in Thai.
+- [x] 3.5 Generators: NPC, tavern/shop, plot hook, loot (SRD magic items), quick encounter (SRD monsters → new fight
+      or this fight), weather/event. 🔄 per part; NPC/place/quest/items save to the notebook. Homebrew content (2026-10-12)
 - [ ] 3.6 Session planner: scenes, planned encounters linked to fights, read-aloud text, checklist
 
 ## Phase 4 — Lobby & live sync · 3–4 sessions ✅ done 2026-10-12

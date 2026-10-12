@@ -1,9 +1,10 @@
-// The DM's tools (Phase 3): SRD lookup and the campaign notebook. Everything here stays on the DM's device.
+// The DM's tools (Phase 3): SRD lookup, generators and the campaign notebook. Everything here stays on the DM's device.
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { getSetting } from '../db/device'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Section } from '../ui/kit'
+import Generators from './Generators'
 import { NotebookList } from './Notebook'
 
 export default function DmHome() {
@@ -35,6 +36,10 @@ export default function DmHome() {
       </div>
 
       <CampaignPicker value={campaignId} onChange={setCampaignId} />
+
+      <Section title="🎲 เครื่องสุ่ม">
+        <Generators campaignId={campaignId === ALL ? null : campaignId} />
+      </Section>
 
       <Section title="📒 สมุดแคมเปญ">
         <NotebookList campaignId={campaignId === ALL ? null : campaignId} onOpen={(id) => go(`/dm/note/${id}`)} />

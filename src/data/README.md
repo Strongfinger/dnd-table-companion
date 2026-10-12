@@ -52,3 +52,18 @@ description and the higher-level / cantrip-upgrade text.
 - **Made by:** `scripts/srd/spells.mjs` (reads the file as plain data, checks every value).
 - **Correction:** Protection from Evil and Good had "Concentration up to 10 minutes" as its duration
   but was not flagged as Concentration; the script flags it and keeps the duration as "up to 10 minutes".
+
+## srd-magic-items.json
+
+SRD 5.2.1 magic items for the loot generator (263 entries): name, rarity, category, attunement and
+description. Loaded only when the loot generator opens.
+
+- **Source:** 5e-bits/5e-database `src/2024/en/5e-SRD-Magic-Items.json` (downloaded 2026-10-12,
+  288,137 bytes, SHA-256 `c97abb7d570656f9329007f17d5bb4fddbe0d65d62abd141f66c1ff3b9c39d2f`).
+- **Made by:** `scripts/srd/magic-items.mjs`. Every entry gets one rarity:
+  "+1/+2/+3" parents (Weapon, Armor, Shield, Ammunition, Wand of the War Mage, Horn of Valhalla) are left
+  out because each version has its own entry; Potions of Healing and Spell Scroll are split into their
+  2024 tiers (Healing Common → Supreme Very Rare; scrolls Cantrip/1 Common, 2–3 Uncommon, 4–5 Rare,
+  6–8 Very Rare, 9 Legendary); other "Rarity Varies" items are kept as "Varies" and not rolled as loot.
+- **Note:** the source flattens tables inside descriptions (e.g. the potion and scroll tables), so the
+  split tiers share their parent's description.
