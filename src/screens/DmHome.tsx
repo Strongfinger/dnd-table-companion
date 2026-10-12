@@ -36,6 +36,10 @@ export default function DmHome() {
           <div className="font-bold">👹 มอนสเตอร์ SRD</div>
           <div className="text-xs text-stone-400">Stat block เต็ม · เพิ่มเข้าการต่อสู้</div>
         </a>
+        <a href="#/lookup/spells" className="rounded-xl bg-stone-800 p-3 hover:bg-stone-700">
+          <div className="font-bold">✨ คาถา SRD</div>
+          <div className="text-xs text-stone-400">339 คาถา · ค้นตาม Level / Class</div>
+        </a>
         <a href="#/lookup/rules" className="rounded-xl bg-stone-800 p-3 hover:bg-stone-700">
           <div className="font-bold">📖 กติกา & Conditions</div>
           <div className="text-xs text-stone-400">คำอธิบายย่อภาษาไทย</div>

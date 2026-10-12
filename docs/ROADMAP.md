@@ -53,7 +53,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] 3.1 Session notes per campaign (🧙 DM tab, auto-save, search) — will become "Session" pages in the notebook
 - [x] 3.2a SRD lookup: full SRD 5.2.1 monster stat blocks (DM only; "add to fight"), rules & conditions (players
       too: 📖 ค้นหา tab on their phones) (2026-10-12)
-- [ ] 3.2b Spells in the lookup (needs SRD 5.2.1 spell data)
+- [x] 3.2b Spells in the lookup: 339 SRD 5.2.1 spells, search by name/school, Level and Class filters (players start on their class) (2026-10-12)
 - [ ] 3.3 DM screen layout: side panel next to the tracker (Lookup now, the rest as they arrive)
 - [ ] 3.4 Campaign notebook: pages for NPCs, places, quests & hooks, factions & items, linked to each other
 - [ ] 3.5 Generators: NPC, tavern/shop, loot, quick encounter, plot hook, weather/event. Reroll parts, then save to

@@ -40,3 +40,15 @@ legendary actions (name, usage such as "Recharge 5–6" or "3/Day, or 4/Day in L
 - **Not in the source data:** each monster's 2024 Initiative bonus (the app shows the DEX modifier and
   says so), the number of Legendary Action uses per round, and some spell notes such as
   "(level 5 version)". Check the SRD for those.
+
+## srd-spells.json
+
+The 339 spells of SRD 5.2.1 for the lookup (loaded only when the spell tab opens): name, level,
+school, classes, casting time, ritual, range, components and material, duration, concentration,
+description and the higher-level / cantrip-upgrade text.
+
+- **Source:** 5e-bits/5e-database `src/2024/en/5e-SRD-Spells.json` (downloaded 2026-10-12,
+  495,225 bytes, SHA-256 `16aa8e47a84c6b21ccc101c1ee7ab5b8a026da940985bc826b6b58aa1fe0b6bc`).
+- **Made by:** `scripts/srd/spells.mjs` (reads the file as plain data, checks every value).
+- **Correction:** Protection from Evil and Good had "Concentration up to 10 minutes" as its duration
+  but was not flagged as Concentration; the script flags it and keeps the duration as "up to 10 minutes".

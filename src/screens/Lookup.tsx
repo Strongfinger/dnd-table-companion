@@ -1,24 +1,26 @@
-// SRD lookup (Phase 3.2): monsters (full stat blocks, DM only) and rules & conditions (everyone).
-// Spells come next. Monster data loads only when this page opens.
+// SRD lookup (Phase 3.2): monsters (full stat blocks, DM only), spells and rules & conditions (everyone).
+// The data loads only when its tab opens.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useLobby } from '../app/useLobby'
+import { getCharacter } from '../db/characters'
 import { listEncounters } from '../db/encounters'
 import { addMonstersToFight } from '../db/turns'
 import { GLOSSARY_TERMS, lookupTerm } from '../model/glossary'
 import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
 import { formatCR, monsterInput, searchMonsters } from '../model/monsters'
+import { castingTimeLine, componentsLine, loadSrdSpells, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
-export type LookupTab = 'monsters' | 'rules'
+export type LookupTab = 'monsters' | 'spells' | 'rules'
 
 const CR_FILTERS = [
   { value: 30, label: 'ทุก CR' }, { value: 0.25, label: 'CR ≤ 1/4' }, { value: 1, label: 'CR ≤ 1' },
   { value: 3, label: 'CR ≤ 3' }, { value: 5, label: 'CR ≤ 5' }, { value: 10, label: 'CR ≤ 10' },
 ]
 
-/** Monster stats are the DM's: a player in a live room only gets rules & conditions (and spells, soon). */
+/** Monster stats are the DM's: a player in a live room only gets spells and rules & conditions. */
 const useIsPlayer = () => useLobby().session?.role === 'player'
 
 function useMonsters(): FullMonster[] | null {
@@ -31,25 +33,26 @@ function useMonsters(): FullMonster[] | null {
 
 export default function Lookup({ tab }: { tab: LookupTab | null }) {
   const isPlayer = useIsPlayer()
-  const current: LookupTab = isPlayer ? 'rules' : tab ?? 'monsters'
+  const current: LookupTab = isPlayer && (tab === 'monsters' || !tab) ? 'spells' : tab ?? 'monsters'
   const tabs: { id: LookupTab; label: string }[] = [
     ...(isPlayer ? [] : [{ id: 'monsters' as const, label: '👹 มอนสเตอร์' }]),
+    { id: 'spells', label: '✨ คาถา' },
     { id: 'rules', label: '📖 กติกา & Conditions' },
   ]
   return (
     <div className="space-y-4">
       <header>
         <h1 className="text-3xl font-bold text-amber-400">📖 ค้นหา SRD</h1>
-        <p className="text-sm text-stone-400">ข้อมูล SRD 5.2.1 ใช้ได้แม้ไม่มีอินเทอร์เน็ต · คาถา (Spells) กำลังจะมา</p>
+        <p className="text-sm text-stone-400">ข้อมูล SRD 5.2.1 ใช้ได้แม้ไม่มีอินเทอร์เน็ต</p>
       </header>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {tabs.map((t) => (
           <a key={t.id} href={`#/lookup/${t.id}`} className={`rounded-full border px-3 py-1 text-sm ${current === t.id ? 'border-amber-400 bg-amber-500 font-bold text-stone-900' : 'border-stone-600'}`}>
             {t.label}
           </a>
         ))}
       </div>
-      {current === 'monsters' ? <MonsterSearch /> : <RulesSearch />}
+      {current === 'monsters' ? <MonsterSearch /> : current === 'spells' ? <SpellSearch /> : <RulesSearch />}
     </div>
   )
 }
@@ -83,6 +86,92 @@ function MonsterSearch() {
         ))}
       </ul>
       {found.length > 100 && <p className="text-xs text-stone-500">แสดง 100 ตัวแรก · พิมพ์ค้นหาเพื่อหาตัวอื่น</p>}
+    </div>
+  )
+}
+
+const CLASS_OPTIONS = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard']
+
+function useSpells(): SrdSpell[] | null {
+  const [list, setList] = useState<SrdSpell[] | null>(null)
+  useEffect(() => {
+    loadSrdSpells().then(setList)
+  }, [])
+  return list
+}
+
+function SpellSearch() {
+  const spells = useSpells()
+  // A player in a room starts with their own character's class.
+  const myCharacterId = useLobby().session?.characterId ?? null
+  const myClass = useLiveQuery(async () => (myCharacterId ? (await getCharacter(myCharacterId))?.className ?? null : null), [myCharacterId])
+  const [query, setQuery] = useState('')
+  const [level, setLevel] = useState<number | null>(null)
+  const [className, setClassName] = useState<string | null | undefined>(undefined)
+  const cls = className === undefined ? (myClass && CLASS_OPTIONS.includes(myClass) ? myClass : null) : className
+  if (!spells) return <p className="text-stone-400">กำลังโหลดข้อมูลคาถา…</p>
+  const found = searchSpells(spells, { query, level, className: cls })
+  const select = 'rounded-lg border border-stone-600 bg-stone-900 px-2 py-2 text-base'
+  return (
+    <div className="space-y-3">
+      <TextInput value={query} placeholder="ชื่อคาถาหรือ School เช่น fireball, cure, evocation" onChange={setQuery} />
+      <div className="flex gap-2">
+        <select aria-label="Level" className={`flex-1 ${select}`} value={level ?? ''} onChange={(e) => setLevel(e.target.value === '' ? null : Number(e.target.value))}>
+          <option value="">ทุก Level</option>
+          <option value="0">Cantrip</option>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => <option key={n} value={n}>Level {n}</option>)}
+        </select>
+        <select aria-label="Class" className={`flex-1 ${select}`} value={cls ?? ''} onChange={(e) => setClassName(e.target.value || null)}>
+          <option value="">ทุก Class</option>
+          {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <p className="text-xs text-stone-500">พบ {found.length} คาถา · C = Concentration · R = Ritual</p>
+      <ul className="space-y-1">
+        {found.slice(0, 150).map((sp) => (
+          <li key={sp.id}>
+            <a href={`#/lookup/spell/${sp.id}`} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
+              <span>
+                <b>{sp.name}</b>
+                {sp.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
+                {sp.ritual && <span className="ml-1 rounded bg-sky-900 px-1 text-xs">R</span>}
+                <span className="block text-xs text-stone-400">{spellLevelLine(sp)}</span>
+              </span>
+              <span className="text-right text-xs text-stone-400">{sp.castingTime.split(',')[0]} · {sp.range}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {found.length > 150 && <p className="text-xs text-stone-500">แสดง 150 รายการแรก · เลือก Level หรือ Class เพื่อดูส่วนอื่น</p>}
+    </div>
+  )
+}
+
+const Row = ({ label, children }: { label: string; children: ReactNode }) => <p><b className="text-amber-200">{label}:</b> {children}</p>
+
+export function SpellView({ id }: { id: string }) {
+  const spells = useSpells()
+  if (!spells) return <p className="text-stone-400">กำลังโหลด…</p>
+  const sp = spells.find((x) => x.id === id)
+  if (!sp) return <p className="text-center text-stone-400">ไม่พบคาถานี้ · <a href="#/lookup/spells" className="underline">กลับ</a></p>
+  return (
+    <div className="space-y-4">
+      <a href="#/lookup/spells" className="text-sm text-stone-400">← คาถาทั้งหมด</a>
+      <article className="space-y-3 rounded-xl border border-violet-900/60 bg-stone-900 p-4 text-sm leading-relaxed">
+        <header>
+          <h2 className="text-2xl font-bold text-amber-400">{sp.name}</h2>
+          <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
+        </header>
+        <div className="space-y-0.5">
+          <Row label="Casting Time">{castingTimeLine(sp)}</Row>
+          <Row label="Range">{sp.range}</Row>
+          <Row label="Components">{componentsLine(sp)}</Row>
+          <Row label="Duration">{sp.concentration && !sp.duration.startsWith('Concentration') ? `Concentration, ${sp.duration}` : sp.duration}</Row>
+        </div>
+        <div className="whitespace-pre-line">{sp.text.replace(/\n\s+/g, '\n')}</div>
+        {sp.higher && <p><b><i>{sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'}</i></b> {sp.higher.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')}</p>}
+        <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
+      </article>
     </div>
   )
 }

@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2a monster/rules lookup done; next: 3.2b spells, then DM screen, notebook, generators, planner
+# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2 lookup done (monsters, spells, rules); next: 3.3 DM screen, then notebook, generators, planner
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (419 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (423 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -22,7 +22,7 @@
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | DM tools (Phase 3) | `src/screens/DmHome.tsx` (`#/dm`, hidden for players in a room), `NoteEdit.tsx` (`#/dm/note/<id>`, auto-save); `src/model/note.ts`, `src/db/notes.ts` (DB version 5: `notes`) |
-| SRD lookup | `src/screens/Lookup.tsx` (`#/lookup`, `#/lookup/monster/<id>`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, data `src/data/srd-monster-details.json` (built by `scripts/srd/monster-details.mjs`); `addMonstersToFight` in `src/db/turns.ts` |
+| SRD lookup | `src/screens/Lookup.tsx` (`#/lookup`, `#/lookup/monster/<id>`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `src/model/spells.ts`, data `src/data/srd-monster-details.json` + `srd-spells.json` (built by `scripts/srd/*.mjs`); `addMonstersToFight` in `src/db/turns.ts` |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 
 ## Firebase (set up and working)
