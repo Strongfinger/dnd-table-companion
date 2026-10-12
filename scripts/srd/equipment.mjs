@@ -4,10 +4,12 @@
 // uses are written.
 //
 //   mkdir -p /tmp/srd && cd /tmp/srd
-//   for f in Equipment Weapon-Properties Weapon-Mastery-Properties; do
+//   for f in Equipment Weapon-Properties Weapon-Mastery-Properties Poisons; do
 //     curl -L -o $f.json https://raw.githubusercontent.com/5e-bits/5e-database/main/src/2024/en/5e-SRD-$f.json
 //   done
-//   node scripts/srd/equipment.mjs /tmp/srd/Equipment.json /tmp/srd/Weapon-Properties.json /tmp/srd/Weapon-Mastery-Properties.json
+//   node scripts/srd/equipment.mjs /tmp/srd/Equipment.json /tmp/srd/Weapon-Properties.json /tmp/srd/Weapon-Mastery-Properties.json /tmp/srd/Poisons.json
+//
+// Poisons (14, kind 'poison'): price per dose, type and text; types, DCs and prices checked against the PDF.
 //
 // Corrections: the source has some 2014 values and gaps. Every cost, weight, weapon row, armor row, tool
 // and pack below was checked against the official SRD 5.2.1 PDF (tables on pp. 91–99); see ITEM_FIXES.
@@ -18,8 +20,8 @@
 // - Spellbook isn't in the SRD gear table (it's the Wizard's class item); its source cost is kept.
 import fs from 'node:fs'
 
-const [equipmentFile, propertiesFile, masteryFile] = process.argv.slice(2)
-if (!masteryFile) throw new Error('usage: node scripts/srd/equipment.mjs <Equipment.json> <Weapon-Properties.json> <Weapon-Mastery-Properties.json>')
+const [equipmentFile, propertiesFile, masteryFile, poisonsFile] = process.argv.slice(2)
+if (!poisonsFile) throw new Error('usage: node scripts/srd/equipment.mjs <Equipment.json> <Weapon-Properties.json> <Weapon-Mastery-Properties.json> <Poisons.json>')
 const read = (f) => JSON.parse(fs.readFileSync(f, 'utf8'))
 
 const fail = (id, what) => { throw new Error(`${id}: ${what}`) }
@@ -183,6 +185,16 @@ for (const x of read(equipmentFile)) {
   if (x.contents) item.contents = x.contents.map((c) => ({ name: str(c.item?.name, id, 'pack item', 60), qty: int(c.quantity, id, 'pack qty', 1, 100) }))
   out.push(item)
 }
+const POISON_TYPES = { contact: 'Contact', ingested: 'Ingested', inhaled: 'Inhaled', injury: 'Injury' }
+for (const p of read(poisonsFile)) {
+  const id = str(p.index, '?', 'index', 64)
+  const type = POISON_TYPES[p.type] ?? fail(id, `poison type ${p.type}`)
+  out.push({
+    id, name: str(p.name, id, 'name', 60), kind: 'poison', cost: { qty: int(p.cost, id, 'cost', 1, 100000), unit: 'gp' }, weight: 0,
+    text: `${type} Poison. ${str(p.description, id, 'description', 2000).trim()}`,
+  })
+}
+
 for (const [id, fix] of Object.entries(ITEM_FIXES)) {
   const item = out.find((i) => i.id === id) ?? fail(id, 'fix for a missing item')
   const { contents, ...rest } = fix

@@ -8,6 +8,7 @@ describe('SRD equipment', () => {
     expect(count('weapon')).toBe(38)
     expect(count('armor')).toBe(12)
     expect(count('shield')).toBe(1)
+    expect(count('poison')).toBe(14)
     expect(data.masteries.map((m) => m.name)).toEqual(['Cleave', 'Graze', 'Nick', 'Push', 'Sap', 'Slow', 'Topple', 'Vex'])
     // Every weapon has damage, a mastery and a range; every armor has an AC.
     for (const i of data.items) {

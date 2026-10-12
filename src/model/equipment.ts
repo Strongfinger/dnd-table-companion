@@ -1,7 +1,7 @@
 // SRD 5.2.1 equipment: weapons, armor, gear, tools, packs, plus the weapon property and Weapon Mastery
 // texts (data: src/data/srd-equipment.json, built by scripts/srd/equipment.mjs).
 
-export type EquipmentKind = 'weapon' | 'armor' | 'shield' | 'ammunition' | 'pack' | 'tool' | 'focus' | 'gear'
+export type EquipmentKind = 'weapon' | 'armor' | 'shield' | 'ammunition' | 'pack' | 'tool' | 'focus' | 'gear' | 'poison'
 
 export interface SrdWeapon {
   category: 'Simple' | 'Martial'
@@ -110,4 +110,5 @@ export const KIND_FILTERS: { label: string; kinds: EquipmentKind[] }[] = [
   { label: 'แพ็ก', kinds: ['pack'] },
   { label: 'เครื่องมือ', kinds: ['tool'] },
   { label: 'ของใช้', kinds: ['gear', 'focus'] },
+  { label: 'พิษ', kinds: ['poison'] },
 ]

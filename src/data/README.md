@@ -88,6 +88,9 @@ the weapon properties (10, incl. Range) and the 8 Weapon Mastery properties. Loa
   Hide Armor is Medium; costs or weights of Dart, Javelin, Spear, Mace, Pike, Longbow, Hand Crossbow, Chain Shirt
   and 16 gear items; Poisoner's Kit 50 GP, Viol 1 lb.; Brewer's and Tinker's Utilize DCs, Glassblower's Utilize,
   Disguise Kit as a tool; all 7 packs' weights and contents written from the SRD text.
+- **Poisons (kind `poison`, 14):** from `5e-SRD-Poisons.json` (6,137 bytes, SHA-256
+  `e0aa4d9eba7f90d1344d4e36f95232b312cbb991afa86b8f1f7627bd4d8b160d`): price per dose, type, text. Types, save DCs
+  and prices match the PDF's Sample Poisons.
 - **Not in the SRD table:** Spellbook (the Wizard's class item) keeps the source's 50 GP, 3 lb.
 
 ## srd-features.json
