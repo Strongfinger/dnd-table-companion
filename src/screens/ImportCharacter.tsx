@@ -1,7 +1,7 @@
 // Bring a character in from a JSON file (or pasted text), with a preview before saving.
 import { useState } from 'react'
 import { go } from '../app/router'
-import { getCharacter, saveCharacter } from '../db/characters'
+import { getCharacter, saveCharacter, saveReceivedCharacter } from '../db/characters'
 import { addLog } from '../db/log'
 import { newId, type Character } from '../model/character'
 import { MAX_IMPORT_BYTES, parseCharacterImport } from '../model/io'
@@ -31,11 +31,20 @@ export default function ImportCharacter() {
     check(content)
   }
 
-  async function save(mode: 'replace' | 'new') {
+  /**
+   * 'first': not on this device yet, keep the file's id (so the player's phone and the DM's copy stay ONE
+   * character: a live room matches sheets by id). 'replace': overwrite the copy with that id.
+   * 'copy': keep both, the file becomes a separate character with a new id.
+   */
+  async function save(mode: 'first' | 'replace' | 'copy') {
     if (!preview) return
     const now = Date.now()
-    const c = mode === 'new' ? { ...preview.character, id: newId(), createdAt: now } : preview.character
-    const saved = await saveCharacter(c)
+    const c = mode === 'copy' ? { ...preview.character, id: newId(), createdAt: now } : preview.character
+    // A first import keeps the file's revision as-is (like a sheet received in a live room), so a player
+    // who edits once more before joining still counts as newer than this copy.
+    const saved = mode === 'first'
+      ? (await saveReceivedCharacter(c, (stored) => !stored, c.campaignId)).stored
+      : await saveCharacter(c)
     await addLog(saved.id, mode === 'replace' ? '📥 อัปเดตจากไฟล์ที่นำเข้า' : '📥 นำเข้าจากไฟล์')
     go(`/c/${saved.id}`)
   }
@@ -84,10 +93,10 @@ export default function ImportCharacter() {
               <>
                 <p className="text-sm">ตัวละครนี้มีอยู่ในเครื่องแล้ว: <b>{preview.existing.name}</b> (Level {preview.existing.level})</p>
                 <Button variant="primary" className="w-full" onClick={() => save('replace')}>🔄 แทนที่ของเดิมด้วยไฟล์นี้</Button>
-                <Button className="w-full" onClick={() => save('new')}>➕ เก็บทั้งคู่ (สร้างเป็นตัวใหม่)</Button>
+                <Button className="w-full" onClick={() => save('copy')}>➕ เก็บทั้งคู่ (สร้างเป็นตัวใหม่)</Button>
               </>
             ) : (
-              <Button variant="primary" className="w-full" onClick={() => save('new')}>📥 นำเข้าตัวละคร</Button>
+              <Button variant="primary" className="w-full" onClick={() => save('first')}>📥 นำเข้าตัวละคร</Button>
             )}
           </div>
         </Section>

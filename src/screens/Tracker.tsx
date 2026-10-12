@@ -265,12 +265,19 @@ export default function Tracker({ id }: { id: string }) {
         </div>
       </div>
 
-      {enc.status === 'ended' && (
+      {/* Delete at any time (an unwanted or test fight), not only after it ended. Asks first. */}
+      <div className="space-y-2">
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => setConfirmDelete(!confirmDelete)}>🗑 ลบการต่อสู้นี้</Button>
+          <Button className="flex-1" onClick={() => setConfirmDelete(!confirmDelete)}>{confirmDelete ? 'ไม่ลบ' : '🗑 ลบการต่อสู้นี้'}</Button>
           {confirmDelete && <Button variant="danger" className="flex-1" onClick={removeFight}>ยืนยันลบ</Button>}
         </div>
-      )}
+        {confirmDelete && (
+          <p className="text-sm text-stone-400">
+            ลบการต่อสู้และบันทึกการต่อสู้นี้ทั้งหมด (บันทึกในใบตัวละครยังอยู่, HP ไม่ถูกย้อนกลับ)
+            {enc.status !== 'ended' && ' · การต่อสู้นี้ยังไม่จบ: Condition จากการต่อสู้นี้จะถูกเอาออกจากใบตัวละคร'}
+          </p>
+        )}
+      </div>
 
       {/* Turn controls stay at the bottom of the screen. */}
       {enc.status !== 'ended' && enc.combatants.length > 0 && (

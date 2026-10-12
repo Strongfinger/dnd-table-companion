@@ -3,6 +3,16 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 2 — owner reports, 2026-10-12
+| Bug | Fix |
+|---|---|
+| A fight could be deleted only after "🏁 จบ"; unwanted/test fights in setup or running stayed forever | `Tracker.tsx`: "🗑 ลบการต่อสู้นี้" in every state (asks first; says what is removed) |
+| **Duplicate characters on the DM device**: importing a player's file saved it under a *new* id, then the player joined the room with the original id and the DM device saved a second copy | `ImportCharacter.tsx`: a first import keeps the file's id **and revision** (saved like a sheet received in a room); "➕ เก็บทั้งคู่" still makes a separate copy on purpose. The same fix covers DM → player files |
+
+Note for the owner: joining a room already copies the player's character to the DM device, so importing
+the file first isn't needed. Old duplicates made before this fix: delete the **older imported** copy (the
+one not updated by the room) and re-add the synced one to fights if needed.
+
 ## Pass 1 — 2026-10-12
 
 **Tested** (dev build, phone 375 px + laptop): character list, Rogue and Wizard sheets (rules math checked
