@@ -43,7 +43,8 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 
 ## Step B — Realtime service trial · 1 session
 - [x] Pick the free realtime service → **Firebase Realtime Database** (free, never pauses, presence + room state built in, Singapore region; Supabase free projects pause after 7 idle days)
-- [ ] Prototype: DM creates a room code, 2 phones join, presence list, send/receive actions, lock a phone and reconnect
+- [x] Prototype (#/lab): DM creates a room code, a second device joins, presence list, send/receive messages, offline on disconnect: works on the live site
+- [ ] Real-phone test: join from a phone, lock it for a minute, check it reconnects
 - [x] Public client key: publishable Firebase config allowed via env vars + security rules + anonymous sign-in; never secret keys
 
 ## Phase 3 — DM assistant (offline) · 2–3 sessions
