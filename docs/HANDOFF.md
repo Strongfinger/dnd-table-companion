@@ -3,7 +3,7 @@
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (423 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (422 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
