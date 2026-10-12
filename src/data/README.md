@@ -67,3 +67,24 @@ description. Loaded only when the loot generator opens.
   6–8 Very Rare, 9 Legendary); other "Rarity Varies" items are kept as "Varies" and not rolled as loot.
 - **Note:** the source flattens tables inside descriptions (e.g. the potion and scroll tables), so the
   split tiers share their parent's description.
+
+## srd-equipment.json
+
+SRD 5.2.1 equipment (182 items: 38 weapons, 12 armors, Shield, ammunition, packs, tools, spellcasting foci,
+adventuring gear) with cost, weight and the fields the app uses: weapon category, melee/ranged, damage
+dice and type, properties, Weapon Mastery, ranges, Versatile dice, ammunition; armor category, base AC,
+DEX cap, Strength minimum, Stealth Disadvantage; tool ability and uses; pack contents. Also the texts of
+the weapon properties (10, incl. Range) and the 8 Weapon Mastery properties. Loaded only when needed.
+
+- **Source:** 5e-bits/5e-database `src/2024/en/` (downloaded 2026-10-13):
+  `5e-SRD-Equipment.json` (192,438 bytes, SHA-256 `4219c83f945f2c1a9a0029ee1bd8ff492d70d1eefd8d42546630ef6b5eef4f22`),
+  `5e-SRD-Weapon-Properties.json` (SHA-256 `a881e9fd8de5e332483871aa9a4e66756cef305582f96a5ff26198477a833db2`),
+  `5e-SRD-Weapon-Mastery-Properties.json` (SHA-256 `0932ec552adfc63fdf87d8e5c3fad4035a728092c78e1c8a32a8712c4ce6d969`).
+- **Made by:** `scripts/srd/equipment.mjs` (reads the files as plain data, checks every value).
+- **Corrections:** the source has some 2014 values and gaps. Every weapon, armor, gear, tool and pack row was
+  diffed against the official SRD 5.2.1 PDF (`SRD_CC_v5.2.1.pdf` from D&D Beyond, tables on pp. 91–99) and fixed in
+  the script (`CORRECTIONS`, `ITEM_FIXES`): Trident 1d8 / Versatile 1d10; Sling Bludgeoning; Morningstar 5 ft.;
+  Hide Armor is Medium; costs or weights of Dart, Javelin, Spear, Mace, Pike, Longbow, Hand Crossbow, Chain Shirt
+  and 16 gear items; Poisoner's Kit 50 GP, Viol 1 lb.; Brewer's and Tinker's Utilize DCs, Glassblower's Utilize,
+  Disguise Kit as a tool; all 7 packs' weights and contents written from the SRD text.
+- **Not in the SRD table:** Spellbook (the Wizard's class item) keeps the source's 50 GP, 3 lb.

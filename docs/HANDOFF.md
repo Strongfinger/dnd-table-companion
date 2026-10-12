@@ -26,6 +26,7 @@ what comes up (see "Next steps"). History of how things were built: `git log` an
 | Live room | `src/app/lobby.tsx` (LobbyProvider: connection, sync, outbox, rest), `src/app/useLobby.ts`, `src/screens/Lobby.tsx` (`#/lobby`, QR `#/lobby/CODE`) |
 | Sync protocol (pure) | `src/sync/` — `envelope.ts` (kinds, Deduper, RateLimiter), `sheets.ts`, `outbox.ts`, `fights.ts` (fight list, log diffs), `lobby.ts`; transports `firebaseTransport.ts`, `localTransport.ts` |
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION 2, `stamp`, `newerOf`, `mergeDraft`), `src/model/campaign.ts`, `src/db/device.ts` |
+| SRD equipment | `src/model/equipment.ts` (types, loader, table-style lines), data `src/data/srd-equipment.json` (`scripts/srd/equipment.mjs`); not used by screens yet (plan step E2) |
 | SRD lookup | `src/screens/Lookup.tsx` (`#/lookup/...`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `spells.ts`, data hooks `src/screens/useSrdData.ts` |
 | Notebook + planner | `src/screens/Notebook.tsx` (`#/dm/note/<id>`), `SessionPlan.tsx`, `src/ui/LinkedText.tsx`; `src/model/note.ts` (kinds, fields, `[[links]]`, backlinks), `sessionPlan.ts` |
 | Campaign pack import | `src/model/campaignPack.ts` (pure parse, stable ids `<campaign>-<id>`), `src/db/campaignPack.ts`, `src/screens/ImportPack.tsx` (`#/dm/import`). The owner's Icespire Peak pack + generator `make_pack.py` live in `docs/DM Scripts/` (private, git-ignored) |
@@ -63,7 +64,7 @@ sender taken from the connection (never the body), size limit; the DM device rat
 Built by scripts from 5e-bits/5e-database **2024** files (download to a scratch folder, then
 `node scripts/srd/<script>.mjs <file>`); details, checksums and corrections in `src/data/README.md`:
 `srd-monsters.json` (quick-add), `srd-monster-details.json` (stat blocks, `monster-details.mjs`),
-`srd-spells.json` (`spells.mjs`), `srd-magic-items.json` (`magic-items.mjs`; healing potion and spell scroll
+`srd-spells.json` (`spells.mjs`), `srd-equipment.json` (`equipment.mjs`, checked line by line against the official SRD 5.2.1 PDF), `srd-magic-items.json` (`magic-items.mjs`; healing potion and spell scroll
 tiers rules-reviewed). Known gaps in the source: monsters' 2024 Initiative bonus (app shows DEX), Legendary
 Action uses per round, some spell notes like "(level 5 version)".
 
