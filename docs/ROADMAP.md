@@ -41,10 +41,10 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] DM-secret flags: hidden monsters, exact HP, notes
 - [x] Validation for incoming actions (reuse the import validation: network data is untrusted)
 
-## Step B — Realtime service trial · 1 session
+## Step B — Realtime service trial · 1 session ✅ done 2026-10-12
 - [x] Pick the free realtime service → **Firebase Realtime Database** (free, never pauses, presence + room state built in, Singapore region; Supabase free projects pause after 7 idle days)
 - [x] Prototype (#/lab): DM creates a room code, a second device joins, presence list, send/receive messages, offline on disconnect: works on the live site
-- [ ] Real-phone test: join from a phone, lock it for a minute, check it reconnects
+- [x] Real-phone test: joined from a phone, locked it, reconnected after unlocking (2026-10-12)
 - [x] Public client key: publishable Firebase config allowed via env vars + security rules + anonymous sign-in; never secret keys
 
 ## Phase 3 — DM assistant (offline) · 2–3 sessions
