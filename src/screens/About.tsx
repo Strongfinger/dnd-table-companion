@@ -49,6 +49,10 @@ export default function About() {
         <p className="mt-1 text-xs text-stone-500">ติดตั้งลงหน้าจอหลักแล้วใช้ได้แม้ไม่มีอินเทอร์เน็ต เมื่อมีเวอร์ชันใหม่จะมีปุ่มให้กดอัปเดต</p>
       </Section>
 
+      <Section title="ทดลองห้องเล่นร่วมกัน (ทดสอบ)">
+        <a href="#/lab" className="text-sm text-amber-400 underline">🧪 เปิดหน้าทดสอบการเชื่อมต่อ</a>
+      </Section>
+
       <Section title="ฟอนต์">
         <p className="text-sm text-stone-300">Noto Sans Thai, SIL Open Font License 1.1</p>
       </Section>

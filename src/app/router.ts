@@ -9,6 +9,7 @@ export type Route =
   | { name: 'fights' }
   | { name: 'about' }
   | { name: 'party' }
+  | { name: 'lab' }
   | { name: 'fight'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
@@ -20,6 +21,7 @@ export function parseRoute(hash: string): Route {
   if (first === 'fights') return { name: 'fights' }
   if (first === 'about') return { name: 'about' }
   if (first === 'party') return { name: 'party' }
+  if (first === 'lab') return { name: 'lab' }
   if (first === 'fight' && id) return { name: 'fight', id }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
   return { name: 'list' }

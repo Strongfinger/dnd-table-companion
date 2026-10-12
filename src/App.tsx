@@ -10,6 +10,7 @@ import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
+import LobbyLab from './screens/LobbyLab'
 import PartyOverview from './screens/PartyOverview'
 import Tracker from './screens/Tracker'
 
@@ -40,6 +41,7 @@ export default function App() {
         {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
         {route.name === 'about' && <About />}
         {route.name === 'party' && <PartyOverview />}
+        {route.name === 'lab' && <LobbyLab />}
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
