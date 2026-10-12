@@ -1,6 +1,7 @@
 // About page: credits and licenses (SRD 5.2.1 attribution is required by CC-BY-4.0).
 import { useState } from 'react'
 import { currentDevice, setDeviceName } from '../db/device'
+import { resetDevice } from '../db/reset'
 import { Button, Section, TextInput } from '../ui/kit'
 
 export default function About() {
@@ -53,9 +54,50 @@ export default function About() {
         <a href="#/lab" className="text-sm text-amber-400 underline">🧪 เปิดหน้าทดสอบการเชื่อมต่อ</a>
       </Section>
 
+      <ResetDevice />
+
       <Section title="ฟอนต์">
         <p className="text-sm text-stone-300">Noto Sans Thai, SIL Open Font License 1.1</p>
       </Section>
     </div>
+  )
+}
+
+/** Wipe this device's data (asks to type a word first: it can't be undone). */
+function ResetDevice() {
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const ok = typed.trim() === 'ล้าง'
+
+  async function reset() {
+    if (!ok || busy) return
+    setBusy(true)
+    await resetDevice()
+    // Start the app again from the character list, as on a new device.
+    window.location.hash = '#/'
+    window.location.reload()
+  }
+
+  return (
+    <Section title="ล้างข้อมูลในเครื่องนี้">
+      <p className="text-sm text-stone-300">
+        ลบทุกอย่างที่แอปเก็บไว้ในเครื่องนี้: ตัวละคร การต่อสู้ บันทึก แคมเปญ ชื่ออุปกรณ์ และห้องที่เข้าอยู่
+        แอปจะเริ่มใหม่เหมือนเพิ่งติดตั้ง · เครื่องอื่นไม่ได้รับผลกระทบ (ต้องล้างแยกทีละเครื่อง)
+      </p>
+      <p className="mt-1 text-xs text-amber-300">อยากเก็บตัวละครไว้? กด 📤 ในใบตัวละครเพื่อส่งออกเป็นไฟล์ก่อน แล้วค่อยนำเข้าหลังล้าง</p>
+      {!open ? (
+        <Button variant="danger" className="mt-3 w-full" onClick={() => setOpen(true)}>🗑 ล้างข้อมูลทั้งหมดในเครื่องนี้…</Button>
+      ) : (
+        <div className="mt-3 space-y-2 rounded-lg bg-red-950/60 p-3">
+          <p className="text-sm">ย้อนกลับไม่ได้ พิมพ์คำว่า <b>ล้าง</b> เพื่อยืนยัน</p>
+          <TextInput value={typed} placeholder="ล้าง" onChange={setTyped} />
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={() => { setOpen(false); setTyped('') }}>ยกเลิก</Button>
+            <Button variant="danger" className={`flex-1 ${ok ? '' : 'opacity-40'}`} onClick={reset}>{busy ? 'กำลังล้าง…' : 'ล้างเลย'}</Button>
+          </div>
+        </div>
+      )}
+    </Section>
   )
 }
