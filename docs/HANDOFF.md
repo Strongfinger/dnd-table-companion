@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, next up: Phase 4 (lobby & live sync)
+# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync done; next: 4.3 initiative/player view)
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (343 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (360 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -14,6 +14,8 @@
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION, stamp, newerOf), `src/model/campaign.ts`, `src/db/device.ts` |
 | Lobby transport | `src/sync/` (`envelope.ts`, `roomCode.ts`, `transport.ts`, `localTransport.ts`, `firebaseTransport.ts`) |
 | Lobby (real) | `src/app/lobby.tsx` (LobbyProvider: one connection for the whole app, `send`/`subscribe` for later steps), `src/app/useLobby.ts`, `src/sync/lobby.ts` (saved session, join link, kick), `src/screens/Lobby.tsx` (`#/lobby`, `#/lobby/CODE` from the QR) |
+| Sheet sync | `src/sync/sheets.ts` (protocol + pure checks), handled in `src/app/lobby.tsx`; `saveReceivedCharacter`/`watchCharacters` in `src/db/characters.ts`; callers: `PlayPanel` (`shareAction`), `CharacterEdit` (`shareSheet`) |
+| Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
@@ -36,7 +38,19 @@
    the lobby screen in `npm run dev` (two tabs). Verified over Firebase with a node script as the 2nd device.
    Kick is enforced by the DM device ignoring that device (no rule change needed). Not yet enforced: who may
    claim `role: 'dm'` (any member can); players should only trust `state` from the DM member (step 4.2).
-2. **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
+2. ✅ Steps 2+3a (4.2, 2026-10-12): sheet sync both ways. Protocol: player→DM `hello {character}` (on
+   connect/reconnect, picking a character, saving an edit) and `action {characterId, action}` (each play tap,
+   also applied locally at once); DM→all `state {character}` whenever a played character changes on the DM
+   device (one Dexie watcher covers players' actions, the tracker and DM edits). Received sheets are stored
+   as sent (no re-stamp) so revisions match. DM takes a hello only if its rev is higher (tie = DM);
+   players take `state` only from the DM and only if rev ≥ theirs. Players may only change the character
+   they picked (`mayChange`). Verified over Firebase in both directions with `scripts/lobby-test/`.
+   Known limits: (a) saving the edit screen overwrites play changes the DM made while it was open (edit
+   wins, rev continues from the newest copy); (b) DM reloading within ~5 s of a player's action can apply
+   it twice (listener replays the last 5 s, Deduper is fresh); (c) the phone's log only gets the player's
+   own actions, not DM-made changes; (d) whole-sheet "higher rev wins", no per-field merge; (e) sheets
+   over ~64 KB can't be sent.
+   Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose
    turn, monsters' rough health only); shared dice log (`RollEvent`).

@@ -62,10 +62,15 @@ export function isDm(members: Member[], deviceId: string): boolean {
   return members.some((m) => m.deviceId === deviceId && m.role === 'dm')
 }
 
-/** Members to show: kicked ones left out; DM first, then online players, then by name. */
+/**
+ * Members to show: kicked ones left out; DM first, then online players, then by name.
+ * A device listed twice (it signed in again, e.g. after clearing site data) shows once, online if it is.
+ */
 export function visibleMembers(members: Member[], kicked: Kicked[]): Member[] {
   const rank = (m: Member) => (m.role === 'dm' ? 0 : m.online ? 1 : 2)
-  return members
+  const byDevice = new Map<string, Member>()
+  for (const m of members) if (!byDevice.get(m.deviceId)?.online) byDevice.set(m.deviceId, m)
+  return [...byDevice.values()]
     .filter((m) => !isKicked(kicked, m.deviceId))
     .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'th'))
 }

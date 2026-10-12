@@ -50,4 +50,9 @@ describe('members', () => {
   it('sorts DM, online, offline and hides kicked devices', () => {
     expect(visibleMembers(list, [{ deviceId: 'p3', name: 'ซี' }]).map((m) => m.deviceId)).toEqual(['dm', 'p1', 'p2'])
   })
+
+  it('shows a device listed twice once, preferring the online entry', () => {
+    const twice = [member('p1', 'old', 'player', false), member('p1', 'new', 'player', true), member('p1', 'older', 'player', false)]
+    expect(visibleMembers(twice, [])).toEqual([member('p1', 'new', 'player', true)])
+  })
 })

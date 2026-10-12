@@ -1,4 +1,5 @@
 // Read/write characters. UI code uses these instead of touching `db` directly.
+import { liveQuery } from 'dexie'
 import { withDefaults, type Character } from '../model/character'
 import { stamp } from '../model/sync'
 import { db } from './db'
@@ -42,6 +43,36 @@ export async function updateCharacter(id: string, fn: (c: Character) => { charac
     await db.characters.put(stampCharacter(r.character))
     return r.text
   })
+}
+
+/**
+ * Store a sheet received in a live lobby exactly as sent (no new revision), so both devices keep
+ * the same revision number. `accept` decides against the copy stored here (in the same transaction).
+ * The campaign stays this device's own choice; a new character gets `campaignIdIfNew`.
+ * Returns the copy now stored here.
+ */
+export async function saveReceivedCharacter(
+  incoming: Character,
+  accept: (stored: Character | undefined) => boolean,
+  campaignIdIfNew: string | null = null,
+): Promise<{ saved: boolean; stored: Character }> {
+  return db.transaction('rw', db.characters, async () => {
+    const raw = await db.characters.get(incoming.id)
+    const stored = raw && withDefaults(raw)
+    if (!accept(stored)) return { saved: false, stored: stored! }
+    const c = { ...incoming, campaignId: stored ? stored.campaignId : campaignIdIfNew }
+    await db.characters.put(c)
+    return { saved: true, stored: c }
+  })
+}
+
+/** Call `onChange` with these characters now and after every change to them. Returns a stop function. */
+export function watchCharacters(ids: string[], onChange: (list: Character[]) => void): () => void {
+  const sub = liveQuery(() => db.characters.where('id').anyOf(ids).toArray()).subscribe({
+    next: (list) => onChange(list.map(withDefaults)),
+    error: (err) => console.error('watchCharacters', err),
+  })
+  return () => sub.unsubscribe()
 }
 
 /** Deletes the character and its play log. */

@@ -1,6 +1,7 @@
 // The live lobby's shared context (the provider is in lobby.tsx). Separate file so React's
 // fast refresh keeps working while editing the provider.
 import { createContext, useContext } from 'react'
+import type { CharacterAction } from '../model/characterActions'
 import type { Envelope, MessageKind } from '../sync/envelope'
 import type { LobbySession } from '../sync/lobby'
 import type { ConnectionStatus, Member } from '../sync/transport'
@@ -26,6 +27,10 @@ export interface LobbyApi {
   kick: (deviceId: string) => void
   readmit: (deviceId: string) => void
   pickCharacter: (character: CharacterPick | null) => void
+  /** A play change this device just made to a character (players: sent to the DM if it's mine here). */
+  shareAction: (characterId: string, action: CharacterAction) => void
+  /** This device saved an edit to a character (players: the full sheet goes to the DM if it's mine here). */
+  shareSheet: (characterId: string) => void
   send: (kind: MessageKind, body: unknown) => void
   /** Hear messages from other devices; returns a function that stops listening. */
   subscribe: (listener: (e: Envelope) => void) => () => void

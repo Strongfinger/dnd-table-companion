@@ -3,14 +3,21 @@
 // The room is saved in settings: after a reload, or the browser killing a sleeping tab, the app rejoins.
 // (Test-mode rooms are saved per browser tab instead, since there each tab plays a different device.)
 //
-// Later steps (sheet sync, initiative, dice log) use `send` and `subscribe` from here.
+// Character sheets are synced here too (protocol in src/sync/sheets.ts). The DM device is the
+// source of truth: it applies players' actions and sends its copy of every played character back.
+// Later steps (initiative, dice log) use `send` and `subscribe` from here.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { getCharacter, saveReceivedCharacter, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
+import { logCharacterEvent } from '../db/log'
+import type { Character } from '../model/character'
+import { applyCharacterAction } from '../model/characterActions'
 import { makeEnvelope, type Envelope } from '../sync/envelope'
 import { firebaseTransport } from '../sync/firebaseTransport'
 import { isDm, isKicked, parseKick, parseLobbySession, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
+import { mayChange, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from '../sync/sheets'
 import { LobbyContext, type LobbyApi } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
 
@@ -41,6 +48,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<LobbySession | null>(null)
   const membersRef = useRef<Member[]>([])
   const listeners = useRef(new Set<(e: Envelope) => void>())
+  /** DM: the revision of each character last sent to the room, so each change goes out once. */
+  const lastSent = useRef(new Map<string, number>())
   const online = firebaseTransport()
 
   /** Remember the session (state for the screen, ref for handlers, settings for a reload). */
@@ -77,11 +86,57 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       }
       return
     }
+    void syncSheet(e, s).catch((err) => console.error('lobby: sheet sync', err))
     listeners.current.forEach((listen) => listen(e))
+  }
+
+  function send(kind: Envelope['kind'], body: unknown) {
+    const s = sessionRef.current
+    if (s) conn.current?.send(makeEnvelope(kind, body, deviceFor(s.local)))
+  }
+
+  function sendState(c: Character) {
+    lastSent.current.set(c.id, c.rev)
+    send('state', { character: c })
+  }
+
+  async function sendHello(characterId: string) {
+    const c = await getCharacter(characterId)
+    if (c) send('hello', { character: c })
+  }
+
+  /**
+   * Is the sender allowed to change this character? A player who just joined or picked a
+   * character may not be in our member list yet, so wait a moment once before saying no.
+   */
+  async function allowed(senderId: string, characterId: string) {
+    if (mayChange(membersRef.current, senderId, characterId)) return true
+    await new Promise((r) => setTimeout(r, 1500))
+    return mayChange(membersRef.current, senderId, characterId)
+  }
+
+  /** Sheet messages (see src/sync/sheets.ts). */
+  async function syncSheet(e: Envelope, s: LobbySession) {
+    if (s.role === 'dm' && e.kind === 'hello') {
+      const c = parseSheetBody(e.body)
+      if (!c || !(await allowed(e.from, c.id))) return
+      const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId)
+      // Taken: the watcher below sends it to the room. Kept ours: send it so the player catches up.
+      if (!r.saved) sendState(r.stored)
+    } else if (s.role === 'dm' && e.kind === 'action') {
+      const a = parseActionBody(e.body)
+      if (!a || !(await allowed(e.from, a.characterId))) return
+      const text = await updateCharacter(a.characterId, (ch) => applyCharacterAction(ch, a.action) ?? { character: ch, text: '' })
+      if (text) await logCharacterEvent(a.characterId, text)
+    } else if (s.role === 'player' && e.kind === 'state' && isDm(membersRef.current, e.from)) {
+      const c = parseSheetBody(e.body)
+      if (c && c.id === s.characterId) await saveReceivedCharacter(c, (stored) => takeDmState(stored, c))
+    }
   }
 
   function connect(s: LobbySession) {
     disconnect()
+    lastSent.current.clear()
     const transport = s.local || !online ? localTransport() : online
     const me = deviceFor(s.local)
     conn.current = transport.join(s.code, { id: me.id, name: me.name, role: s.role, characterId: s.characterId, characterName: s.characterName }, {
@@ -119,6 +174,29 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on start
   }, [])
 
+  // Player: send my sheet whenever I'm (re)connected or pick a character, so the DM has my latest.
+  const myCharacter = session?.role === 'player' ? session.characterId : null
+  useEffect(() => {
+    if (myCharacter && status === 'connected') void sendHello(myCharacter)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sendHello reads refs
+  }, [myCharacter, status])
+
+  // DM: whenever a played character changes on this device (a player's action, the tracker,
+  // an edit), send the new copy to the room.
+  const played = session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id)).join(',') : ''
+  useEffect(() => {
+    if (!played) return
+    return watchCharacters(played.split(','), (list) => {
+      for (const c of list) if (lastSent.current.get(c.id) !== c.rev) sendState(c)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sendState reads refs
+  }, [played])
+
+  const mine = (characterId: string) => {
+    const s = sessionRef.current
+    return s?.role === 'player' && s.characterId === characterId
+  }
+
   const api: LobbyApi = {
     session,
     status,
@@ -153,10 +231,13 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       conn.current?.updateMe(patch)
       save({ ...s, ...patch })
     },
-    send: (kind, body) => {
-      const s = sessionRef.current
-      if (s) conn.current?.send(makeEnvelope(kind, body, deviceFor(s.local)))
+    shareAction: (characterId, action) => {
+      if (mine(characterId)) send('action', { characterId, action })
     },
+    shareSheet: (characterId) => {
+      if (mine(characterId)) void sendHello(characterId)
+    },
+    send,
     subscribe: (listener) => {
       listeners.current.add(listener)
       return () => {

@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { go } from '../app/router'
+import { useLobby } from '../app/useLobby'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
@@ -45,6 +46,7 @@ export default function CharacterSheet({ id }: { id: string }) {
         </div>
       </header>
 
+      <LiveBadge characterId={c.id} />
       {exporting && <ExportPanel c={c} />}
 
       <div className="grid grid-cols-4 gap-2">
@@ -163,5 +165,21 @@ function NotFound() {
       <p className="text-stone-400">ไม่พบตัวละครนี้ในเครื่อง</p>
       <Button onClick={() => go('/')}>กลับหน้าหลัก</Button>
     </div>
+  )
+}
+
+/** In a live lobby: shows that this sheet is synced with the room (player: with the DM; DM: who plays it). */
+function LiveBadge({ characterId }: { characterId: string }) {
+  const { session, members, status } = useLobby()
+  if (!session) return null
+  const player = members.find((m) => m.role === 'player' && m.characterId === characterId)
+  const text = session.role === 'player'
+    ? session.characterId === characterId && `ซิงค์กับ DM ในห้อง ${session.code}`
+    : player && `${player.name} เล่นตัวนี้ในห้อง ${session.code}${player.online ? '' : ' (ออฟไลน์)'}`
+  if (!text) return null
+  return (
+    <a href="#/lobby" className="block rounded-lg bg-sky-950 px-3 py-2 text-sm text-sky-200">
+      🌐 {text}{status !== 'connected' && ' · ⏳ รอสัญญาณ การเปลี่ยนแปลงจะส่งเมื่อเชื่อมต่อได้'}
+    </a>
   )
 }

@@ -5,7 +5,7 @@ import { sampleCharacters } from '../dev/sampleCharacters'
 import { createCharacter } from '../model/character'
 import { ALL_FIXTURES } from '../rules/fixtures/characters'
 import { deriveSheet } from '../rules'
-import { deleteCharacter, getCharacter, listCharacters, saveCharacter, updateCharacter } from './characters'
+import { deleteCharacter, getCharacter, listCharacters, saveCharacter, saveReceivedCharacter, updateCharacter } from './characters'
 import { db } from './db'
 
 beforeEach(async () => {
@@ -66,5 +66,26 @@ describe('updateCharacter', () => {
 
   it('returns null for a missing character', async () => {
     expect(await updateCharacter('nope', (x) => ({ character: x, text: '' }))).toBeNull()
+  })
+})
+
+describe('saveReceivedCharacter (live lobby)', () => {
+  it('stores a received sheet as sent, with the given campaign when new', async () => {
+    const c = createCharacter({ name: 'Nyx', rev: 7, updatedBy: 'other', campaignId: 'theirs' })
+    const r = await saveReceivedCharacter(c, () => true, 'mine')
+    expect(r.saved).toBe(true)
+    const stored = await getCharacter(c.id)
+    expect(stored?.rev).toBe(7)
+    expect(stored?.updatedBy).toBe('other')
+    expect(stored?.campaignId).toBe('mine')
+  })
+
+  it('keeps this device\'s campaign, and keeps its copy when not accepted', async () => {
+    const mine = await saveCharacter(createCharacter({ name: 'Nyx', campaignId: 'camp' }))
+    await saveReceivedCharacter({ ...mine, name: 'Nyx 2', rev: mine.rev + 1, campaignId: 'x' }, () => true)
+    expect((await getCharacter(mine.id))?.campaignId).toBe('camp')
+    const r = await saveReceivedCharacter({ ...mine, name: 'Old' }, (stored) => stored!.rev < mine.rev)
+    expect(r.saved).toBe(false)
+    expect(r.stored.name).toBe('Nyx 2')
   })
 })

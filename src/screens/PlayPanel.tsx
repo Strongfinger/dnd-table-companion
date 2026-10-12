@@ -1,6 +1,7 @@
 // In-play tracking on the sheet: HP, death saves, rests, spell slots, features, conditions.
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
+import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
 import { logCharacterEvent } from '../db/log'
 import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
@@ -16,6 +17,7 @@ import { CONDITION_TH } from '../ui/labels'
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 
 export default function PlayPanel({ c }: { c: Character }) {
+  const lobby = useLobby()
   const [amount, setAmount] = useState('')
   const [critical, setCritical] = useState(false)
   const [message, setMessage] = useState('')
@@ -26,10 +28,11 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   /**
    * Send one action (see model/characterActions.ts): it's applied to the newest saved copy,
-   * shown, and logged. In a live lobby the same actions will travel to the DM's device.
+   * shown, and logged. In a live lobby a player's action also goes to the DM's device.
    */
   const act = async (action: CharacterAction) => {
     const text = await updateCharacter(c.id, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
+    lobby.shareAction(c.id, action)
     if (text) {
       setMessage(text)
       // Also lands in the fight log if this character is in a running fight on this device.

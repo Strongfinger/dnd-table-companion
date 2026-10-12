@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
+import { useLobby } from '../app/useLobby'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
@@ -25,6 +26,7 @@ export default function CharacterEdit({ id }: { id: string }) {
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
   const campaigns = useLiveQuery(listCampaigns) ?? []
+  const lobby = useLobby()
 
   useEffect(() => {
     getCharacter(id).then((c) => (c ? setDraft(c) : setNotFound(true)))
@@ -119,7 +121,11 @@ export default function CharacterEdit({ id }: { id: string }) {
     }
     // Current HP can't be above the (possibly lowered) max.
     const current = Math.min(c.hp.current, c.hp.max)
-    const saved = await saveCharacter({ ...c, name: c.name.trim(), hp: { ...c.hp, current } })
+    // The revision continues from the newest saved copy (it may have changed while editing, e.g. the
+    // DM's device sent new HP in a live lobby), so this edit counts as the newest change.
+    const latest = await getCharacter(c.id)
+    const saved = await saveCharacter({ ...c, name: c.name.trim(), hp: { ...c.hp, current }, rev: Math.max(c.rev, latest?.rev ?? 0) })
+    lobby.shareSheet(saved.id)
     go(`/c/${saved.id}`)
   }
 

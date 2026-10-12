@@ -166,7 +166,12 @@ function InRoom() {
                 <span className={m.online ? '' : 'text-stone-500'}>{m.name}</span>
                 {m.deviceId === lobby.me.id && <span className="text-stone-500"> (ฉัน)</span>}
                 {m.role === 'player' && (
-                  <span className="block text-xs text-stone-400">{m.characterName ? `เล่นเป็น ${m.characterName}` : 'ยังไม่ได้เลือกตัวละคร'}</span>
+                  <span className="block text-xs text-stone-400">
+                    {!m.characterName ? 'ยังไม่ได้เลือกตัวละคร'
+                      : m.characterId && characters.some((c) => c.id === m.characterId)
+                        ? <a href={`#/c/${m.characterId}`} className="underline">เล่นเป็น {m.characterName}</a>
+                        : `เล่นเป็น ${m.characterName}`}
+                  </span>
                 )}
               </span>
               <span className="text-xs text-stone-400">{m.role === 'dm' ? 'DM' : 'ผู้เล่น'}</span>
