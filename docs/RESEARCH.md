@@ -157,18 +157,16 @@ Each step: build script / pure rules in `src/rules/` with tests → UI → `rule
 E1–E7, F1, F2 all done 2026-10-13 (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
 Order: **E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7**. Before Phase 5 (first real session): E1–F2.
 
-## 6. Open decisions for the owner (collected 2026-10-13, nothing blocked on them)
-1. **Older characters:** characters made before these steps keep a hand-typed AC and have no SRD-linked items or
-   catalog features until edited. Offer a one-tap "อัปเกรด" (match inventory names to SRD items, add catalog
-   features)? Today: "+ เพิ่มของ" / "+ จาก SRD" by hand, and AC turns automatic once SRD armor is equipped.
-2. **Free-cast features not in the catalog:** Elf/Gnome/Tiefling lineage spells (once per Long Rest each) and Warlock
-   Mystic Arcanum. Track them as features, or as a "free cast" mark on the spell list?
-3. **Poisons** (14 SRD items): add a Lookup tab / items? Skipped for now.
-4. **Wizard equips all starting weapons** (e.g. Fighter A: Greatsword, Flail, Javelins). Fine, or equip only the first?
-5. **Damage roll for Critical:** the 💥 button opens the roller and the player turns Critical on. Want a separate
-   "💥 Critical" button instead?
-6. **Weapon Mastery choices** stay untracked (owner decision); revisit if players forget which weapons they picked.
-7. **Bundle size:** the main JS chunk is 754 KB (warning). QA #3 (lazy-load DM screens) would cut it; do it before Phase 5?
+## 6. Owner decisions, round 2 (2026-10-13) — all done
+1. **Upgrade button** for older characters: ✅ banner "⬆️" on the sheet → plan (item links, feature links/adds, wear the
+   armor found for auto AC, optionally replace hand-made attacks) → "อัปเกรด" or "ไม่ต้อง" (`srdLinked` flag).
+2. **Free casts** as catalog features: ✅ Elven Lineage / Fiendish Legacy spells (levels 3 and 5), Forest Gnome Speak
+   with Animals, Mystic Arcanum 6–9.
+3. **Poisons:** ✅ 14 SRD poisons in the equipment data (Lookup and inventory filter "พิษ").
+4. **Starting weapons** stay in the pack; the player equips them (armor and Shield still worn). ✅
+5. **Critical:** no extra button (turn Critical on in the roller). ✅
+6. **Faster start:** ✅ DM screens lazy-loaded; main JS 754 → 426 KB.
+7. Weapon Mastery choices stay untracked (owner decision).
 
 ## 7. Licensing notes
 - Keep the existing CC-BY attribution (About page + `src/data/README.md`); add Open5e as the source of the

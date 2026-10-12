@@ -48,6 +48,8 @@ export interface Character extends SheetInput {
   acAuto?: boolean
   /** Extra AC added to the worked-out value (e.g. Ring of Protection, +1 armor). */
   acBonus?: number
+  /** Set once the sheet uses SRD items and features (new characters, or after "อัปเกรด" / "ไม่ต้อง"). */
+  srdLinked?: boolean
   speed: number
 
   /** Spell slots per spell level 1–9: index 0 = 1st level. */

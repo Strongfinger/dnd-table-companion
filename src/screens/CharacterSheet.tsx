@@ -9,6 +9,7 @@ import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
 import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
+import UpgradePanel from './UpgradePanel'
 import { characterArmorClass } from '../model/inventory'
 import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
@@ -57,6 +58,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       </header>
 
       <LiveBadge characterId={c.id} />
+      <UpgradePanel c={c} />
       {exporting && <ExportPanel c={c} />}
 
       <div className="grid grid-cols-4 gap-2">

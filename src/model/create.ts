@@ -83,6 +83,7 @@ export function buildCharacter(c: CreationChoices): Character {
     hp: { max: hpMax, current: hpMax, temp: 0 },
     ac: unarmoredAC(c.className, mods),
     acAuto: true,
+    srdLinked: true,
     speed: lineage?.speed ?? species.speed,
     spellSlots: spellSlotsFor(c.className, 1).map((max) => ({ max, used: 0 })),
     featuresText: [
