@@ -3,11 +3,12 @@ import UpdatePrompt from './app/UpdatePrompt'
 import { HelpProvider } from './ui/help'
 import { LobbyProvider } from './app/lobby'
 import { useLobby } from './app/useLobby'
-import { useRoute } from './app/router'
+import { useRoute, type Route } from './app/router'
 import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
+import DmHome from './screens/DmHome'
 import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
@@ -15,6 +16,7 @@ import ImportCharacter from './screens/ImportCharacter'
 import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
+import NoteEdit from './screens/NoteEdit'
 import PartyOverview from './screens/PartyOverview'
 import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
 import RoomRollToast from './screens/RoomRollToast'
@@ -24,20 +26,11 @@ export default function App() {
   const route = useRoute()
   // Dice history lives here so it survives moving between screens.
   const [rolls, setRolls] = useState<RollRecord[]>([])
-  const inFights = route.name === 'fights' || route.name === 'fight'
-  const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
 
   return (
     <HelpProvider>
     <LobbyProvider>
-      <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
-        <div className="mx-auto flex max-w-5xl">
-          <a href="#/" className={tab(!inFights && route.name !== 'lobby')}>📜 ตัวละคร</a>
-          <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
-          <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
-        </div>
-        <LiveFightBar />
-      </nav>
+      <NavBar route={route} />
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
       <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' || route.name === 'party' ? 'max-w-5xl' : 'max-w-xl'}`}>
@@ -53,6 +46,8 @@ export default function App() {
         {route.name === 'party' && <PartyOverview />}
         {route.name === 'lab' && <LobbyLab />}
         {route.name === 'lobby' && <Lobby code={route.code} />}
+        {route.name === 'dm' && <DmHome />}
+        {route.name === 'note' && <NoteEdit key={route.id} id={route.id} />}
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
@@ -84,4 +79,23 @@ function FightsRoute() {
 function FightRoute({ id }: { id: string }) {
   const lobby = useLobby()
   return playingInRoom(lobby) ? <PlayerFight id={id} /> : <Tracker id={id} />
+}
+
+/** Top tabs. The DM tab (notes, tools) is hidden on a player's phone in a live room. */
+function NavBar({ route }: { route: Route }) {
+  const lobby = useLobby()
+  const inFights = route.name === 'fights' || route.name === 'fight'
+  const inDm = route.name === 'dm' || route.name === 'note'
+  const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
+  return (
+    <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
+      <div className="mx-auto flex max-w-5xl text-sm sm:text-base">
+        <a href="#/" className={tab(!inFights && !inDm && route.name !== 'lobby')}>📜 ตัวละคร</a>
+        <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
+        {lobby.session?.role !== 'player' && <a href="#/dm" className={tab(inDm)}>🧙 DM</a>}
+        <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
+      </div>
+      <LiveFightBar />
+    </nav>
+  )
 }

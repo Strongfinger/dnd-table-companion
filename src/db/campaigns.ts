@@ -21,9 +21,9 @@ export async function renameCampaign(id: string, name: string): Promise<void> {
   })
 }
 
-/** Deletes the campaign only; its characters and fights stay, just without a campaign. */
+/** Deletes the campaign only; its characters, fights and notes stay, just without a campaign. */
 export async function deleteCampaign(id: string): Promise<void> {
-  await db.transaction('rw', db.campaigns, db.characters, db.encounters, async () => {
+  await db.transaction('rw', [db.campaigns, db.characters, db.encounters, db.notes], async () => {
     await db.campaigns.delete(id)
     // Stamp the changed records too, so other devices can tell they changed.
     const me = deviceId()
@@ -32,6 +32,9 @@ export async function deleteCampaign(id: string): Promise<void> {
     })
     await db.encounters.where('campaignId').equals(id).modify((e) => {
       Object.assign(e, stamp({ ...e, campaignId: null }, me))
+    })
+    await db.notes.where('campaignId').equals(id).modify((n) => {
+      Object.assign(n, stamp({ ...n, campaignId: null }, me))
     })
   })
 }

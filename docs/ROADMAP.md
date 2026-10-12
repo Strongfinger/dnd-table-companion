@@ -50,7 +50,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 ## Phase 3 — DM assistant (offline) · 2–3 sessions
 - [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters
 - [ ] SRD monster and spell lookup
-- [ ] Session notes (belong to a campaign from day one)
+- [x] Session notes (belong to a campaign from day one): 🧙 DM tab, auto-save, search (step 3.1, 2026-10-12)
 
 ## Phase 4 — Lobby & live sync · 3–4 sessions ✅ done 2026-10-12
 - [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)

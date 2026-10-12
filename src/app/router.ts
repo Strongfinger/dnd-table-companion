@@ -12,6 +12,9 @@ export type Route =
   | { name: 'lab' }
   /** `code`: filled in from a QR / join link (#/lobby/K7QX4M). */
   | { name: 'lobby'; code: string | null }
+  /** The DM's tools: notes, generators, lookup. */
+  | { name: 'dm' }
+  | { name: 'note'; id: string }
   | { name: 'fight'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
@@ -25,6 +28,7 @@ export function parseRoute(hash: string): Route {
   if (first === 'party') return { name: 'party' }
   if (first === 'lab') return { name: 'lab' }
   if (first === 'lobby') return { name: 'lobby', code: id ?? null }
+  if (first === 'dm') return id === 'note' && action ? { name: 'note', id: action } : { name: 'dm' }
   if (first === 'fight' && id) return { name: 'fight', id }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
   return { name: 'list' }

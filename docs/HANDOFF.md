@@ -1,4 +1,4 @@
-# Handoff: state on 2026-10-12, Phase 4 done (4.1–4.5); next: Phase 5 hardening (real session with friends) or Phase 3 DM assistant
+# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 in progress (3.1 notes done; next: 3.2 random generators, 3.3 monster lookup, 3.4 spell lookup)
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
@@ -21,6 +21,7 @@
 | Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`, `resync.cjs`, `permissions-dm.cjs`, `permissions-player.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
+| DM tools (Phase 3) | `src/screens/DmHome.tsx` (`#/dm`, hidden for players in a room), `NoteEdit.tsx` (`#/dm/note/<id>`, auto-save); `src/model/note.ts`, `src/db/notes.ts` (DB version 5: `notes`) |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 
 ## Firebase (set up and working)

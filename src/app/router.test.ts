@@ -16,6 +16,8 @@ describe('parseRoute', () => {
     expect(parseRoute('#/party')).toEqual({ name: 'party' })
     expect(parseRoute('#/lab')).toEqual({ name: 'lab' })
     expect(parseRoute('#/lobby')).toEqual({ name: 'lobby', code: null })
+    expect(parseRoute('#/dm')).toEqual({ name: 'dm' })
+    expect(parseRoute('#/dm/note/n1')).toEqual({ name: 'note', id: 'n1' })
     expect(parseRoute('#/lobby/K7QX4M')).toEqual({ name: 'lobby', code: 'K7QX4M' })
     expect(parseRoute('#/fight/x1')).toEqual({ name: 'fight', id: 'x1' })
     expect(parseRoute('#/c/abc')).toEqual({ name: 'sheet', id: 'abc' })

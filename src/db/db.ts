@@ -3,6 +3,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { Character } from '../model/character'
 import type { Campaign } from '../model/campaign'
 import type { Encounter } from '../model/encounter'
+import type { Note } from '../model/note'
 
 export interface LogEntry {
   id: string
@@ -27,6 +28,8 @@ export const db = new Dexie('dnd-table-companion') as Dexie & {
   log: EntityTable<LogEntry, 'id'>
   encounters: EntityTable<Encounter, 'id'>
   campaigns: EntityTable<Campaign, 'id'>
+  /** The DM's session notes (never sent to players). */
+  notes: EntityTable<Note, 'id'>
   /** Per-device key/value settings (device identity, selected campaign). */
   settings: EntityTable<{ key: string; value: unknown }, 'key'>
 }
@@ -51,4 +54,12 @@ db.version(4).stores({
   encounters: 'id, updatedAt, campaignId',
   campaigns: 'id, updatedAt',
   settings: 'key',
+})
+db.version(5).stores({
+  characters: 'id, name, updatedAt, campaignId',
+  log: 'id, characterId, encounterId, at',
+  encounters: 'id, updatedAt, campaignId',
+  campaigns: 'id, updatedAt',
+  settings: 'key',
+  notes: 'id, updatedAt, campaignId',
 })
