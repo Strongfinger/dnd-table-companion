@@ -16,6 +16,7 @@ import ImportCharacter from './screens/ImportCharacter'
 import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
+import Lookup, { MonsterView } from './screens/Lookup'
 import NoteEdit from './screens/NoteEdit'
 import PartyOverview from './screens/PartyOverview'
 import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
@@ -48,6 +49,8 @@ export default function App() {
         {route.name === 'lobby' && <Lobby code={route.code} />}
         {route.name === 'dm' && <DmHome />}
         {route.name === 'note' && <NoteEdit key={route.id} id={route.id} />}
+        {route.name === 'lookup' && <Lookup tab={route.tab} />}
+        {route.name === 'monster' && <MonsterView key={route.id} id={route.id} />}
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
@@ -85,14 +88,17 @@ function FightRoute({ id }: { id: string }) {
 function NavBar({ route }: { route: Route }) {
   const lobby = useLobby()
   const inFights = route.name === 'fights' || route.name === 'fight'
-  const inDm = route.name === 'dm' || route.name === 'note'
+  const inDm = route.name === 'dm' || route.name === 'note' || route.name === 'lookup' || route.name === 'monster'
   const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
   return (
     <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
       <div className="mx-auto flex max-w-5xl text-sm sm:text-base">
         <a href="#/" className={tab(!inFights && !inDm && route.name !== 'lobby')}>📜 ตัวละคร</a>
         <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
-        {lobby.session?.role !== 'player' && <a href="#/dm" className={tab(inDm)}>🧙 DM</a>}
+        {/* Players in a room get the lookup (rules, conditions; spells soon) instead of the DM's tools. */}
+        {lobby.session?.role === 'player'
+          ? <a href="#/lookup" className={tab(inDm)}>📖 ค้นหา</a>
+          : <a href="#/dm" className={tab(inDm)}>🧙 DM</a>}
         <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
       </div>
       <LiveFightBar />

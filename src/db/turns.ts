@@ -1,10 +1,11 @@
-// Moving a fight to the next turn: used by the tracker's "ถัดไป" button and by a player ending their
-// own turn from their phone in a live room (the DM's device runs it), so both do exactly the same.
+// Fight changes used from more than one place, so they always work the same:
+// - next turn: the tracker's "ถัดไป" button, and a player ending their own turn from their phone
+// - adding monsters: the tracker, and the SRD lookup's "add to fight"
 import { isDead } from '../model/actions'
 import { withDefaults } from '../model/character'
-import { conditionsToClear } from '../model/encounter'
+import { conditionsToClear, createMonsters, type MonsterInput } from '../model/encounter'
 import { isTurnEventForPlayers } from '../model/playerView'
-import { nextTurn, startOfTurn } from '../rules'
+import { nextTurn, sortByInitiative, startOfTurn } from '../rules'
 import { db } from './db'
 import { getEncounter, updateEncounter } from './encounters'
 import { addLog } from './log'
@@ -44,4 +45,15 @@ export async function advanceTurn(encounterId: string, expect?: { activeId: stri
   const round = r.t.state.round
   for (const ev of r.t.events) await addLog('', ev.text, { encounterId, round }, isTurnEventForPlayers(ev, r.t.combatants))
   return true
+}
+
+/** Add `count` copies of a monster to a fight (numbered "Goblin 1", "Goblin 2"…), logged like the tracker does. */
+export async function addMonstersToFight(encounterId: string, input: MonsterInput, count: number): Promise<string[]> {
+  const added = await updateEncounter(encounterId, (x) => {
+    const list = createMonsters(input, count, x.combatants)
+    return { encounter: { ...x, combatants: sortByInitiative([...x.combatants, ...list]) }, result: { list, round: x.round } }
+  })
+  if (!added) return []
+  for (const c of added.list) await addLog('', `➕ ${c.name} เข้าร่วมการต่อสู้`, { encounterId, round: added.round }, true)
+  return added.list.map((c) => c.name)
 }

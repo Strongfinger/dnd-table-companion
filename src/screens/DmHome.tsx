@@ -28,8 +28,19 @@ export default function DmHome() {
     <div className="space-y-4">
       <header>
         <h1 className="text-3xl font-bold text-amber-400">🧙 ผู้ช่วย DM</h1>
-        <p className="text-stone-400">บันทึกเซสชัน (เก็บในเครื่องนี้ ผู้เล่นไม่เห็น)</p>
+        <p className="text-stone-400">ค้นหา SRD และบันทึกเซสชัน (เก็บในเครื่องนี้ ผู้เล่นไม่เห็น)</p>
       </header>
+
+      <div className="grid grid-cols-2 gap-2">
+        <a href="#/lookup/monsters" className="rounded-xl bg-stone-800 p-3 hover:bg-stone-700">
+          <div className="font-bold">👹 มอนสเตอร์ SRD</div>
+          <div className="text-xs text-stone-400">Stat block เต็ม · เพิ่มเข้าการต่อสู้</div>
+        </a>
+        <a href="#/lookup/rules" className="rounded-xl bg-stone-800 p-3 hover:bg-stone-700">
+          <div className="font-bold">📖 กติกา & Conditions</div>
+          <div className="text-xs text-stone-400">คำอธิบายย่อภาษาไทย</div>
+        </a>
+      </div>
 
       <CampaignPicker value={campaignId} onChange={setCampaignId} />
 

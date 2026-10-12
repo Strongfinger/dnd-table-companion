@@ -15,6 +15,9 @@ export type Route =
   /** The DM's tools: notes, generators, lookup. */
   | { name: 'dm' }
   | { name: 'note'; id: string }
+  /** SRD lookup: #/lookup, #/lookup/monsters, #/lookup/rules */
+  | { name: 'lookup'; tab: 'monsters' | 'rules' | null }
+  | { name: 'monster'; id: string }
   | { name: 'fight'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
@@ -28,6 +31,10 @@ export function parseRoute(hash: string): Route {
   if (first === 'party') return { name: 'party' }
   if (first === 'lab') return { name: 'lab' }
   if (first === 'lobby') return { name: 'lobby', code: id ?? null }
+  if (first === 'lookup') {
+    if (id === 'monster' && action) return { name: 'monster', id: action }
+    return { name: 'lookup', tab: id === 'monsters' || id === 'rules' ? id : null }
+  }
   if (first === 'dm') return id === 'note' && action ? { name: 'note', id: action } : { name: 'dm' }
   if (first === 'fight' && id) return { name: 'fight', id }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
