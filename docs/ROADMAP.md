@@ -47,10 +47,17 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] Real-phone test: joined from a phone, locked it, reconnected after unlocking (2026-10-12)
 - [x] Public client key: publishable Firebase config allowed via env vars + security rules + anonymous sign-in; never secret keys
 
-## Phase 3 — DM assistant (offline) · 2–3 sessions
-- [ ] Random tables: Thai NPC names and traits, taverns, loot by CR, quick encounters
-- [ ] SRD monster and spell lookup
-- [x] Session notes (belong to a campaign from day one): 🧙 DM tab, auto-save, search (step 3.1, 2026-10-12)
+## Phase 3 — DM assistant (offline, no AI) · redesigned 2026-10-12
+Use: mostly live at the table, on a laptop. Layout: **one DM screen**: the fight tracker in the middle and a
+side panel with tabs (Notebook · Generators · Lookup) that opens without leaving the fight.
+- [x] 3.1 Session notes per campaign (🧙 DM tab, auto-save, search) — will become "Session" pages in the notebook
+- [ ] 3.2 SRD lookup (first): full SRD 5.2.1 monster stat blocks (DM only; "add to fight"), spells, conditions and
+      rules (players too, on their phones). Needs a bigger offline data import (loaded only when opened).
+- [ ] 3.3 DM screen layout: side panel next to the tracker (Lookup now, the rest as they arrive)
+- [ ] 3.4 Campaign notebook: pages for NPCs, places, quests & hooks, factions & items, linked to each other
+- [ ] 3.5 Generators: NPC, tavern/shop, loot, quick encounter, plot hook, weather/event. Reroll parts, then save to
+      the notebook in one tap. Proper names in English, descriptions in Thai.
+- [ ] 3.6 Session planner: scenes, planned encounters linked to fights, read-aloud text, checklist
 
 ## Phase 4 — Lobby & live sync · 3–4 sessions ✅ done 2026-10-12
 - [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)
@@ -68,6 +75,6 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 
 ## Later
 - [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content
-- [ ] Minimap / battle map (shared view for players)
-- [ ] Claude API DM helper through a Vercel serverless function (NPC dialogue, descriptions, rules Q&A)
+- [ ] ~~Minimap / battle map~~ → use an outside tool (e.g. Owlbear Rodeo) next to the app (decided 2026-10-12)
+- [ ] ~~Claude API DM helper~~ → no AI (decided 2026-10-12)
 - [ ] QR code export/import of a character (optional)

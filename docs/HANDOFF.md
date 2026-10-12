@@ -1,4 +1,4 @@
-# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 in progress (3.1 notes done; next: 3.2 random generators, 3.3 monster lookup, 3.4 spell lookup)
+# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; next: 3.2 SRD lookup, then DM screen, notebook, generators, planner
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
