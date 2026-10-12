@@ -9,3 +9,6 @@ dist/
 docs/Character Sheets/
 docs/DM Scripts/
 !.env.example
+
+# Generated progress page (npm run roadmap)
+docs/roadmap.html
