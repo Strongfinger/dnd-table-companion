@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
 import PullToRefresh from './ui/PullToRefresh'
 import { HelpProvider } from './ui/help'
@@ -9,21 +9,25 @@ import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
-import DmHome from './screens/DmHome'
-import ImportPack from './screens/ImportPack'
 import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
-import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
 import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
-import LobbyLab from './screens/LobbyLab'
-import Lookup, { MonsterView, SpellView } from './screens/Lookup'
-import NotePageRoute from './screens/Notebook'
 import PartyOverview from './screens/PartyOverview'
 import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
 import RoomRollToast from './screens/RoomRollToast'
-import Tracker from './screens/Tracker'
+
+// DM-side screens load on first use, so players' phones start faster (the offline app still caches them all).
+const DmHome = lazy(() => import('./screens/DmHome'))
+const ImportPack = lazy(() => import('./screens/ImportPack'))
+const EncounterList = lazy(() => import('./screens/EncounterList'))
+const LobbyLab = lazy(() => import('./screens/LobbyLab'))
+const Lookup = lazy(() => import('./screens/Lookup'))
+const MonsterView = lazy(() => import('./screens/Lookup').then((m) => ({ default: m.MonsterView })))
+const SpellView = lazy(() => import('./screens/Lookup').then((m) => ({ default: m.SpellView })))
+const NotePageRoute = lazy(() => import('./screens/Notebook'))
+const Tracker = lazy(() => import('./screens/Tracker'))
 
 export default function App() {
   const route = useRoute()
@@ -37,6 +41,7 @@ export default function App() {
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
       <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' ? 'max-w-7xl' : route.name === 'party' ? 'max-w-5xl' : 'max-w-xl'}`}>
+        <Suspense fallback={<p className="text-center text-stone-500">กำลังโหลด…</p>}>
         {route.name === 'list' && <CharacterList />}
         {route.name === 'new' && <CreateWizard />}
         {route.name === 'import' && <ImportCharacter />}
@@ -55,6 +60,7 @@ export default function App() {
         {route.name === 'lookup' && <Lookup tab={route.tab} />}
         {route.name === 'monster' && <MonsterView key={route.id} id={route.id} />}
         {route.name === 'spell' && <SpellView key={route.id} id={route.id} />}
+        </Suspense>
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>

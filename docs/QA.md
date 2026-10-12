@@ -77,7 +77,7 @@ offline/PWA update, notebook and session planner editing.
 2. **Medium: floating 🎲 button covers content on phones**: the last "+ เพิ่ม" in the spell picker and the
    monster form's "เพิ่ม" sit under it until you scroll. Option: bottom padding on `<main>` equal to the
    button's height, or hide the button while a picker/form is open.
-3. **Low: first load is one 676 KB JS chunk** (build warning). Lazy-load the DM-only screens (tracker, DM
+3. ✅ Done 2026-10-13 (DM screens lazy-loaded; main chunk 754 → 426 KB). **Low: first load is one 676 KB JS chunk** (build warning). Lazy-load the DM-only screens (tracker, DM
    panel, notebook, generators, lookup) with `React.lazy` so players' phones load faster.
 4. **Low: a PC combatant's own `hp` copy goes stale** (the sheet is the source; the copy is only a fallback
    if the sheet is deleted). Harmless now; either keep it in sync or drop it.
