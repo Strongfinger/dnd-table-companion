@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DATA_VERSION, isCompatibleVersion, isValidSyncMeta, newerOf, stamp, type SyncMeta } from './sync'
+import { DATA_VERSION, isCompatibleVersion, isValidSyncMeta, mergeDraft, newerOf, stamp, type SyncMeta } from './sync'
 
 const rec = (rev: number, updatedAt: number, updatedBy: string): SyncMeta & { v: string } => ({ rev, updatedAt, updatedBy, v: `${rev}-${updatedBy}` })
 
@@ -32,5 +32,20 @@ describe('bad bookkeeping from old records or other devices', () => {
     for (const v of [{ rev: -1, updatedAt: 1, updatedBy: 'x' }, { rev: 1e12, updatedAt: 1, updatedBy: 'x' }, { rev: 1, updatedAt: Infinity, updatedBy: 'x' }, { rev: 1, updatedAt: 1 }]) {
       expect(isValidSyncMeta(v), JSON.stringify(v)).toBe(false)
     }
+  })
+})
+
+describe('mergeDraft', () => {
+  const original = { name: 'Nyx', notes: '', hp: { max: 10, current: 10, temp: 0 }, conditions: [] as string[] }
+  it('keeps changes made elsewhere in fields the form did not touch', () => {
+    const draft = { ...original, notes: 'new notes', hp: { ...original.hp, max: 12 } }
+    const latest = { ...original, hp: { max: 10, current: 4, temp: 2 }, conditions: ['Prone'] }
+    expect(mergeDraft(original, draft, latest)).toEqual({ name: 'Nyx', notes: 'new notes', hp: { max: 12, current: 4, temp: 2 }, conditions: ['Prone'] })
+  })
+
+  it('a field changed in the form wins', () => {
+    const draft = { ...original, conditions: ['Poisoned'] }
+    const latest = { ...original, conditions: ['Prone'] }
+    expect(mergeDraft(original, draft, latest).conditions).toEqual(['Poisoned'])
   })
 })

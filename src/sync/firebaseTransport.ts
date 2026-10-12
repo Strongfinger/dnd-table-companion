@@ -119,7 +119,9 @@ export function firebaseTransport(): RoomTransport | null {
           }))
         }
 
-        sendNow = (e) => void db.push(db.ref(database, `${room}/messages`), { fromUid: user.uid, at: e.at, json: JSON.stringify(e) })
+        // `at` on the record is when it was sent (listeners only read recent records); the envelope
+        // inside keeps its own time. A change re-sent from a player's outbox is old but sent now.
+        sendNow = (e) => void db.push(db.ref(database, `${room}/messages`), { fromUid: user.uid, at: Date.now(), json: JSON.stringify(e) })
         cleanups.push(() => void db.update(memberRef, { online: false, lastSeen: db.serverTimestamp() }))
       })().catch((err) => {
         console.error('lobby: could not connect', err)

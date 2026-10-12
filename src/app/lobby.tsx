@@ -7,6 +7,10 @@
 // source of truth: it applies players' actions and sends its copy of every played character back.
 // The running fight is sent to players too, as the secret-free player view ('fight' messages).
 // Dice rolls are shared with everyone in the room; the DM device writes them into the fight log.
+//
+// Nothing gets lost or applied twice (4.5): a player's changes wait in a saved outbox until the DM's
+// device confirms them ('ack'), and are re-sent until then; the DM's device saves the ids it has
+// applied, so a re-sent change, or one replayed after a reload, is only confirmed again.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getCharacter, saveReceivedCharacter, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
@@ -16,16 +20,37 @@ import type { Character } from '../model/character'
 import { applyCharacterAction } from '../model/characterActions'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
-import { makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
+import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { firebaseTransport } from '../sync/firebaseTransport'
 import { isDm, isKicked, parseKick, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
-import { mayChange, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from '../sync/sheets'
+import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
+import {
+  isEditHello, mayChange, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
+} from '../sync/sheets'
 import { LobbyContext, type LobbyApi, type RoomRoll } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
 
 const SETTING = 'lobby'
+/** Player: changes not yet confirmed by the DM's device. */
+const OUTBOX = 'lobby-outbox'
+/** DM: ids of players' changes and rolls already handled. */
+const APPLIED = 'lobby-applied'
+const RETRY_MS = 4000
+
+/** Small saved values: in settings, or per browser tab in test mode (each tab is a device there). */
+function store(key: string, value: unknown, local: boolean) {
+  if (!local) return void setSetting(key, value)
+  if (value == null) sessionStorage.removeItem(key)
+  else sessionStorage.setItem(key, JSON.stringify(value))
+}
+
+async function load(key: string, local: boolean): Promise<unknown> {
+  if (!local) return getSetting<unknown>(key)
+  const v = sessionStorage.getItem(key)
+  return v ? JSON.parse(v) : null
+}
 
 /** In test mode two tabs of one browser must look like two devices, so each tab gets its own id. */
 function tabDevice(base: { id: string; name: string }) {
@@ -59,6 +84,16 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const lastSent = useRef(new Map<string, number>())
   /** DM: the fight view last sent (as JSON), to skip repeats and to resend to players who (re)join. */
   const lastFight = useRef<string | null>(null)
+  /** DM: players' changes and rolls already handled (saved, so a reload doesn't apply them again). */
+  const applied = useRef(new Deduper(500))
+  /** Player: changes waiting for the DM's 'ack' (saved), and their count for the screen. */
+  const outbox = useRef<OutboxItem[]>([])
+  const [pending, setPending] = useState(0)
+  /** Player: send my full sheet once the outbox is empty (after connecting or picking a character). */
+  const needHello = useRef(false)
+  const statusRef = useRef<ConnectionStatus>('offline')
+  /** Counts connects, so a slow load for an old connect can't start it after a newer one. */
+  const connectRun = useRef(0)
   const online = firebaseTransport()
 
   /** Remember the session (state for the screen, ref for handlers, settings for a reload). */
@@ -74,6 +109,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   }
 
   function disconnect() {
+    connectRun.current++
     conn.current?.leave()
     conn.current = null
     membersRef.current = []
@@ -105,6 +141,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       }
       return
     }
+    if (e.kind === 'ack' && s.role === 'player' && isDm(membersRef.current, e.from)) {
+      const ids = parseAck(e.body)
+      if (ids) setOutbox(removeAcked(outbox.current, ids), s)
+      return
+    }
     if (e.kind === 'fight' && s.role === 'player' && isDm(membersRef.current, e.from)) {
       const body = e.body as { view?: unknown } | null
       setFight(body?.view == null ? null : parsePlayerView(body.view))
@@ -124,6 +165,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     const parsed = parseRollEvent(e.body)
     if (!parsed) return
     const roll = { ...parsed, by: rollerName(membersRef.current, e.from, e.fromName) }
+    // DM: a roll replayed after a reload was already logged.
+    if (s.role === 'dm' && !markApplied(e.id, s)) return
     addRoll({ id: e.id, at: e.at, roll, mine: false })
     if (s.role === 'dm') {
       const characterId = membersRef.current.find((m) => m.deviceId === e.from && m.role === 'player')?.characterId ?? null
@@ -141,9 +184,53 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     send('state', { character: c })
   }
 
-  async function sendHello(characterId: string) {
-    const c = await getCharacter(characterId)
-    if (c) send('hello', { character: c })
+  /** DM: remember a handled id (saved). False if it was handled before. */
+  function markApplied(id: string, s: LobbySession): boolean {
+    if (!applied.current.firstTime(id)) return false
+    store(APPLIED, { code: s.code, ids: applied.current.ids() }, s.local)
+    return true
+  }
+
+  /** Player: replace the outbox (saved, and counted for the screen); send my sheet once it's empty. */
+  function setOutbox(items: OutboxItem[], s: LobbySession) {
+    outbox.current = items.slice(-OUTBOX_LIMIT)
+    setPending(outbox.current.length)
+    store(OUTBOX, { code: s.code, items: outbox.current }, s.local)
+    maybeHello()
+  }
+
+  /** Player: send a change to the DM through the outbox (kept until confirmed). */
+  function queue(kind: Envelope['kind'], body: unknown) {
+    const s = sessionRef.current
+    if (!s) return
+    const envelope = makeEnvelope(kind, body, deviceFor(s.local))
+    setOutbox([...outbox.current, { envelope, sentAt: Date.now(), tries: 0 }], s)
+    conn.current?.send(envelope)
+  }
+
+  /**
+   * Player: the plain full-sheet 'hello' goes out once nothing is pending, so it never
+   * races changes still on their way (the DM could otherwise take the whole sheet and apply them twice).
+   */
+  function maybeHello() {
+    const s = sessionRef.current
+    if (!s || s.role !== 'player' || !s.characterId || !needHello.current) return
+    if (outbox.current.length > 0 || statusRef.current !== 'connected') return
+    needHello.current = false
+    void getCharacter(s.characterId).then((c) => c && send('hello', { character: c }))
+  }
+
+  function onStatus(status: ConnectionStatus) {
+    statusRef.current = status
+    setStatus(status)
+    if (status !== 'connected' || sessionRef.current?.role !== 'player') return
+    // (Re)connected: send everything still pending now, then my sheet once it's confirmed.
+    // (Next tick: a transport may report "connected" before join() has returned the connection.)
+    setTimeout(() => {
+      for (const item of outbox.current) conn.current?.send(item.envelope)
+      needHello.current = true
+      maybeHello()
+    }, 0)
   }
 
   /**
@@ -158,7 +245,16 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
   /** Sheet messages (see src/sync/sheets.ts). */
   async function syncSheet(e: Envelope, s: LobbySession) {
-    if (s.role === 'dm' && e.kind === 'hello') {
+    if (s.role === 'dm' && e.kind === 'hello' && isEditHello(e.body)) {
+      // A player's edit-screen save: their build, our play state.
+      const c = parseSheetBody(e.body)
+      if (!c || !(await allowed(e.from, c.id))) return
+      if (markApplied(e.id, s)) {
+        if (await getCharacter(c.id)) await updateCharacter(c.id, (dm) => ({ character: mergeEdit(dm, c), text: '' }))
+        else await saveReceivedCharacter(c, () => true, s.campaignId)
+      }
+      send('ack', { ids: [e.id] })
+    } else if (s.role === 'dm' && e.kind === 'hello') {
       const c = parseSheetBody(e.body)
       if (!c || !(await allowed(e.from, c.id))) return
       const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId)
@@ -167,19 +263,40 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     } else if (s.role === 'dm' && e.kind === 'action') {
       const a = parseActionBody(e.body)
       if (!a || !(await allowed(e.from, a.characterId))) return
-      const text = await updateCharacter(a.characterId, (ch) => applyCharacterAction(ch, a.action) ?? { character: ch, text: '' })
-      if (text) await logCharacterEvent(a.characterId, text)
+      // Already applied (sent again, or replayed after a reload): just confirm it again.
+      if (markApplied(e.id, s)) {
+        const text = await updateCharacter(a.characterId, (ch) => applyCharacterAction(ch, a.action) ?? { character: ch, text: '' })
+        if (text) await logCharacterEvent(a.characterId, text)
+      }
+      send('ack', { ids: [e.id] })
     } else if (s.role === 'player' && e.kind === 'state' && isDm(membersRef.current, e.from)) {
       const c = parseSheetBody(e.body)
       if (c && c.id === s.characterId) await saveReceivedCharacter(c, (stored) => takeDmState(stored, c))
     }
   }
 
-  function connect(s: LobbySession) {
+  function connect(session: LobbySession) {
     disconnect()
+    const s = { ...session, local: session.local || !online }
+    const run = connectRun.current
     lastSent.current.clear()
     lastFight.current = null
-    const transport = s.local || !online ? localTransport() : online
+    needHello.current = false
+    save(s)
+    setKickedNotice(null)
+    // Load what was saved for this room (outbox / handled ids) before any message can arrive.
+    void Promise.all([load(OUTBOX, s.local), load(APPLIED, s.local)]).then(([savedOutbox, savedApplied]) => {
+      if (run !== connectRun.current) return // left or reconnected meanwhile
+      outbox.current = outboxFor(savedOutbox, s.code)
+      setPending(outbox.current.length)
+      const a = savedApplied as { code?: string; ids?: unknown } | null
+      applied.current = new Deduper(500, a?.code === s.code && Array.isArray(a.ids) ? a.ids.filter((x): x is string => typeof x === 'string') : [])
+      join(s)
+    })
+  }
+
+  function join(s: LobbySession) {
+    const transport = s.local ? localTransport() : online!
     const me = deviceFor(s.local)
     conn.current = transport.join(s.code, { id: me.id, name: me.name, role: s.role, characterId: s.characterId, characterName: s.characterName }, {
       onMessage,
@@ -195,10 +312,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
         membersRef.current = list
         setMembers(list)
       },
-      onStatus: setStatus,
+      onStatus,
     })
-    save({ ...s, local: s.local || !online })
-    setKickedNotice(null)
   }
 
   // Rejoin the saved room when the app starts.
@@ -216,12 +331,21 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on start
   }, [])
 
-  // Player: send my sheet whenever I'm (re)connected or pick a character, so the DM has my latest.
-  const myCharacter = session?.role === 'player' ? session.characterId : null
+  // Player: re-send unconfirmed changes every few seconds while connected.
+  const isPlayer = session?.role === 'player'
   useEffect(() => {
-    if (myCharacter && status === 'connected') void sendHello(myCharacter)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sendHello reads refs
-  }, [myCharacter, status])
+    if (!isPlayer) return
+    const timer = setInterval(() => {
+      const s = sessionRef.current
+      if (!s || statusRef.current !== 'connected' || outbox.current.length === 0) return
+      const round = resendRound(outbox.current, Date.now(), RETRY_MS)
+      for (const item of round.send) conn.current?.send(item.envelope)
+      if (round.dropped) console.warn(`lobby: gave up ${round.dropped} change(s) the DM's device never confirmed`)
+      setOutbox(round.items, s)
+    }, RETRY_MS)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads refs
+  }, [isPlayer])
 
   // DM: whenever a played character changes on this device (a player's action, the tracker,
   // an edit), send the new copy to the room.
@@ -261,14 +385,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     kickedNotice,
     fight,
     rolls,
+    pending,
     create: (campaignId, local) =>
       connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [] }),
     join: (code, character, local) =>
       connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [] }),
     leave: () => {
+      const s = sessionRef.current
       disconnect()
+      if (s) {
+        store(OUTBOX, null, s.local)
+        store(APPLIED, null, s.local)
+      }
+      outbox.current = []
+      setPending(0)
       save(null)
-      setStatus('offline')
+      onStatus('offline')
     },
     kick: (deviceId) => {
       const s = sessionRef.current
@@ -287,12 +419,14 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       const patch = { characterId: character?.id ?? null, characterName: character?.name ?? null }
       conn.current?.updateMe(patch)
       save({ ...s, ...patch })
+      needHello.current = true
+      maybeHello()
     },
     shareAction: (characterId, action) => {
-      if (mine(characterId)) send('action', { characterId, action })
+      if (mine(characterId)) queue('action', { characterId, action })
     },
     shareSheet: (characterId) => {
-      if (mine(characterId)) void sendHello(characterId)
+      if (mine(characterId)) void getCharacter(characterId).then((c) => c && queue('hello', { character: c, edit: true }))
     },
     shareRoll: (r) => {
       const s = sessionRef.current

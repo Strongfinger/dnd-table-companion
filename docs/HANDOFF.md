@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync, 4.3 live fight view, 4.4 dice log done; next: 4.5 reconnect/offline merge)
+# Handoff: state on 2026-10-12, Phase 4 done (4.1–4.5); next: Phase 5 hardening (real session with friends) or Phase 3 DM assistant
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (368 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (379 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -15,7 +15,8 @@
 | Lobby transport | `src/sync/` (`envelope.ts`, `roomCode.ts`, `transport.ts`, `localTransport.ts`, `firebaseTransport.ts`) |
 | Lobby (real) | `src/app/lobby.tsx` (LobbyProvider: one connection for the whole app, `send`/`subscribe` for later steps), `src/app/useLobby.ts`, `src/sync/lobby.ts` (saved session, join link, kick), `src/screens/Lobby.tsx` (`#/lobby`, `#/lobby/CODE` from the QR) |
 | Sheet sync | `src/sync/sheets.ts` (protocol + pure checks), handled in `src/app/lobby.tsx`; `saveReceivedCharacter`/`watchCharacters` in `src/db/characters.ts`; callers: `PlayPanel` (`shareAction`), `CharacterEdit` (`shareSheet`) |
-| Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
+| Outbox / applied-once | `src/sync/outbox.ts` (player outbox, retry rounds, acks); `mergeDraft` in `src/model/sync.ts` (edit screen); `mergeEdit` in `src/sync/sheets.ts` |
+| Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`, `resync.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
@@ -63,6 +64,21 @@
    Others' rolls show in the roller ("ทอยล่าสุดในห้อง") and as a 5 s toast (`RoomRollToast`).
    `RateLimiter` (40 messages / 10 s per device) drops floods. Verified over Firebase in all directions.
    Not shared yet: death-save / hit-die rolls are already in the action log lines; initiative rolls by players.
+5. ✅ Step 4.5 (2026-10-12): nothing lost, nothing applied twice. Player: every action / edit goes through a
+   saved outbox (settings `lobby-outbox`; test mode: sessionStorage) and is re-sent every 4 s while connected
+   until the DM device answers `ack {ids}` (gives up after 20 tries, e.g. character switched). The plain
+   full-sheet `hello` is only sent when the outbox is empty (after connect or picking a character), so it
+   can't race pending actions. DM: ids of applied actions/edits/rolls are saved (`lobby-applied`, last 500),
+   so a re-send or a replay after a reload is only acked again. Edit-screen saves are merged by field on the
+   device itself (`mergeDraft`) and, in a room, sent as `hello {edit: true}`: the DM takes the build and
+   keeps its play state (`mergeEdit`: current/temp HP, conditions, death saves, exhaustion, turn, hit dice,
+   inspiration, concentration). Firebase records now carry the send time (`at`), so re-sent old changes
+   pass the listeners' "recent only" filter. Verified over Firebase: duplicate id applied once; same message
+   after a DM reload only acked; edit with stale HP keeps the DM's HP; player outbox survives a reload with
+   no DM online and is delivered in order when the DM joins, then the sheet hello follows.
+   Fixed limits from 4.2: (a) edit screen overwrites, (b) double apply after DM reload, (d) partly (by field).
+   Still open: (c) phone log lacks DM-made changes; (e) sheets over ~64 KB; old room messages pile up in
+   Firebase (rules allow create only) — listed in Phase 5.
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

@@ -1,7 +1,9 @@
 // Character sheet sync in a live lobby (Phase 4.2). The DM device is the source of truth:
-//   player → DM  'hello'  { character }            the full sheet: on join, reconnect and after edits
+//   player → DM  'hello'  { character }            the full sheet when (re)connecting with nothing pending
+//   player → DM  'hello'  { character, edit: true } the sheet after the player saved the edit screen
 //   player → DM  'action' { characterId, action }  one play change (damage, slot, condition...)
 //   DM → all     'state'  { character }            the DM's copy after any change to a played character
+//   DM → all     'ack'    { ids }                  actions/edits handled (players clear their outbox)
 // The helpers here are pure; the lobby provider (src/app/lobby.tsx) does the sending and saving.
 import type { Character } from '../model/character'
 import { parseCharacterAction, type CharacterAction } from '../model/characterActions'
@@ -55,4 +57,30 @@ export function takeDmState(stored: Pick<Character, 'rev'> | undefined, incoming
 export function playedCharacterIds(members: Member[], isRemoved: (deviceId: string) => boolean): string[] {
   const ids = members.filter((m) => m.role === 'player' && m.characterId && !isRemoved(m.deviceId)).map((m) => m.characterId!)
   return [...new Set(ids)].sort()
+}
+
+/** Is this 'hello' an edit from the edit screen (merged by field) rather than a plain sync? */
+export const isEditHello = (body: unknown) => typeof body === 'object' && body !== null && (body as Record<string, unknown>).edit === true
+
+/** Fields that change during play. In a live session the DM's device owns them. */
+export const PLAY_FIELDS = ['hitDiceSpent', 'deathSaves', 'heroicInspiration', 'exhaustion', 'conditions', 'concentration', 'turn'] as const
+
+/**
+ * The DM device got a player's edit-screen save: take what the player builds (scores, items,
+ * spells, notes, max HP, slots...) but keep the DM's play state (current HP, conditions, death
+ * saves...), which may have changed since. The revision ends above both copies.
+ */
+export function mergeEdit(dm: Character, edit: Character): Character {
+  const play = Object.fromEntries(PLAY_FIELDS.map((k) => [k, dm[k]])) as Pick<Character, (typeof PLAY_FIELDS)[number]>
+  return {
+    ...edit,
+    ...play,
+    hitDiceSpent: Math.min(dm.hitDiceSpent, edit.level),
+    hp: { max: edit.hp.max, current: Math.min(dm.hp.current, edit.hp.max), temp: dm.hp.temp },
+    id: dm.id,
+    campaignId: dm.campaignId,
+    ownerDeviceId: dm.ownerDeviceId,
+    createdAt: dm.createdAt,
+    rev: Math.max(dm.rev, edit.rev),
+  }
 }

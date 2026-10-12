@@ -122,11 +122,18 @@ function InRoom() {
   const shownFight = s.role === 'dm' ? liveFight(encounters, s.campaignId) : null
   const link = joinLink(window.location.origin + window.location.pathname, s.code)
   const shown = visibleMembers(lobby.members, s.kicked)
+  const leave = () => {
+    if (lobby.pending > 0 && !confirm(`ยังมี ${lobby.pending} การเปลี่ยนแปลงที่ DM ยังไม่ได้รับ ออกจากห้องตอนนี้จะไม่ส่งแล้ว ออกเลยไหม?`)) return
+    lobby.leave()
+  }
 
   return (
     <>
-      <Section title={s.role === 'dm' ? `ห้องของฉัน${campaign ? ` · 🗺 ${campaign.name}` : ''}` : 'ฉันอยู่ในห้อง'} action={<Button className="text-sm" onClick={lobby.leave}>ออกจากห้อง</Button>}>
-        <p className="mb-2 text-sm">{STATUS_TEXT[lobby.status]}{s.local && ' · โหมดทดสอบในเครื่อง'}</p>
+      <Section title={s.role === 'dm' ? `ห้องของฉัน${campaign ? ` · 🗺 ${campaign.name}` : ''}` : 'ฉันอยู่ในห้อง'} action={<Button className="text-sm" onClick={leave}>ออกจากห้อง</Button>}>
+        <p className="mb-2 text-sm">
+          {STATUS_TEXT[lobby.status]}{s.local && ' · โหมดทดสอบในเครื่อง'}
+          {s.role === 'player' && lobby.pending > 0 && ` · ⏳ รอ DM ยืนยัน ${lobby.pending} การเปลี่ยนแปลง`}
+        </p>
         <div className="rounded-lg bg-stone-900 p-3 text-center">
           <div className="text-xs text-stone-400">รหัสห้อง{s.role === 'dm' && ' (ให้ผู้เล่นพิมพ์ หรือสแกน QR)'}</div>
           <div className="font-mono text-4xl font-bold tracking-widest text-amber-400">{s.code}</div>

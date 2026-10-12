@@ -16,8 +16,10 @@ exports.join = async (code, member, onEnvelope) => {
   await db.set(me, { ...member, online: true })
   const q = db.query(db.ref(d, `rooms/${code}/messages`), db.orderByChild('at'), db.startAt(Date.now() - 2000))
   db.onChildAdded(q, (s) => { const m = s.val(); if (m.fromUid !== user.uid) onEnvelope(JSON.parse(m.json)) })
-  const send = (kind, body) => { const e = { v: 2, id: crypto.randomUUID(), kind, from: member.deviceId, fromName: member.name, at: Date.now(), body }; return db.push(db.ref(d, `rooms/${code}/messages`), { fromUid: user.uid, at: e.at, json: JSON.stringify(e) }) }
+  const send = (kind, body) => { const e = { v: 2, id: crypto.randomUUID(), kind, from: member.deviceId, fromName: member.name, at: Date.now(), body }; return db.push(db.ref(d, `rooms/${code}/messages`), { fromUid: user.uid, at: Date.now(), json: JSON.stringify(e) }) }
+  /** Send a ready-made envelope as is (e.g. the same id twice). */
+  const sendRaw = (e) => db.push(db.ref(d, `rooms/${code}/messages`), { fromUid: user.uid, at: Date.now(), json: JSON.stringify(e) })
   const leave = () => db.update(me, { online: false })
-  return { send, leave }
+  return { send, sendRaw, leave }
 }
 exports.sleep = (ms) => new Promise((r) => setTimeout(r, ms))

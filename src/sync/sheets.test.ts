@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
-import { mayChange, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
+import { isEditHello, mayChange, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
 import type { Member } from './transport'
 
 const nyx = createCharacter({ name: 'Nyx', className: 'Rogue', level: 3, scores: { str: 8, dex: 17, con: 14, int: 12, wis: 10, cha: 13 }, rev: 7 })
@@ -60,5 +60,30 @@ describe('playedCharacterIds', () => {
   it('lists picked characters once, without removed players', () => {
     const members = [member('dm', 'dm', null), member('p1', 'player', 'c2'), member('p2', 'player', 'c1'), member('p3', 'player', 'c1'), member('p4', 'player', null), member('p5', 'player', 'c9')]
     expect(playedCharacterIds(members, (id) => id === 'p5')).toEqual(['c1', 'c2'])
+  })
+})
+
+describe('mergeEdit', () => {
+  const dm = { ...nyx, hp: { max: 20, current: 6, temp: 3 }, conditions: ['Prone' as const], hitDiceSpent: 2, rev: 12, campaignId: 'camp' }
+  const edit = { ...nyx, notes: 'levelled up', level: 4, hp: { max: 27, current: 20, temp: 0 }, conditions: [], rev: 10, campaignId: 'theirs' }
+
+  it('takes the build, keeps the DM play state', () => {
+    const m = mergeEdit(dm, edit)
+    expect(m.notes).toBe('levelled up')
+    expect(m.level).toBe(4)
+    expect(m.hp).toEqual({ max: 27, current: 6, temp: 3 })
+    expect(m.conditions).toEqual(['Prone'])
+    expect(m.hitDiceSpent).toBe(2)
+    expect(m.campaignId).toBe('camp')
+    expect(m.rev).toBe(12)
+  })
+
+  it('keeps current HP within a lowered max', () => {
+    expect(mergeEdit({ ...dm, hp: { max: 20, current: 20, temp: 0 } }, { ...edit, hp: { max: 15, current: 15, temp: 0 } }).hp.current).toBe(15)
+  })
+
+  it('tells edits from plain syncs', () => {
+    expect(isEditHello({ character: {}, edit: true })).toBe(true)
+    expect(isEditHello({ character: {} })).toBe(false)
   })
 })

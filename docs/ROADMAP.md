@@ -52,17 +52,19 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [ ] SRD monster and spell lookup
 - [ ] Session notes (belong to a campaign from day one)
 
-## Phase 4 — Lobby & live sync · 3–4 sessions
+## Phase 4 — Lobby & live sync · 3–4 sessions ✅ done 2026-10-12
 - [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)
 - [x] DM device is the source of truth during a session; players send actions, DM device applies and broadcasts (step 4.2)
 - [x] Players' sheets synced both ways (HP, conditions, slots, death saves, action economy) (step 4.2, 2026-10-12)
 - [x] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied") (step 4.3, 2026-10-12)
 - [x] Shared dice log: rolls from any phone appear in the fight log (step 4.4, 2026-10-12)
-- [ ] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect
+- [x] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect (step 4.5: saved outbox + acks, applied-once ids, edits merged by field)
 - [x] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character, rate limit per device (4.4)
 
 ## Phase 5 — Hardening · 1–2 sessions
 - [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
+- [ ] Clean up old room messages in Firebase (they pile up; the rules only allow creating, not deleting)
+- [ ] Players' phone logs: also show changes the DM made to their character (now only their own actions)
 
 ## Later
 - [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content

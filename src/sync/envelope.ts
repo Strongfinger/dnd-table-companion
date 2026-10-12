@@ -4,7 +4,7 @@
 import { newId } from '../model/character'
 import { DATA_VERSION } from '../model/sync'
 
-export const MESSAGE_KINDS = ['hello', 'action', 'roll', 'state', 'ping', 'kick', 'fight'] as const
+export const MESSAGE_KINDS = ['hello', 'action', 'roll', 'state', 'ping', 'kick', 'fight', 'ack'] as const
 export type MessageKind = (typeof MESSAGE_KINDS)[number]
 
 export interface Envelope {
@@ -56,8 +56,15 @@ export class Deduper {
   private order: string[] = []
   private limit: number
 
-  constructor(limit = 2000) {
+  /** `initial`: ids already handled before (e.g. saved before a reload), oldest first. */
+  constructor(limit = 2000, initial: string[] = []) {
     this.limit = limit
+    for (const id of initial) this.firstTime(id)
+  }
+
+  /** The remembered ids, oldest first (to save them). */
+  ids(): string[] {
+    return [...this.order]
   }
 
   /** True the first time an id is seen, false for repeats. */

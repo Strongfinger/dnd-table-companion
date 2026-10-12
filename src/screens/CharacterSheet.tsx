@@ -170,7 +170,7 @@ function NotFound() {
 
 /** In a live lobby: shows that this sheet is synced with the room (player: with the DM; DM: who plays it). */
 function LiveBadge({ characterId }: { characterId: string }) {
-  const { session, members, status } = useLobby()
+  const { session, members, status, pending } = useLobby()
   if (!session) return null
   const player = members.find((m) => m.role === 'player' && m.characterId === characterId)
   const text = session.role === 'player'
@@ -179,7 +179,9 @@ function LiveBadge({ characterId }: { characterId: string }) {
   if (!text) return null
   return (
     <a href="#/lobby" className="block rounded-lg bg-sky-950 px-3 py-2 text-sm text-sky-200">
-      🌐 {text}{status !== 'connected' && ' · ⏳ รอสัญญาณ การเปลี่ยนแปลงจะส่งเมื่อเชื่อมต่อได้'}
+      🌐 {text}
+      {status !== 'connected' && ' · ⏳ รอสัญญาณ'}
+      {session.role === 'player' && pending > 0 && ` · ⏳ รอ DM ยืนยัน ${pending} การเปลี่ยนแปลง (ส่งให้เองเมื่อมีสัญญาณ)`}
     </a>
   )
 }

@@ -62,3 +62,13 @@ describe('RateLimiter', () => {
     expect(limit.allow('a', 1005)).toBe(true) // the first message left the window
   })
 })
+
+describe('Deduper with saved ids', () => {
+  it('starts from ids handled before and gives them back to save', () => {
+    const d = new Deduper(3, ['a', 'b'])
+    expect(d.firstTime('a')).toBe(false)
+    expect(d.firstTime('c')).toBe(true)
+    expect(d.firstTime('d')).toBe(true) // over the limit: 'a' is forgotten
+    expect(d.ids()).toEqual(['b', 'c', 'd'])
+  })
+})

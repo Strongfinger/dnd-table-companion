@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
 import { newId, type Character } from '../model/character'
+import { mergeDraft } from '../model/sync'
 import {
   ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
   deriveSheet, formatModifier, isSrdBackground, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
@@ -22,6 +23,8 @@ const CASTING_OPTIONS = [{ value: 'none', label: '— ไม่มี —' }, ..
 export default function CharacterEdit({ id }: { id: string }) {
   // The draft is a copy we edit freely; nothing is saved until "บันทึก" is pressed.
   const [draft, setDraft] = useState<Character | null>(null)
+  // The copy the form started from: on save, fields the form didn't change keep their newest value.
+  const [original, setOriginal] = useState<Character | null>(null)
   const [notFound, setNotFound] = useState(false)
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
@@ -29,7 +32,11 @@ export default function CharacterEdit({ id }: { id: string }) {
   const lobby = useLobby()
 
   useEffect(() => {
-    getCharacter(id).then((c) => (c ? setDraft(c) : setNotFound(true)))
+    getCharacter(id).then((c) => {
+      if (!c) return setNotFound(true)
+      setDraft(c)
+      setOriginal(c)
+    })
   }, [id])
 
   if (notFound) return <p className="text-center text-stone-400">ไม่พบตัวละครนี้ในเครื่อง</p>
@@ -119,12 +126,13 @@ export default function CharacterEdit({ id }: { id: string }) {
       alert('กรุณาใส่ชื่อตัวละคร')
       return
     }
-    // Current HP can't be above the (possibly lowered) max.
-    const current = Math.min(c.hp.current, c.hp.max)
-    // The revision continues from the newest saved copy (it may have changed while editing, e.g. the
-    // DM's device sent new HP in a live lobby), so this edit counts as the newest change.
+    // The sheet may have changed while the form was open (damage in the tracker, the DM's device in a
+    // live lobby): keep those changes in the fields this form didn't touch, and continue its revision.
     const latest = await getCharacter(c.id)
-    const saved = await saveCharacter({ ...c, name: c.name.trim(), hp: { ...c.hp, current }, rev: Math.max(c.rev, latest?.rev ?? 0) })
+    const merged = latest && original ? mergeDraft(original, c, latest) : c
+    // Current HP can't be above the (possibly lowered) max.
+    const current = Math.min(merged.hp.current, merged.hp.max)
+    const saved = await saveCharacter({ ...merged, name: merged.name.trim(), hp: { ...merged.hp, current }, rev: latest?.rev ?? c.rev })
     lobby.shareSheet(saved.id)
     go(`/c/${saved.id}`)
   }

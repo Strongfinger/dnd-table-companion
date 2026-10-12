@@ -46,3 +46,23 @@ export function newerOf<T extends SyncMeta>(a: T, b: T): T {
   if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? a : b
   return a.updatedBy >= b.updatedBy ? a : b
 }
+
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+const isPlainObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/**
+ * Save an edit form without losing changes made elsewhere while it was open (e.g. damage from the
+ * tracker or the DM's device): fields the form changed come from `draft`, all others from `latest`.
+ * `original` is the copy the form started from. Nested objects (like hp) are merged the same way.
+ */
+export function mergeDraft<T extends object>(original: T, draft: T, latest: T): T {
+  const o = original as Record<string, unknown>
+  const d = draft as Record<string, unknown>
+  const out: Record<string, unknown> = { ...(latest as Record<string, unknown>) }
+  for (const key of Object.keys(d)) {
+    if (sameValue(o[key], d[key])) continue
+    const l = out[key]
+    out[key] = isPlainObject(o[key]) && isPlainObject(d[key]) && isPlainObject(l) ? mergeDraft(o[key], d[key], l) : d[key]
+  }
+  return out as T
+}

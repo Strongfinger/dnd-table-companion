@@ -1,14 +1,17 @@
 // Fake DM for testing sheet sync against a player in the browser.
 // 1. node scripts/lobby-test/dm.cjs TESTQ2  2. In the app join TESTQ2 as a player and pick a character.
 // It answers the first sheet with a newer copy (-2 HP) and a stale one (should be ignored), sends a fight
-// where it's the player's turn, then a hidden creature's turn, and prints actions.
+// where it's the player's turn, then a hidden creature's turn, and prints (and confirms) actions and edits.
 const { join, sleep } = require('./fb.cjs')
 const code = process.argv[2]
 const log = (...a) => console.log(new Date().toISOString().slice(17, 23), ...a)
 let sheet = null
 ;(async () => {
   const conn = await join(code, { deviceId: 'node-dm', name: 'สคริปต์ DM', role: 'dm', characterId: null, characterName: null }, async (e) => {
-    if (e.kind === 'hello') {
+    if (e.kind === 'hello' && e.body.edit) {
+      log('EDIT', e.body.character.name, 'notes:', JSON.stringify(e.body.character.notes.slice(0, 40)), 'id', e.id.slice(0, 8))
+      await conn.send('ack', { ids: [e.id] })
+    } else if (e.kind === 'hello') {
       const first = !sheet
       sheet = e.body.character
       log('HELLO', sheet.name, 'rev', sheet.rev, 'hp', sheet.hp.current)
@@ -34,10 +37,11 @@ let sheet = null
     } else if (e.kind === 'roll') {
       log('ROLL', JSON.stringify(e.body), 'from device', e.fromName)
     } else if (e.kind === 'action') {
-      log('ACTION', JSON.stringify(e.body))
+      log('ACTION', JSON.stringify(e.body), 'id', e.id.slice(0, 8))
+      await conn.send('ack', { ids: [e.id] })
     } else log('msg', e.kind)
   })
   log('DM in room', code)
-  await sleep(90000)
+  await sleep(Number(process.argv[3] ?? 90) * 1000)
   await conn.leave(); process.exit(0)
 })().catch((e) => { console.error(e); process.exit(1) })

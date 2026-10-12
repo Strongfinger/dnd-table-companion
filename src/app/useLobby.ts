@@ -23,6 +23,8 @@ export interface LobbyApi {
   onlineAvailable: boolean
   /** Players: the running fight as the DM's device shows it to players (null = no fight running). */
   fight: PlayerEncounterView | null
+  /** Player: changes made here that the DM's device hasn't confirmed yet (re-sent until it does). */
+  pending: number
   /** Dice rolls shared in the room this session, newest first (mine included). */
   rolls: RoomRoll[]
   /** Set when the DM removed this device from the room. */
