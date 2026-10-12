@@ -40,6 +40,8 @@ export function useKeys(c: Character, a: CharacterAction): string[] {
       const f = c.features.find((x) => x.id === a.featureId)
       return f && a.used > f.used ? [`feature:${f.id}`] : []
     }
+    case 'actionSurge':
+      return [`feature:${a.featureId}`]
     default:
       return []
   }
@@ -70,6 +72,8 @@ export function playerMay(c: Character, a: CharacterAction, ctx: PlayContext = N
   if (DM_ONLY.includes(a.type)) return { ok: false, reason: 'พักสั้น/พักยาว และเริ่มเทิร์นใหม่: DM เป็นคนกดให้' }
   if (a.type === 'spendHitDie' && !ctx.shortRest) return { ok: false, reason: 'ใช้ Hit Dice ได้เฉพาะระหว่างพักสั้นที่ DM เริ่ม' }
   const turn = ctx.turn
+  // Action Surge gives the Action back by spending a use: allowed, but only on their own turn.
+  if (a.type === 'actionSurge' && turn.inFight && !turn.myTurn) return { ok: false, reason: 'Action Surge ใช้ได้เฉพาะตาของตัวเอง' }
   if (a.type === 'setActionUsed' && a.used && a.kind !== 'reaction' && turn.inFight && !turn.myTurn) {
     return { ok: false, reason: 'ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)' }
   }

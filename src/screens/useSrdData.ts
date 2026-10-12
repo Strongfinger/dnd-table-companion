@@ -4,6 +4,7 @@ import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
 import type { LootItem } from '../model/generators'
 import { loadSrdSpells, type SrdSpell } from '../model/spells'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
+import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
 
 export function useMonsters(): FullMonster[] | null {
   const [list, setList] = useState<FullMonster[] | null>(null)
@@ -35,6 +36,15 @@ export function useEquipment(): SrdEquipment | null {
   const [data, setData] = useState<SrdEquipment | null>(null)
   useEffect(() => {
     loadSrdEquipment().then(setData)
+  }, [])
+  return data
+}
+
+/** SRD feature texts (about 145 KB) for feature cards and the feature list. */
+export function useFeatureTexts(): SrdFeatureTexts | null {
+  const [data, setData] = useState<SrdFeatureTexts | null>(null)
+  useEffect(() => {
+    loadFeatureTexts().then(setData)
   }, [])
   return data
 }

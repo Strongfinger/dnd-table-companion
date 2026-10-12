@@ -88,3 +88,17 @@ the weapon properties (10, incl. Range) and the 8 Weapon Mastery properties. Loa
   and 16 gear items; Poisoner's Kit 50 GP, Viol 1 lb.; Brewer's and Tinker's Utilize DCs, Glassblower's Utilize,
   Disguise Kit as a tool; all 7 packs' weights and contents written from the SRD text.
 - **Not in the SRD table:** Spellbook (the Wizard's class item) keeps the source's 50 GP, 3 lb.
+
+## srd-features.json
+
+The English rules text of the SRD 5.2.1 class and subclass features (232), species traits (67) and feats (17),
+for the sheet's feature cards and the lookup. Loaded only when needed. The numbers the sheet uses (uses per
+level, recharge, dice) are not in this file: they are in `src/rules/srd/limitedFeatures.ts`, keyed by the same ids.
+
+- **Source:** 5e-bits/5e-database `src/2024/en/` (downloaded 2026-10-13): `5e-SRD-Features.json`
+  (184,384 bytes, SHA-256 `6390b3a1ad2ae68ad21516c38309799f610f893cb008cd3ad920d0eed89f8249`),
+  `5e-SRD-Traits.json` (53,892 bytes, SHA-256 `acbe77b03e08959b6d8901b10d7d9eaad57a2624af121c4ef72157c708bf9427`),
+  `5e-SRD-Feats.json` (9,773 bytes, SHA-256 `f80bf64d46b4addb5d991c6b4b1e05e8c0f9209ffbae297222c5439022abcbc3`).
+- **Made by:** `scripts/srd/features.mjs`. Text clean-up: the PDF's line-break hyphens ("ex- pended") are joined
+  when the joined word is a real word (the texts' own words plus the system word list); a few dashes the source
+  lost ("Strength-with" → "Strength—with") are put back by a short fix list in the script.

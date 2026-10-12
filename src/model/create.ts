@@ -7,6 +7,7 @@ import {
   type ProficiencyLevel, type Skill, type SpeciesName,
 } from '../rules'
 import { createCharacter, type Character } from './character'
+import { withAllCatalogFeatures } from './featureCatalog'
 
 export interface CreationChoices {
   name: string
@@ -65,7 +66,8 @@ export function buildCharacter(c: CreationChoices): Character {
     return `• ${f}${list}: ${FEAT_INFO[f].descriptionTh}`
   })
 
-  return createCharacter({
+  // SRD limited-use features (Second Wind, Rage, Breath Weapon…) start on the sheet.
+  return withAllCatalogFeatures(createCharacter({
     name: c.name.trim(),
     player: c.player.trim(),
     className: c.className,
@@ -94,5 +96,5 @@ export function buildCharacter(c: CreationChoices): Character {
     ].filter(Boolean).join('\n'),
     proficienciesText: `เครื่องมือ: ${bg.tool}\nภาษา: Common + อีก 2 ภาษา (เลือกกับ DM)`,
     notes: '',
-  })
+  }))
 }

@@ -7,6 +7,7 @@ import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
 import { newId, type Character } from '../model/character'
 import { mergeDraft } from '../model/sync'
 import { applyAutoAC, characterArmorClass } from '../model/inventory'
+import { addNewlyAvailable, refreshCatalogFeatures } from '../model/featureCatalog'
 import { useEquipment } from './useSrdData'
 import {
   ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
@@ -142,8 +143,9 @@ export default function CharacterEdit({ id }: { id: string }) {
     const merged = latest && original ? mergeDraft(original, c, latest) : c
     // Current HP can't be above the (possibly lowered) max.
     const current = Math.min(merged.hp.current, merged.hp.max)
-    // Auto AC follows the edits (ability scores, class, level, bonus).
-    const withAc = equipment ? applyAutoAC(merged, equipment) : merged
+    // Auto AC and SRD feature uses follow the edits (ability scores, class, level, bonus).
+    const refreshed = refreshCatalogFeatures(latest ? addNewlyAvailable(latest, merged) : merged)
+    const withAc = equipment ? applyAutoAC(refreshed, equipment) : refreshed
     const saved = await saveCharacter({ ...withAc, name: merged.name.trim(), hp: { ...merged.hp, current }, rev: latest?.rev ?? c.rev })
     lobby.shareSheet(saved.id)
     go(`/c/${saved.id}`)

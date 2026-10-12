@@ -37,6 +37,8 @@ export type CharacterAction =
   /** `detail`: what it was used for, e.g. "Attack: Greatsword" (logged). */
   | { type: 'setActionUsed'; kind: ActionKind; used: boolean; detail?: string }
   | { type: 'resetTurn' }
+  /** Action Surge: spend one use and get the Action back for one more action this turn. */
+  | { type: 'actionSurge'; featureId: string }
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 const hpText = (h: Character['hp']) => `HP ${h.current}/${h.max}${h.temp ? ` (+${h.temp} Temp)` : ''}`
@@ -134,6 +136,14 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
       }
     case 'resetTurn':
       return { character: { ...c, turn: startOfTurn() }, text: '' }
+    case 'actionSurge': {
+      const f = c.features.find((x) => x.id === a.featureId)
+      if (!f || f.used >= f.max) return null
+      return {
+        character: { ...c, features: c.features.map((x) => (x.id === f.id ? { ...x, used: x.used + 1 } : x)), turn: { ...c.turn, action: false } },
+        text: `⚡ ${c.name} ใช้ ${f.name}: ได้ Action เพิ่มอีก 1 ครั้งในเทิร์นนี้ (เหลือ ${f.max - f.used - 1}/${f.max})`,
+      }
+    }
   }
 }
 
@@ -180,6 +190,8 @@ export function parseCharacterAction(v: unknown): CharacterAction | null {
       return isBool(v.on) ? { type: 'setInspiration', on: v.on } : null
     case 'setConcentration':
       return typeof v.spell === 'string' && v.spell.length <= 100 ? { type: 'setConcentration', spell: v.spell } : null
+    case 'actionSurge':
+      return typeof v.featureId === 'string' && v.featureId.length >= 1 && v.featureId.length <= 64 ? { type: 'actionSurge', featureId: v.featureId } : null
     case 'setActionUsed':
       if (!ACTION_KINDS.includes(v.kind as ActionKind) || !isBool(v.used)) return null
       if (v.detail !== undefined && (typeof v.detail !== 'string' || v.detail.length > 100)) return null

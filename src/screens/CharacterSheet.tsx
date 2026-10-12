@@ -6,6 +6,7 @@ import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
 import Attacks from './Attacks'
+import ClassFeatures from './ClassFeatures'
 import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
 import { characterArmorClass } from '../model/inventory'
@@ -137,6 +138,7 @@ export default function CharacterSheet({ id }: { id: string }) {
 
       <Inventory c={c} />
 
+      <ClassFeatures c={c} />
       <TextBlock title="ความสามารถพิเศษ (Features & Traits)" text={c.featuresText} />
       <TextBlock title="ความชำนาญอื่นๆ และภาษา" text={c.proficienciesText} />
       <TextBlock title="โน้ต" text={c.notes} />

@@ -11,6 +11,9 @@ import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/k
 import { Term } from '../ui/help'
 import UseActionDialog from '../ui/UseActionDialog'
 import { useCharacterAct } from './useCharacterAct'
+import { FeatureCard, FeaturePicker } from './FeatureCatalog'
+import { useFeatureTexts } from './useSrdData'
+import { featuresToAdd } from '../model/featureCatalog'
 import { CONDITION_TH, RECHARGE_LABEL } from '../ui/labels'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
@@ -26,6 +29,10 @@ export default function PlayPanel({ c }: { c: Character }) {
   const [pending, setPending] = useState<SuggestionKind | null>(null)
 
   const { act: apply, asPlayer, waitingForTurn } = useCharacterAct(c)
+  const [picking, setPicking] = useState(false)
+  const [openFeature, setOpenFeature] = useState<string | null>(null)
+  const featureTexts = useFeatureTexts()
+  const canAddFeatures = featuresToAdd(c).length > 0
 
   /** Send one action and show what happened (or why it was refused). */
   const act = async (action: CharacterAction) => {
@@ -211,25 +218,37 @@ export default function PlayPanel({ c }: { c: Character }) {
         </div>
       )}
 
-      {/* Limited-use features */}
-      {c.features.length > 0 && (
+      {/* Limited-use features (tap a name for its card; "+ จาก SRD" adds catalog features) */}
+      {(c.features.length > 0 || canAddFeatures) && (
         <div className="mt-4">
-          <div className="mb-1 text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · {asPlayer ? 'แตะเพื่อใช้ (DM เป็นคนคืน)' : 'แตะเพื่อใช้/คืน'}</div>
-          {c.features.map((f) => f.pool || f.max > 10 ? (
-            <PoolRow key={f.id} f={f} canGiveBack={!asPlayer} onSet={(used) => act({ type: 'setFeatureUsed', featureId: f.id, used })} />
-          ) : (
-            <div key={f.id} className="flex flex-wrap items-center gap-2 py-1">
-              <span className="min-w-28 text-sm">{f.name}</span>
-              {Array.from({ length: f.max }, (_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`${f.name} ${i + 1}`}
-                  onClick={() => tapFeature(f.id, i)}
-                  className={`h-7 w-7 rounded border-2 border-amber-400 ${i < f.used ? 'bg-transparent' : 'bg-amber-500'}`}
-                />
-              ))}
-              <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · แตะชื่อเพื่อดู/ใช้{asPlayer ? ' (DM เป็นคนคืน)' : ''}</span>
+            {canAddFeatures && !picking && <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => setPicking(true)}>+ จาก SRD</Button>}
+          </div>
+          {picking && <FeaturePicker c={c} onClose={() => setPicking(false)} />}
+          {c.features.map((f) => (
+            <div key={f.id}>
+              {f.pool || f.max > 10 ? (
+                <PoolRow f={f} canGiveBack={!asPlayer} onOpen={() => setOpenFeature(openFeature === f.id ? null : f.id)}
+                  onSet={(used) => act({ type: 'setFeatureUsed', featureId: f.id, used })} />
+              ) : (
+                <div className="flex flex-wrap items-center gap-2 py-1">
+                  <button type="button" className="min-w-28 text-left text-sm underline decoration-stone-600 underline-offset-4" onClick={() => setOpenFeature(openFeature === f.id ? null : f.id)}>
+                    {f.name}
+                  </button>
+                  {Array.from({ length: f.max }, (_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`${f.name} ${i + 1}`}
+                      onClick={() => tapFeature(f.id, i)}
+                      className={`h-7 w-7 rounded border-2 border-amber-400 ${i < f.used ? 'bg-transparent' : 'bg-amber-500'}`}
+                    />
+                  ))}
+                  <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
+                </div>
+              )}
+              {openFeature === f.id && <FeatureCard c={c} featureId={f.id} texts={featureTexts} />}
             </div>
           ))}
         </div>
@@ -320,13 +339,13 @@ export default function PlayPanel({ c }: { c: Character }) {
 }
 
 /** A pool of points (Lay On Hands, Focus Points…): spend any amount; the DM (or offline play) can give some back. */
-function PoolRow({ f, canGiveBack, onSet }: { f: Character['features'][number]; canGiveBack: boolean; onSet: (used: number) => void }) {
+function PoolRow({ f, canGiveBack, onSet, onOpen }: { f: Character['features'][number]; canGiveBack: boolean; onSet: (used: number) => void; onOpen: () => void }) {
   const [amount, setAmount] = useState('1')
   const n = Math.max(1, Math.min(MAX_FEATURE_USES, Number(amount) || 1))
   const left = f.max - f.used
   return (
     <div className="flex flex-wrap items-center gap-2 py-1">
-      <span className="min-w-28 text-sm">{f.name}</span>
+      <button type="button" className="min-w-28 text-left text-sm underline decoration-stone-600 underline-offset-4" onClick={onOpen}>{f.name}</button>
       <span className="font-bold text-amber-300">{left}/{f.max}</span>
       <input
         className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-center text-base"
