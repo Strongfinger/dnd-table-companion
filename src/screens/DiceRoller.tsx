@@ -1,7 +1,7 @@
 // Floating dice roller: any expression ("2d6+3"), advantage/disadvantage, Critical Hit,
 // rolled in the app or typed in from real dice. History stays while the app is open.
 // In a live lobby, rolls can be shared with the room (players: on by default; DM: off, DM rolls are often secret).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   addDie, addModifier, canBeCritical, canUseAdvantage, criticalDice, diceRange, formatDice, naturalD20, naturalFromManual,
   parseDice, resolveRollMode, rollDice, totalFromManualDice, type RollMode,
@@ -9,6 +9,7 @@ import {
 import { useLobby } from '../app/useLobby'
 import { rollEventText } from '../model/rollEvent'
 import { Button } from '../ui/kit'
+import { onRollerRequest } from '../ui/rollerBus'
 
 export interface RollRecord {
   id: number
@@ -19,6 +20,8 @@ export interface RollRecord {
   faces: number[][] | null
   total: number
   natural: 20 | 1 | null
+  /** What it was for, when opened from the sheet (e.g. "Rapier · โจมตี"). */
+  label?: string
 }
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20, 100]
@@ -31,7 +34,19 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
   const [disadvantage, setDisadvantage] = useState(false)
   const [critical, setCritical] = useState(false)
   const [manual, setManual] = useState('')
+  /** Set when a sheet button opened the roller; cleared when the expression is edited by hand. */
+  const [label, setLabel] = useState('')
   const lobby = useLobby()
+  // A sheet button (attack, damage…) opens the roller with its dice filled in.
+  useEffect(() => onRollerRequest((r) => {
+    setText(r.expression)
+    setLabel(r.label)
+    setAdvantage(false)
+    setDisadvantage(false)
+    setCritical(false)
+    setManual('')
+    setOpen(true)
+  }), [])
   // null = the default for my role in the room.
   const [shareChoice, setShareChoice] = useState<boolean | null>(null)
   const share = !!lobby.session && (shareChoice ?? lobby.session.role === 'player')
@@ -59,13 +74,13 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
   function roll() {
     if (!expr) return
     const r = rollDice(expr, effectiveMode)
-    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: r.rolls, total: r.total, natural: naturalD20(expr, r) })
+    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: r.rolls, total: r.total, natural: naturalD20(expr, r), ...(label ? { label } : {}) })
   }
 
   function useManual() {
     if (!expr || manualTotal === null) return
     // With advantage at the table, the player rolls two d20s and types the one they keep.
-    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: null, total: manualTotal, natural: naturalFromManual(expr, manualSum) })
+    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: null, total: manualTotal, natural: naturalFromManual(expr, manualSum), ...(label ? { label } : {}) })
     setManual('')
   }
 
@@ -96,6 +111,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
               <div className={`rounded-xl p-3 text-center ${last.natural === 20 ? 'bg-emerald-900' : last.natural === 1 ? 'bg-red-900' : 'bg-stone-800'}`}>
                 <div className="text-5xl font-bold">{last.total}</div>
                 <div className="text-sm text-stone-300">
+                  {last.label && <span className="font-bold text-amber-300">{last.label} · </span>}
                   {last.expression}{last.mode !== 'normal' && ` · ${MODE_LABEL[last.mode]}`}{last.critical && ' · Critical'}
                   {last.faces ? ` · 🎲 [${last.faces.map((f) => f.join(', ')).join(' | ')}]` : ' · ทอยเอง'}
                   {last.natural === 20 && ' · Nat 20!'}{last.natural === 1 && ' · Nat 1'}
@@ -109,14 +125,18 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
                 className={`min-w-0 flex-1 rounded-lg border bg-stone-950 px-3 py-2 text-center font-mono text-lg ${parsed ? 'border-stone-600' : 'border-red-500'}`}
                 value={text}
                 aria-label="สูตรลูกเต๋า"
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  setText(e.target.value)
+                  setLabel('')
+                }}
               />
-              <Button className="px-3" onClick={() => setText('')}>ล้าง</Button>
+              <Button className="px-3" onClick={() => { setText(''); setLabel('') }}>ล้าง</Button>
             </div>
+            {label && <p className="text-sm font-bold text-amber-300">{label}</p>}
             {!parsed && <p className="text-xs text-red-300">พิมพ์แบบ 2d6+3, d20+5 หรือ 1d8+1d6</p>}
             <div className="flex flex-wrap gap-1.5">
               {QUICK_DICE.map((d) => (
-                <button key={d} type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => setText(addDie(text, d))}>d{d}</button>
+                <button key={d} type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => { setText(addDie(text, d)); setLabel('') }}>d{d}</button>
               ))}
               <button type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => setText(addModifier(text, -1))}>−1</button>
               <button type="button" className="rounded-lg bg-stone-700 px-3 py-2 font-bold" onClick={() => setText(addModifier(text, 1))}>+1</button>
@@ -198,7 +218,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
                 {history.slice(1, 15).map((h) => (
                   <li key={h.id} className="flex justify-between rounded bg-stone-800 px-2 py-1">
                     <span className="text-stone-400">
-                      {h.expression}{h.mode !== 'normal' && ` (${MODE_LABEL[h.mode]})`}{h.critical && ' Crit'}{!h.faces && ' · ทอยเอง'}
+                      {h.label && `${h.label} · `}{h.expression}{h.mode !== 'normal' && ` (${MODE_LABEL[h.mode]})`}{h.critical && ' Crit'}{!h.faces && ' · ทอยเอง'}
                     </span>
                     <span className={`font-bold ${h.natural === 20 ? 'text-emerald-400' : h.natural === 1 ? 'text-red-400' : ''}`}>{h.total}</span>
                   </li>

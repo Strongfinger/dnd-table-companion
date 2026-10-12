@@ -231,7 +231,11 @@ function spell(v: unknown): Character['spells'][number] | undefined {
 function item(v: unknown): Character['inventory'][number] | undefined {
   if (!isObject(v) || !isInt(v.qty, 0, 9999)) return undefined
   const name = text(v.name, 200)
-  return name === undefined ? undefined : { id: itemId(v.id), name, qty: v.qty }
+  if (name === undefined) return undefined
+  const out: Character['inventory'][number] = { id: itemId(v.id), name, qty: v.qty }
+  if (typeof v.srdId === 'string' && /^[a-z0-9-]{1,64}$/.test(v.srdId)) out.srdId = v.srdId
+  if (v.equipped === true) out.equipped = true
+  return out
 }
 
 function coins(v: unknown): Character['coins'] | undefined {

@@ -9,6 +9,7 @@ describe('shared dice rolls', () => {
     expect(r).toEqual(ok)
     expect(rollEventText(r)).toBe('🎲 Boom: 1d20+5 (Advantage) = 23')
     expect(rollEventText({ ...r, faces: null, natural: 20, mode: 'normal' })).toBe('🎲 Boom: 1d20+5 (ทอยเอง) = 23 · Nat 20!')
+    expect(rollEventText({ ...r, mode: 'normal', label: 'Rapier · โจมตี' })).toBe('🎲 Boom · Rapier · โจมตี: 1d20+5 = 23')
   })
 
   it('a natural 20 must match a d20 face (or be typed in)', () => {

@@ -5,7 +5,9 @@ import { useLobby } from '../app/useLobby'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
+import Attacks from './Attacks'
 import ExportPanel from './ExportPanel'
+import Inventory from './Inventory'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
 import SpellList from './SpellList'
@@ -23,7 +25,6 @@ export default function CharacterSheet({ id }: { id: string }) {
 
   const s = deriveSheet(c)
   const mod = formatModifier
-  const coins = Object.entries(c.coins).filter(([, n]) => n > 0)
 
   return (
     <div className="space-y-4">
@@ -103,21 +104,7 @@ export default function CharacterSheet({ id }: { id: string }) {
         </div>
       </Section>
 
-      {s.attacks.length > 0 && (
-        <Section title="อาวุธและการโจมตี (Attacks)">
-          <ul className="divide-y divide-stone-700">
-            {s.attacks.map((a) => (
-              <li key={a.id} className="grid grid-cols-[1fr_3rem_auto] items-baseline gap-2 py-2">
-                <span className="font-bold">{a.name}</span>
-                <span className="text-right text-amber-300">{mod(a.hit)}</span>
-                <span className="text-right">
-                  {a.damage} <span className="text-sm text-stone-400">{a.damageType}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+      <Attacks c={c} manual={s.attacks} />
 
       {c.spellcastingAbility && (
         <Section title="Spellcasting">
@@ -132,21 +119,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       {/* Spells: shown for casters, or anyone who already has spells (e.g. from a feat). */}
       {(c.spellcastingAbility || c.spells.length > 0) && <SpellList c={c} />}
 
-      {(c.inventory.length > 0 || coins.length > 0) && (
-        <Section title="ของในกระเป๋า (Inventory)">
-          {coins.length > 0 && (
-            <p className="mb-2 text-amber-300">{coins.map(([k, n]) => `${n} ${k.toUpperCase()}`).join(' · ')}</p>
-          )}
-          <ul className="space-y-1">
-            {c.inventory.map((item) => (
-              <li key={item.id} className="flex justify-between">
-                <span>{item.name}</span>
-                <span className="text-stone-400">×{item.qty}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+      <Inventory c={c} />
 
       <TextBlock title="ความสามารถพิเศษ (Features & Traits)" text={c.featuresText} />
       <TextBlock title="ความชำนาญอื่นๆ และภาษา" text={c.proficienciesText} />

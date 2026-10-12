@@ -12,6 +12,8 @@ export interface RollEvent {
   /** Die faces; null when typed in from real dice. */
   faces: number[][] | null
   natural: 20 | 1 | null
+  /** What the roll was for, e.g. "Rapier · โจมตี" (optional; older devices don't send it). */
+  label?: string
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -19,7 +21,8 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 /** Check a received roll and rebuild it with known fields only, or null. */
 export function parseRollEvent(v: unknown): RollEvent | null {
   if (!isObj(v) || v.type !== 'roll') return null
-  const { by, expression, mode, critical, total, faces, natural } = v
+  const { by, expression, mode, critical, total, faces, natural, label } = v
+  if (label !== undefined && (typeof label !== 'string' || label.length > 60)) return null
   if (typeof by !== 'string' || by.length > 60 || typeof expression !== 'string' || expression.length > 60) return null
   if (mode !== 'normal' && mode !== 'advantage' && mode !== 'disadvantage') return null
   if (typeof critical !== 'boolean' || !Number.isInteger(total) || Math.abs(total as number) > 100000) return null
@@ -31,13 +34,15 @@ export function parseRollEvent(v: unknown): RollEvent | null {
   const e = parseDice(expression)
   if (!e) return null
   if (natural !== null && (!canUseAdvantage(e) || (faces !== null && !(faces as number[][])[0]?.includes(natural)))) return null
-  return { type: 'roll', by, expression, mode, critical, total: total as number, faces: faces as number[][] | null, natural }
+  const out: RollEvent = { type: 'roll', by, expression, mode, critical, total: total as number, faces: faces as number[][] | null, natural }
+  if (label) out.label = label
+  return out
 }
 
-/** One log line, e.g. "🎲 Boom: 1d20+5 (Advantage) = 23". */
+/** One log line, e.g. "🎲 Boom: 1d20+5 (Advantage) = 23" or "🎲 Nyx · Rapier · โจมตี: 1d20+5 = 17". */
 export function rollEventText(r: RollEvent): string {
   const extra = [r.mode !== 'normal' ? (r.mode === 'advantage' ? 'Advantage' : 'Disadvantage') : '', r.critical ? 'Critical' : '', r.faces ? '' : 'ทอยเอง']
     .filter(Boolean).join(', ')
   const nat = r.natural === 20 ? ' · Nat 20!' : r.natural === 1 ? ' · Nat 1' : ''
-  return `🎲 ${r.by}: ${r.expression}${extra ? ` (${extra})` : ''} = ${r.total}${nat}`
+  return `🎲 ${r.by}${r.label ? ` · ${r.label}` : ''}: ${r.expression}${extra ? ` (${extra})` : ''} = ${r.total}${nat}`
 }

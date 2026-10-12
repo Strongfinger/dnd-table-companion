@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
 import type { LootItem } from '../model/generators'
 import { loadSrdSpells, type SrdSpell } from '../model/spells'
+import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
 
 export function useMonsters(): FullMonster[] | null {
   const [list, setList] = useState<FullMonster[] | null>(null)
@@ -27,4 +28,13 @@ export function useMagicItems(): LootItem[] | null {
     import('../data/srd-magic-items.json').then((m) => setList(m.default as LootItem[]))
   }, [])
   return list
+}
+
+/** SRD 5.2.1 equipment (weapons, armor, gear) for the sheet's attacks and inventory. */
+export function useEquipment(): SrdEquipment | null {
+  const [data, setData] = useState<SrdEquipment | null>(null)
+  useEffect(() => {
+    loadSrdEquipment().then(setData)
+  }, [])
+  return data
 }

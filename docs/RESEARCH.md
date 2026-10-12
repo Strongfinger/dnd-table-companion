@@ -144,7 +144,7 @@ Each step: build script / pure rules in `src/rules/` with tests → UI → `rule
 | # | Step | Size | Notes |
 |---|---|---|---|
 | **E1** ✅ | `scripts/srd/equipment.mjs` → `src/data/srd-equipment.json`: weapons, armor, mastery + property texts. Apply §2 corrections; README entry with checksum | S | Lazy-loaded |
-| **E2** | Inventory items can point to an SRD item (`srdId`) and be **equipped**. Equipped weapons appear as attacks: Finesse = higher of STR/DEX, ranged = DEX, Versatile two-handed damage, proficiency from class training, Mastery text shown. **Attack tap → d20 roll; separate Damage tap** (Critical doubles dice), both via `DiceRoll`. Hand-made attacks stay | M | Fixes QA #1 "attack +X, damage YdZ+M" |
+| **E2** ✅ | Inventory items can point to an SRD item (`srdId`) and be **equipped**. Equipped weapons appear as attacks: Finesse = higher of STR/DEX, ranged = DEX, Versatile two-handed damage, proficiency from class training, Mastery text shown. **Attack tap → d20 roll; separate Damage tap** (Critical doubles dice), both via `DiceRoll`. Hand-made attacks stay | M | Fixes QA #1 "attack +X, damage YdZ+M" |
 | **E3** | `src/rules/armor.ts`: AC from **equipped** armor + Shield + DEX cap, Unarmored Defense, Str minimum → −10 ft., Stealth Disadvantage, untrained-armor warning; manual override kept | M | Nyx: AC 14 in Leather |
 | **F1** | Rules fix first: `shortOne` recharge + pools (`kind`), raise the max limit; old data still imports | S | Fixes a real Short Rest bug today |
 | **F2** | Feature catalog (§4): rules table + text data, picker on the sheet, detail view with SRD text, use button (spend, action economy, log, dice) | L | The new request |
@@ -154,7 +154,7 @@ Each step: build script / pure rules in `src/rules/` with tests → UI → `rule
 | **E7** | Lookup tabs: Equipment, Weapon Mastery & Properties, Feats, Class features, Poisons | S | |
 | Q | QA #2 (🎲 button covers buttons), QA #3 (`React.lazy` DM screens) | S | |
 
-E1 done 2026-10-13 (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
+E1 and E2 done 2026-10-13 (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
 Order: **E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7**. Before Phase 5 (first real session): E1–F2.
 
 ## 6. Licensing notes

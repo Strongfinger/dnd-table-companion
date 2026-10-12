@@ -46,7 +46,8 @@ export interface Character extends SheetInput {
   spellSlots: { max: number; used: number }[]
   spells: { id: string; name: string; level: number; prepared: boolean }[]
 
-  inventory: { id: string; name: string; qty: number }[]
+  /** srdId links an item to SRD equipment (src/data/srd-equipment.json); equipped = held or worn. */
+  inventory: InventoryItem[]
   coins: { cp: number; sp: number; ep: number; gp: number; pp: number }
 
   /** Free text: languages, tools, armor/weapon training. */
@@ -65,6 +66,14 @@ export interface Character extends SheetInput {
 }
 
 export type Attack = AttackInput
+
+export interface InventoryItem {
+  id: string
+  name: string
+  qty: number
+  srdId?: string
+  equipped?: boolean
+}
 
 export function newId(): string {
   return crypto.randomUUID()
