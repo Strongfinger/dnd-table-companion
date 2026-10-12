@@ -1,4 +1,5 @@
 // The campaign notebook (Phase 3.4): pages for sessions, NPCs, places, quests, factions and items.
+// Session pages also hold the session plan as scenes (SessionPlan.tsx, Phase 3.6).
 // A page opens in view mode (fields, text with clickable [[links]], pages that link here) and switches
 // to edit mode (saves by itself a moment after typing). Used on the DM tab and in the DM panel.
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -7,10 +8,12 @@ import { go } from '../app/router'
 import { listCampaigns } from '../db/campaigns'
 import { deleteNote, getNote, listNotes, saveNote } from '../db/notes'
 import {
-  backlinks, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, parseLinks, plainText, searchNotes, thaiDate,
+  backlinks, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, plainText, searchNotes, thaiDate,
   type Note, type NoteKind,
 } from '../model/note'
 import { Button, TextInput } from '../ui/kit'
+import LinkedText from '../ui/LinkedText'
+import { ScenesEditor, ScenesView } from './SessionPlan'
 
 const SAVE_AFTER_MS = 700
 const select = 'rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-base'
@@ -92,7 +95,7 @@ export function NotebookPage({ id, onBack, onOpen, backLabel }: {
     getNote(id).then((n) => {
       setNote(n ?? null)
       // A page just created (from "+ หน้าใหม่" or a [[link]]) opens for editing.
-      setEditing(!!n && n.rev <= 1 && !n.body)
+      setEditing(!!n && n.rev <= 1 && !n.body && n.scenes.length === 0)
     })
   }, [id])
 
@@ -109,33 +112,22 @@ export function NotebookPage({ id, onBack, onOpen, backLabel }: {
 
   return editing
     ? <PageEditor note={note} pages={pages} onDone={(saved) => { setNote(saved); setEditing(false) }} onDeleted={onBack} />
-    : <PageView note={note} pages={pages} backLabel={backLabel} onBack={onBack} onEdit={() => setEditing(true)} onFollow={follow} onOpen={onOpen} />
+    : (
+      <PageView
+        note={note}
+        pages={pages}
+        backLabel={backLabel}
+        onBack={onBack}
+        onEdit={() => setEditing(true)}
+        onFollow={follow}
+        onOpen={onOpen}
+        // Ticks during play (scenes, checklist) show at once and save in the background.
+        onChange={(n) => { setNote(n); void saveNote(n) }}
+      />
+    )
 }
 
-/** Text with its [[links]] as buttons; links to missing pages are dashed (tap to create one). */
-function LinkedText({ text, pages, campaignId, onFollow }: { text: string; pages: Note[]; campaignId: string | null; onFollow: (title: string) => void }) {
-  return (
-    <>
-      {parseLinks(text).map((p, i) => {
-        if ('text' in p) return <span key={i}>{p.text}</span>
-        const exists = !!findPage(pages, p.link, campaignId)
-        return (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onFollow(p.link)}
-            title={exists ? 'เปิดหน้านี้' : 'ยังไม่มีหน้านี้: แตะเพื่อสร้าง'}
-            className={`font-bold underline ${exists ? 'text-sky-300' : 'text-stone-400 decoration-dashed'}`}
-          >
-            {p.link}
-          </button>
-        )
-      })}
-    </>
-  )
-}
-
-function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen }: {
+function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, onChange }: {
   note: Note
   pages: Note[]
   backLabel: string
@@ -143,6 +135,7 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen }: 
   onEdit: () => void
   onFollow: (title: string) => void
   onOpen: (id: string) => void
+  onChange: (n: Note) => void
 }) {
   const linked = (text: string): ReactNode => <LinkedText text={text} pages={pages} campaignId={note.campaignId} onFollow={onFollow} />
   const fields = KIND_FIELDS[note.kind].filter((f) => note.fields[f.key])
@@ -167,7 +160,10 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen }: 
           ))}
         </dl>
       )}
-      {note.body ? <div className="whitespace-pre-line leading-relaxed">{linked(note.body)}</div> : <p className="text-sm text-stone-500">ยังไม่มีรายละเอียด · กด ✏️ แก้ไข</p>}
+      {note.kind === 'session' && <ScenesView note={note} pages={pages} onChange={onChange} onFollow={onFollow} onOpen={onOpen} />}
+      {note.body
+        ? <div className="whitespace-pre-line leading-relaxed">{linked(note.body)}</div>
+        : note.scenes.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีรายละเอียด · กด ✏️ แก้ไข{note.kind === 'session' && ' เพื่อวางแผนเป็นฉาก ๆ'}</p>}
       {linksHere.length > 0 && (
         <div className="border-t border-stone-700 pt-2">
           <p className="mb-1 text-xs text-stone-400">ถูกพูดถึงใน</p>
@@ -261,6 +257,7 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
           )}
         </label>
       ))}
+      {note.kind === 'session' && <ScenesEditor note={note} onScenes={(scenes) => set({ scenes })} />}
       <div className="flex gap-2">
         <select aria-label="แทรกลิงก์ไปหน้าอื่น" className={`min-w-0 flex-1 ${select}`} value={linkPick} onChange={(e) => insertLink(e.target.value)}>
           <option value="">🔗 แทรกลิงก์ไปหน้า… (หรือพิมพ์ [[ชื่อ]] เอง)</option>

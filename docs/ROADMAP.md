@@ -47,7 +47,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] Real-phone test: joined from a phone, locked it, reconnected after unlocking (2026-10-12)
 - [x] Public client key: publishable Firebase config allowed via env vars + security rules + anonymous sign-in; never secret keys
 
-## Phase 3 — DM assistant (offline, no AI) · redesigned 2026-10-12
+## Phase 3 — DM assistant (offline, no AI) · redesigned 2026-10-12 ✅ done 2026-10-12
 Use: mostly live at the table, on a laptop. Layout: **one DM screen**: the fight tracker in the middle and a
 side panel with tabs (Notebook · Generators · Lookup) that opens without leaving the fight.
 - [x] 3.1 Session notes per campaign (🧙 DM tab, auto-save, search) — will become "Session" pages in the notebook
@@ -60,7 +60,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] 3.4 Campaign notebook: pages for sessions, NPCs, places, quests, factions, items (a few key fields + text), [[links]] with "ถูกพูดถึงใน" backlinks, view/edit, on the DM tab and in the fight panel; DM only (2026-10-12)
 - [x] 3.5 Generators: NPC, tavern/shop, plot hook, loot (SRD magic items), quick encounter (SRD monsters → new fight
       or this fight), weather/event. 🔄 per part; NPC/place/quest/items save to the notebook. Homebrew content (2026-10-12)
-- [ ] 3.6 Session planner: scenes, planned encounters linked to fights, read-aloud text, checklist
+- [x] 3.6 Session planner: Session pages hold scenes (read-aloud, notes with [[links]], checklist, linked/created fight); tick while playing; carry unplayed scenes to a new session page (2026-10-12)
 
 ## Phase 4 — Lobby & live sync · 3–4 sessions ✅ done 2026-10-12
 - [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)

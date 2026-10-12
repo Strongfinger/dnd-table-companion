@@ -3,6 +3,7 @@
 // [[Page title]] in the text. Pages belong to a campaign (or none) and stay on the DM's device:
 // never sent to players. (Stored in the `notes` table; notes from before the notebook are Session pages.)
 import { newId } from './character'
+import { sceneTexts, type Scene } from './sessionPlan'
 import type { SyncMeta } from './sync'
 
 export const NOTE_KINDS = ['session', 'npc', 'place', 'quest', 'faction', 'item'] as const
@@ -74,12 +75,14 @@ export interface Note extends SyncMeta {
   body: string
   /** The session day, as YYYY-MM-DD (used by session pages). */
   sessionDate: string
+  /** Session pages: the plan, as scenes in order (see sessionPlan.ts). */
+  scenes: Scene[]
   createdAt: number
 }
 
 /** Fill in what notes saved before the notebook don't have. */
 export function withNoteDefaults(stored: Partial<Note> & { id: string }): Note {
-  return { kind: 'session', fields: {}, ...stored } as Note
+  return { kind: 'session', fields: {}, scenes: [], ...stored } as Note
 }
 
 /** Today as YYYY-MM-DD in local time (not UTC, so a late-night session keeps its day). */
@@ -90,14 +93,14 @@ export function today(now = new Date()): string {
 
 export function createNote(campaignId: string | null, now = Date.now(), kind: NoteKind = 'session', title = ''): Note {
   const fields: Record<string, string> = kind === 'quest' ? { status: 'open' } : {}
-  return { id: newId(), campaignId, kind, title, fields, body: '', sessionDate: today(new Date(now)), createdAt: now, updatedAt: now, rev: 0, updatedBy: '' }
+  return { id: newId(), campaignId, kind, title, fields, body: '', sessionDate: today(new Date(now)), scenes: [], createdAt: now, updatedAt: now, rev: 0, updatedBy: '' }
 }
 
 /** Notes whose title or text contains the search words (all of them, any case). */
 export function searchNotes(notes: Note[], query: string): Note[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
   return notes.filter((n) => {
-    const text = `${n.title}\n${n.body}\n${Object.values(n.fields ?? {}).join('\n')}`.toLowerCase()
+    const text = [n.title, n.body, ...Object.values(n.fields ?? {}), ...(n.scenes ?? []).flatMap(sceneTexts)].join('\n').toLowerCase()
     return words.every((w) => text.includes(w))
   })
 }
@@ -136,12 +139,12 @@ export function findPage(pages: Note[], title: string, campaignId: string | null
   return named.find((p) => p.campaignId === campaignId) ?? named[0]
 }
 
-/** Pages that link to this one (in their text or fields), newest first. */
+/** Pages that link to this one (in their text, fields or scenes), newest first. */
 export function backlinks(pages: Note[], page: Note): Note[] {
   if (!page.title.trim()) return []
   return pages
     .filter((p) => p.id !== page.id)
-    .filter((p) => [p.body, ...Object.values(p.fields ?? {})].some((t) => parseLinks(t).some((x) => 'link' in x && sameTitle(x.link, page.title))))
+    .filter((p) => [p.body, ...Object.values(p.fields ?? {}), ...(p.scenes ?? []).flatMap(sceneTexts)].some((t) => parseLinks(t).some((x) => 'link' in x && sameTitle(x.link, page.title))))
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
