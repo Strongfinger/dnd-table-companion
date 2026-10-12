@@ -4,17 +4,20 @@ import { useState, type ReactNode } from 'react'
 import { go } from '../app/router'
 import { saveCharacter } from '../db/characters'
 import { buildCharacter, featsFor, type CreationChoices } from '../model/create'
+import type { Character } from '../model/character'
+import { applyStartingGear, backgroundGearOptions, classGearOptions } from '../model/startingGear'
+import { useEquipment } from './useSrdData'
 import {
   ABILITIES, abilityModifier, BACKGROUND_INFO, BACKGROUNDS, CLASS_HIT_DIE, CLASS_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter,
   deriveSheet, ELF_LINEAGES, FEAT_INFO, formatModifier, maxExpertise, ORIGIN_FEATS, POINT_BUY_BUDGET, POINT_BUY_MAX,
   POINT_BUY_MIN, POINT_BUY_START, pointBuyCost, pointBuyPriceList, pointBuyTotal, SKILLS, SPECIES, SPECIES_INFO, applyBonus,
-  checkBackgroundBonus, tapTwoOneBonus,
-  type Ability, type ElfLineage, type Skill,
+  checkBackgroundBonus, gearOptionLine, tapTwoOneBonus,
+  type Ability, type GearOption, type ElfLineage, type Skill,
 } from '../rules'
 import { Button, Label, RuleMessages, Section, Stat, TextInput } from '../ui/kit'
 import { ABILITY_LABEL } from '../ui/labels'
 
-const STEPS = ['Class', 'Species', 'Background', 'Ability Scores', 'Skills', 'สรุป'] as const
+const STEPS = ['Class', 'Species', 'Background', 'Ability Scores', 'Skills', 'อุปกรณ์', 'สรุป'] as const
 
 const START: CreationChoices = {
   name: '',
@@ -37,13 +40,18 @@ export default function CreateWizard() {
   const [step, setStep] = useState(0)
   const [c, setC] = useState<CreationChoices>(START)
   const update = (patch: Partial<CreationChoices>) => setC({ ...c, ...patch })
+  // Starting equipment: index of the class's and the background's option (A = 0).
+  const [gear, setGear] = useState({ cls: 0, bg: 0 })
+  const equipment = useEquipment()
+  const chosenGear = [classGearOptions(c)[gear.cls] ?? classGearOptions(c)[0], backgroundGearOptions(c.background)[gear.bg]].filter(Boolean)
+  const build = () => (equipment ? applyStartingGear(buildCharacter(c), chosenGear, equipment) : buildCharacter(c))
 
   const feats = featsFor(c)
   const needsMagicAbility = feats.includes('Magic Initiate') && CLASS_SPELLCASTING[c.className] === null
   const stepError = validateStep(step, c, needsMagicAbility)
 
   async function finish() {
-    const saved = await saveCharacter(buildCharacter(c))
+    const saved = await saveCharacter(build())
     go(`/c/${saved.id}`)
   }
 
@@ -66,7 +74,8 @@ export default function CreateWizard() {
       {step === 2 && <BackgroundStep c={c} update={update} needsMagicAbility={needsMagicAbility} />}
       {step === 3 && <AbilityStep c={c} update={update} />}
       {step === 4 && <SkillStep c={c} update={update} />}
-      {step === 5 && <ReviewStep c={c} />}
+      {step === 5 && <GearStep c={c} gear={gear} setGear={setGear} />}
+      {step === 6 && <ReviewStep c={c} character={build()} />}
 
       {stepError && <p className="text-sm text-amber-300">⚠️ {stepError}</p>}
 
@@ -413,8 +422,30 @@ function SkillStep({ c, update }: StepProps) {
   )
 }
 
-function ReviewStep({ c }: { c: CreationChoices }) {
-  const character = buildCharacter(c)
+function GearStep({ c, gear, setGear }: { c: CreationChoices; gear: { cls: number; bg: number }; setGear: (g: { cls: number; bg: number }) => void }) {
+  const choice = (title: string, options: GearOption[], value: number, onPick: (i: number) => void) => (
+    <Section title={title}>
+      <div className="space-y-2">
+        {options.map((o, i) => (
+          <button key={o.label} type="button" onClick={() => onPick(i)} aria-pressed={value === i}
+            className={`w-full rounded-lg border p-3 text-left text-sm ${value === i ? 'border-amber-400 bg-amber-950/60' : 'border-stone-700 bg-stone-900'}`}>
+            <b>({o.label})</b> {gearOptionLine(o)}
+          </button>
+        ))}
+      </div>
+    </Section>
+  )
+  return (
+    <>
+      <p className="text-sm text-stone-400">เลือกอุปกรณ์เริ่มต้น (กติกา 2024): ชุดของ หรือรับเป็นเงิน GP ไว้ซื้อเอง · เกราะ/โล่/อาวุธจะถูกสวมให้ และคำนวณ AC ให้</p>
+      {choice(`${c.className}`, classGearOptions(c), gear.cls, (i) => setGear({ ...gear, cls: i }))}
+      {choice(`${c.background} (Background)`, backgroundGearOptions(c.background), gear.bg, (i) => setGear({ ...gear, bg: i }))}
+      <p className="text-xs text-stone-500">ของที่ต้องเลือกเอง (เช่น Musical Instrument, Holy Symbol, Gaming Set) จะถูกใส่ไว้ให้เปลี่ยนชื่อในหน้าแก้ไข · แพ็กจะถูกแกะเป็นของข้างใน</p>
+    </>
+  )
+}
+
+function ReviewStep({ c, character }: { c: CreationChoices; character: Character }) {
   const s = deriveSheet(character)
   return (
     <>
@@ -422,7 +453,7 @@ function ReviewStep({ c }: { c: CreationChoices }) {
         <p className="mb-3 text-sm text-stone-400">{character.species}{c.elfLineage ? ` (${c.elfLineage})` : ''} · {c.background} · Feat: {character.feats.join(', ')}</p>
         <div className="grid grid-cols-3 gap-2">
           <Stat label="HP" value={character.hp.max} />
-          <Stat label="AC (ไม่มีเกราะ)" value={character.ac} />
+          <Stat label="AC" value={character.ac} />
           <Stat label="Initiative" value={formatModifier(s.initiative)} />
         </div>
         <div className="mt-2 grid grid-cols-6 gap-1">
@@ -442,7 +473,7 @@ function ReviewStep({ c }: { c: CreationChoices }) {
       </Section>
       <Section title="ตรวจกติกา">
         <RuleMessages messages={checkCharacter(character)} />
-        <p className="mt-2 text-xs text-stone-500">หลังสร้างแล้ว ไปเพิ่มอาวุธ เกราะ (AC) ของในกระเป๋า และคาถา ได้ที่หน้า "แก้ไข"</p>
+        <p className="mt-2 text-xs text-stone-500">ของ {character.inventory.length} อย่าง · {character.coins.gp} GP · ความสามารถ: {character.features.map((f) => f.name).join(', ') || '—'} · เพิ่มคาถาได้ที่หน้าตัวละคร</p>
       </Section>
     </>
   )

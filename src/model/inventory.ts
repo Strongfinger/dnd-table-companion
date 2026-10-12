@@ -11,8 +11,11 @@ export function isEquippable(item: SrdItem | undefined): boolean {
   return !!item && (EQUIPPABLE as readonly string[]).includes(item.kind)
 }
 
-/** Add one SRD item, or stack it on the same unequipped item. A pack adds its contents instead. */
-export function addSrdItem(c: Character, item: SrdItem, data: SrdEquipment): Character {
+/**
+ * Add one SRD item (or `qty` pieces, e.g. 20 Arrows), or stack it on the same unequipped item.
+ * A pack adds its contents instead.
+ */
+export function addSrdItem(c: Character, item: SrdItem, data: SrdEquipment, qty?: number): Character {
   if (item.kind === 'pack' && item.contents) {
     let next = c
     for (const part of item.contents) {
@@ -21,7 +24,12 @@ export function addSrdItem(c: Character, item: SrdItem, data: SrdEquipment): Cha
     }
     return next
   }
-  return addOne(c, item.id, item.name, item.qty ?? 1)
+  return addOne(c, item.id, item.name, qty ?? item.qty ?? 1)
+}
+
+/** A plain item without SRD data (e.g. "Musical Instrument" for the player to rename). */
+export function addPlainItem(c: Character, name: string, qty = 1): Character {
+  return addOne(c, undefined, name, qty)
 }
 
 function addOne(c: Character, srdId: string | undefined, name: string, qty: number): Character {
