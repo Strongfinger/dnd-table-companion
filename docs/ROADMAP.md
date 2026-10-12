@@ -53,6 +53,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] 3.1 Session notes per campaign (🧙 DM tab, auto-save, search) — will become "Session" pages in the notebook
 - [x] 3.2a SRD lookup: full SRD 5.2.1 monster stat blocks (DM only; "add to fight"), rules & conditions (players
       too: 📖 ค้นหา tab on their phones) (2026-10-12)
+- [x] Spell casting from the sheet (✨ ร่าย: Action/Bonus/Reaction, slot with upcast, Ritual, Concentration) and 2024 cantrip/prepared limits (warn only) (2026-10-12)
 - [x] Character spell list on the sheet (✨ คาถา): add from SRD spells (class + slot levels) or homebrew, prepared marks, links to spell cards (2026-10-12)
 - [x] 3.2b Spells in the lookup: 339 SRD 5.2.1 spells, search by name/school, Level and Class filters (players start on their class) (2026-10-12)
 - [ ] 3.3 DM screen layout: side panel next to the tracker (Lookup now, the rest as they arrive)
