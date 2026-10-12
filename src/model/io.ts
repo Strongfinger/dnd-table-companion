@@ -129,6 +129,8 @@ export function parseCharacterImport(text: string): ImportResult {
     turn: field('turn', economy, d.turn, 'Action/Bonus Action/Reaction'),
     features: field('features', arrayOf(feature, 50), [], 'ความสามารถที่ใช้ได้จำกัด'),
     ac: field('ac', int(1, 40), d.ac, 'AC'),
+    ...(raw.acAuto === true ? { acAuto: true } : {}),
+    ...(raw.acBonus === undefined ? {} : { acBonus: field('acBonus', int(-10, 20), 0, 'โบนัส AC') }),
     speed: field('speed', int(0, 200), d.speed, 'Speed'),
     spellSlots: field('spellSlots', spellSlots, d.spellSlots, 'Spell Slots'),
     spells: field('spells', arrayOf(spell, 500), [], 'Spells'),

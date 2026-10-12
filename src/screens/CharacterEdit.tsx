@@ -6,6 +6,8 @@ import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
 import { newId, type Character } from '../model/character'
 import { mergeDraft } from '../model/sync'
+import { applyAutoAC, characterArmorClass } from '../model/inventory'
+import { useEquipment } from './useSrdData'
 import {
   ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
   deriveSheet, formatModifier, isSrdBackground, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
@@ -28,6 +30,7 @@ export default function CharacterEdit({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false)
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
+  const equipment = useEquipment()
   const campaigns = useLiveQuery(listCampaigns) ?? []
   const lobby = useLobby()
 
@@ -135,7 +138,9 @@ export default function CharacterEdit({ id }: { id: string }) {
     const merged = latest && original ? mergeDraft(original, c, latest) : c
     // Current HP can't be above the (possibly lowered) max.
     const current = Math.min(merged.hp.current, merged.hp.max)
-    const saved = await saveCharacter({ ...merged, name: merged.name.trim(), hp: { ...merged.hp, current }, rev: latest?.rev ?? c.rev })
+    // Auto AC follows the edits (ability scores, class, level, bonus).
+    const withAc = equipment ? applyAutoAC(merged, equipment) : merged
+    const saved = await saveCharacter({ ...withAc, name: merged.name.trim(), hp: { ...merged.hp, current }, rev: latest?.rev ?? c.rev })
     lobby.shareSheet(saved.id)
     go(`/c/${saved.id}`)
   }
@@ -267,9 +272,24 @@ export default function CharacterEdit({ id }: { id: string }) {
           <Label text="Max HP">
             <NumberInput value={c.hp.max} min={1} max={999} onChange={(v) => set('hp', { ...c.hp, max: v })} />
           </Label>
-          <Label text="AC"><NumberInput value={c.ac} min={1} max={40} onChange={(v) => set('ac', v)} /></Label>
+          <Label text={c.acAuto ? 'AC (คำนวณ)' : 'AC'}>
+            {c.acAuto && equipment
+              ? <div className="rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-center text-lg font-bold">{applyAutoAC(c, equipment).ac}</div>
+              : <NumberInput value={c.ac} min={1} max={40} onChange={(v) => set('ac', v)} />}
+          </Label>
           <Label text="Speed (ft.)"><NumberInput value={c.speed} min={0} max={200} onChange={(v) => set('speed', v)} /></Label>
         </div>
+        <div className="mt-2 flex items-end gap-3">
+          <div className="flex-1">
+            <Checkbox checked={!!c.acAuto} onChange={(v) => set('acAuto', v || undefined)} label="คำนวณ AC จากเกราะ/Shield ที่สวม (ใน Inventory)" />
+          </div>
+          {c.acAuto && (
+            <Label text="โบนัส AC" className="w-24">
+              <NumberInput value={c.acBonus ?? 0} min={-10} max={20} onChange={(v) => set('acBonus', v || undefined)} />
+            </Label>
+          )}
+        </div>
+        {c.acAuto && equipment && <p className="text-xs text-stone-500">{characterArmorClass(c, equipment).formula} · โบนัส AC: ของวิเศษ เช่น Ring of Protection, เกราะ +1</p>}
         <button type="button" className="mt-2 text-sm text-amber-400 underline" onClick={() => set('hp', { ...c.hp, max: suggestedMaxHp(c) })}>
           ใช้ Max HP แบบค่าเฉลี่ย: {suggestedMaxHp(c)}
         </button>

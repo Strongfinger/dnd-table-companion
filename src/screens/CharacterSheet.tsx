@@ -8,6 +8,8 @@ import { ABILITY_LABEL } from '../ui/labels'
 import Attacks from './Attacks'
 import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
+import { characterArmorClass } from '../model/inventory'
+import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
 import SpellList from './SpellList'
@@ -19,11 +21,15 @@ export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
   const c = useLiveQuery(() => getCharacter(id).then((found) => found ?? null), [id])
   const [exporting, setExporting] = useState(false)
+  const equipment = useEquipment()
 
   if (c === undefined) return null
   if (c === null) return <NotFound />
 
   const s = deriveSheet(c)
+  // Armor details (formula, Strength/Stealth/training drawbacks) when AC is worked out from armor.
+  const armor = c.acAuto && equipment ? characterArmorClass(c, equipment) : null
+  const speed = Math.max(0, (s.speed ?? c.speed) - (armor?.speedPenalty ?? 0))
   const mod = formatModifier
 
   return (
@@ -55,9 +61,19 @@ export default function CharacterSheet({ id }: { id: string }) {
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={c.ac} />
         <Stat label="Initiative" value={mod(s.initiative)} />
-        <Stat label="Speed" value={`${s.speed ?? c.speed} ft.`} />
+        <Stat label="Speed" value={`${speed} ft.`} />
         <Stat label="Proficiency" value={mod(s.proficiencyBonus)} />
       </div>
+
+      {armor && (
+        <div className="space-y-1 text-xs">
+          <p className="text-stone-400">AC {c.ac} = {armor.formula}</p>
+          {armor.untrainedArmor && <p className="rounded bg-red-950/60 p-1.5 text-red-300">⚠️ ไม่ได้ฝึกใช้เกราะนี้: Disadvantage ทุก D20 Test ที่ใช้ STR หรือ DEX และร่ายคาถาไม่ได้</p>}
+          {armor.untrainedShield && <p className="rounded bg-amber-950/60 p-1.5 text-amber-200">⚠️ ไม่ได้ฝึกใช้ Shield: ไม่ได้ +2 AC</p>}
+          {armor.speedPenalty > 0 && <p className="rounded bg-amber-950/60 p-1.5 text-amber-200">เกราะหนักเกิน STR: Speed −{armor.speedPenalty} ft. (หักแล้ว)</p>}
+          {armor.stealthDisadvantage && <p className="text-stone-400">เกราะนี้: Disadvantage ใน Dexterity (Stealth)</p>}
+        </div>
+      )}
 
       {s.d20Penalty > 0 && (
         <p className="rounded-lg bg-red-950/60 p-2 text-sm text-red-300">Exhaustion {c.exhaustion}: ทุก D20 Test −{s.d20Penalty} (ตัวเลขด้านล่างหักแล้ว)</p>

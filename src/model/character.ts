@@ -38,8 +38,16 @@ export interface Character extends SheetInput {
   concentration: string
   /** Limited-use features like Second Wind or Channel Divinity. */
   features: { id: string; name: string; max: number; used: number; recharge: 'short' | 'long' }[]
-  /** Entered by hand for now (armor rules come later). */
+  /**
+   * The Armor Class shown everywhere (sheet, tracker, party). With acAuto it is worked out from the
+   * equipped SRD armor and Shield (model/inventory.ts `applyAutoAC`) whenever those or the edit page change;
+   * otherwise it is typed by hand.
+   */
   ac: number
+  /** Work AC out from the equipped armor (new characters, or after equipping SRD armor on the sheet). */
+  acAuto?: boolean
+  /** Extra AC added to the worked-out value (e.g. Ring of Protection, +1 armor). */
+  acBonus?: number
   speed: number
 
   /** Spell slots per spell level 1–9: index 0 = 1st level. */

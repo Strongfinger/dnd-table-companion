@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { findItem, loadSrdEquipment } from './equipment'
-import { addSrdItem, equippedWeapons, toggleEquipped } from './inventory'
+import { addSrdItem, applyAutoAC, characterArmorClass, equippedWeapons, toggleEquipped } from './inventory'
 import { parseCharacterImport } from './io'
 
 const rogue = () => createCharacter({ name: 'Nyx', className: 'Rogue', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
@@ -69,5 +69,25 @@ describe('inventory', () => {
     c = toggleEquipped(c, c.inventory[0].id, data)
     const back = parseCharacterImport(JSON.stringify(c))
     expect(back.ok && back.character.inventory[0]).toMatchObject({ srdId: 'rapier', equipped: true })
+  })
+
+  it('works AC out from equipped armor once SRD armor is worn', async () => {
+    const data = await loadSrdEquipment()
+    // An older character with a hand-typed AC keeps it until armor is equipped on the sheet.
+    let c = { ...rogue(), ac: 13 }
+    c = addSrdItem(c, findItem(data, 'leather-armor')!, data)
+    expect(applyAutoAC(c, data).ac).toBe(13)
+    c = toggleEquipped(c, c.inventory[0].id, data)
+    expect(c).toMatchObject({ acAuto: true, ac: 14 })
+    // Taking it off: 10 + DEX.
+    c = toggleEquipped(c, c.inventory[0].id, data)
+    expect(c.ac).toBe(13)
+    // Rogues have no Shield training: no AC from it, and the result says why.
+    c = addSrdItem(c, findItem(data, 'shield')!, data)
+    c = toggleEquipped(c, c.inventory[1].id, data)
+    expect(c.ac).toBe(13)
+    expect(characterArmorClass(c, data).untrainedShield).toBe(true)
+    // A magic bonus adds on top.
+    expect(applyAutoAC({ ...c, acBonus: 1 }, data).ac).toBe(14)
   })
 })

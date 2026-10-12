@@ -80,6 +80,7 @@ export function buildCharacter(c: CreationChoices): Character {
     spellcastingAbility: casting,
     hp: { max: hpMax, current: hpMax, temp: 0 },
     ac: unarmoredAC(c.className, mods),
+    acAuto: true,
     speed: lineage?.speed ?? species.speed,
     spellSlots: spellSlotsFor(c.className, 1).map((max) => ({ max, used: 0 })),
     featuresText: [
@@ -92,6 +93,6 @@ export function buildCharacter(c: CreationChoices): Character {
         : '',
     ].filter(Boolean).join('\n'),
     proficienciesText: `เครื่องมือ: ${bg.tool}\nภาษา: Common + อีก 2 ภาษา (เลือกกับ DM)`,
-    notes: 'AC ยังไม่รวมเกราะ: ใส่เกราะ/โล่แล้วแก้ AC ในหน้าแก้ไข',
+    notes: '',
   })
 }

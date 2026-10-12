@@ -46,9 +46,7 @@ export default function Inventory({ c }: { c: Character }) {
             onToggle={() => data && change((latest) => toggleEquipped(latest, item.id, data))} />
         ))}
       </ul>
-      {c.inventory.some((i) => i.equipped && i.srdId && data && findItem(data, i.srdId)?.armor) && (
-        <p className="mt-2 text-xs text-stone-500">AC ยังเป็นค่าที่ใส่เองในหน้าแก้ไข (การคำนวณ AC จากเกราะที่สวมกำลังจะมา)</p>
-      )}
+      <p className="mt-2 text-xs text-stone-500">สวม/ถอดเกราะหรือ Shield แล้ว AC คำนวณให้เอง (ปิดได้ในหน้าแก้ไข)</p>
     </Section>
   )
 }

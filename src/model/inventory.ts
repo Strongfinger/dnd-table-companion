@@ -1,6 +1,6 @@
 // Inventory changes on the sheet: add SRD items (a pack adds what's inside), equip weapons and armor,
 // and turn equipped weapons into attacks. Pure functions; the screen saves the result.
-import { classHasWeaponTraining, deriveSheet, WEAPON_MASTERY_CLASSES, weaponAttack, type WeaponAttack } from '../rules'
+import { abilityModifier, armorClass, classHasWeaponTraining, deriveSheet, WEAPON_MASTERY_CLASSES, weaponAttack, type ArmorClassResult, type WeaponAttack } from '../rules'
 import { newId, type Character, type InventoryItem } from './character'
 import { findItem, type SrdEquipment, type SrdItem, type SrdWeapon } from './equipment'
 
@@ -47,7 +47,7 @@ export function toggleEquipped(c: Character, itemId: string, data: SrdEquipment)
     const other = i.srdId ? findItem(data, i.srdId) : undefined
     return other?.kind === srd!.kind
   }
-  return {
+  const next = {
     ...c,
     inventory: c.inventory.map((i) => {
       if (i.id === itemId) return { ...i, equipped: on || undefined }
@@ -55,6 +55,34 @@ export function toggleEquipped(c: Character, itemId: string, data: SrdEquipment)
       return i
     }),
   }
+  // Putting on or taking off SRD armor or a Shield switches AC to "worked out from armor".
+  return srd!.kind === 'weapon' ? next : applyAutoAC({ ...next, acAuto: true }, data)
+}
+
+/** AC from the equipped SRD armor and Shield (plus the character's AC bonus), with its drawbacks. */
+export function characterArmorClass(c: Character, data: SrdEquipment): ArmorClassResult {
+  const equipped = c.inventory.filter((i) => i.equipped && i.srdId).map((i) => ({ item: i, srd: findItem(data, i.srdId!) }))
+  const suit = equipped.find((e) => e.srd?.kind === 'armor')
+  const a = suit?.srd?.armor
+  return armorClass({
+    className: c.className,
+    subclass: c.subclass,
+    level: c.level,
+    modifiers: Object.fromEntries(Object.entries(c.scores).map(([k, v]) => [k, abilityModifier(v)])) as Record<keyof Character['scores'], number>,
+    strScore: c.scores.str,
+    feats: c.feats,
+    armor: a && a.category !== 'Shield' ? { name: suit!.item.name, category: a.category, base: a.base, dexCap: a.dexCap, strMin: a.strMin, stealthDisadvantage: a.stealthDisadvantage } : null,
+    shield: equipped.some((e) => e.srd?.kind === 'shield'),
+    monster: !!c.monster,
+    bonus: c.acBonus ?? 0,
+  })
+}
+
+/** With acAuto on, store the worked-out AC in `ac` (what the tracker and party views show). */
+export function applyAutoAC(c: Character, data: SrdEquipment): Character {
+  if (!c.acAuto) return c
+  const ac = Math.min(40, Math.max(1, characterArmorClass(c, data).ac))
+  return ac === c.ac ? c : { ...c, ac }
 }
 
 export interface EquippedWeapon {
