@@ -4,6 +4,7 @@
 //   player → DM  'action' { characterId, action }  one play change (damage, slot, condition...)
 //   DM → all     'state'  { character }            the DM's copy after any change to a played character
 //   DM → all     'ack'    { ids }                  actions/edits handled (players clear their outbox)
+//   DM → all     'control' { grants }               extra characters the DM handed to players (e.g. a monster)
 // The helpers here are pure; the lobby provider (src/app/lobby.tsx) does the sending and saving.
 import type { Character } from '../model/character'
 import { parseCharacterAction, type CharacterAction } from '../model/characterActions'
@@ -27,12 +28,34 @@ export function parseActionBody(body: unknown): { characterId: string; action: C
   return typeof b.characterId === 'string' && b.characterId.length <= 64 && action ? { characterId: b.characterId, action } : null
 }
 
+/** The DM handed a character (e.g. a monster turned into a character) to a player's device. */
+export interface Grant {
+  characterId: string
+  deviceId: string
+}
+
+/** At most this many handed-over characters in a room. */
+export const MAX_GRANTS = 20
+
 /**
- * Players may only change their own character: the one they picked in the room.
- * (The member list comes from the connection, so a message can't claim to be someone else.)
+ * Players may only change their own characters: the one they picked in the room, and any the DM
+ * handed to them. (The member list comes from the connection, so a message can't claim to be someone else.)
  */
-export function mayChange(members: Member[], senderId: string, characterId: string): boolean {
-  return members.some((m) => m.deviceId === senderId && m.role === 'player' && m.characterId === characterId)
+export function mayChange(members: Member[], senderId: string, characterId: string, grants: Grant[] = []): boolean {
+  const player = members.find((m) => m.deviceId === senderId && m.role === 'player')
+  if (!player) return false
+  return player.characterId === characterId || grants.some((g) => g.deviceId === senderId && g.characterId === characterId)
+}
+
+/** Player: the characters the DM handed to this device, from a 'control' message. Null = invalid. */
+export function parseControl(body: unknown, myDeviceId: string): string[] | null {
+  const list = typeof body === 'object' && body !== null ? (body as Record<string, unknown>).grants : null
+  if (!Array.isArray(list) || list.length > MAX_GRANTS) return null
+  const mine = list.flatMap((g) => {
+    const ok = typeof g === 'object' && g !== null && typeof g.characterId === 'string' && g.characterId.length <= 64 && typeof g.deviceId === 'string'
+    return ok && g.deviceId === myDeviceId ? [g.characterId as string] : []
+  })
+  return [...new Set(mine)]
 }
 
 /**
@@ -54,9 +77,11 @@ export function takeDmState(stored: Pick<Character, 'rev'> | undefined, incoming
 }
 
 /** Characters played in the room right now (DM side): picked by a player who wasn't removed. */
-export function playedCharacterIds(members: Member[], isRemoved: (deviceId: string) => boolean): string[] {
+export function playedCharacterIds(members: Member[], isRemoved: (deviceId: string) => boolean, grants: Grant[] = []): string[] {
   const ids = members.filter((m) => m.role === 'player' && m.characterId && !isRemoved(m.deviceId)).map((m) => m.characterId!)
-  return [...new Set(ids)].sort()
+  // Handed-over characters stay synced too (even while that player is briefly offline).
+  const granted = grants.filter((g) => !isRemoved(g.deviceId)).map((g) => g.characterId)
+  return [...new Set([...ids, ...granted])].sort()
 }
 
 /** Is this 'hello' an edit from the edit screen (merged by field) rather than a plain sync? */

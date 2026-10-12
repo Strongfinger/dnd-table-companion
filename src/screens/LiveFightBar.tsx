@@ -6,14 +6,14 @@ import { activeTurn, type PlayerEncounterView } from '../model/playerView'
 import PlayerViewPanel from './PlayerViewPanel'
 
 export default function LiveFightBar() {
-  const { session, fight, endTurn } = useLobby()
+  const { session, fight, endTurn, myCharacterIds: myIds } = useLobby()
   const [open, setOpen] = useState(false)
   // After "end turn", wait for the DM's device to move the turn: any newer fight update ends the wait.
   const [endingAt, setEndingAt] = useState<PlayerEncounterView | null>(null)
   const ending = endingAt !== null && endingAt === fight
-  const myCharacterId = session?.role === 'player' ? session.characterId : null
+  const myCharacterIds = session?.role === 'player' ? myIds : null
   const turn = fight ? activeTurn(fight) : null
-  const myTurn = !!myCharacterId && turn !== null && turn !== 'hidden' && turn.pc?.characterId === myCharacterId
+  const myTurn = !!myCharacterIds && turn !== null && turn !== 'hidden' && !!turn.pc && myCharacterIds.includes(turn.pc.characterId)
 
   // A short buzz when my turn starts (phones that support it; iPhones ignore it).
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function LiveFightBar() {
       </div>
       {open && (
         <div className="max-h-[60dvh] overflow-y-auto bg-stone-950 p-3">
-          <PlayerViewPanel view={fight} title="⚔️ ลำดับ Initiative" myCharacterId={myCharacterId} />
+          <PlayerViewPanel view={fight} title="⚔️ ลำดับ Initiative" myCharacterIds={myCharacterIds} />
           <a href={`#/fight/${fight.id}`} onClick={() => setOpen(false)} className="mt-2 block text-center text-sm text-amber-300 underline">ดูบันทึกการต่อสู้</a>
         </div>
       )}

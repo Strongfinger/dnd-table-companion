@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
-import { isEditHello, mayChange, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
+import { isEditHello, mayChange, parseControl, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
 import type { Member } from './transport'
 
 const nyx = createCharacter({ name: 'Nyx', className: 'Rogue', level: 3, scores: { str: 8, dex: 17, con: 14, int: 12, wis: 10, cha: 13 }, rev: 7 })
@@ -101,5 +101,33 @@ describe('parseEndTurn', () => {
     expect(parseEndTurn({ encounterId: 'f1', round: 2, combatantId: 'c1' })).toEqual({ encounterId: 'f1', round: 2, combatantId: 'c1' })
     expect(parseEndTurn({ encounterId: 'f1', round: '2', combatantId: 'c1' })).toBeNull()
     expect(parseEndTurn(null)).toBeNull()
+  })
+})
+
+describe('characters the DM hands to a player (grants)', () => {
+  const members: Member[] = [
+    { deviceId: 'dm', name: 'DM', role: 'dm', characterId: null, characterName: null, online: true },
+    { deviceId: 'p1', name: 'A', role: 'player', characterId: 'c1', characterName: 'Nyx', online: true },
+    { deviceId: 'p2', name: 'B', role: 'player', characterId: 'c2', characterName: 'Boom', online: true },
+  ]
+  const grants = [{ characterId: 'goblin', deviceId: 'p1' }]
+
+  it('the player it was handed to may change it; nobody else', () => {
+    expect(mayChange(members, 'p1', 'goblin', grants)).toBe(true)
+    expect(mayChange(members, 'p1', 'c1', grants)).toBe(true) // still their own
+    expect(mayChange(members, 'p2', 'goblin', grants)).toBe(false)
+    expect(mayChange(members, 'dm', 'goblin', [{ characterId: 'goblin', deviceId: 'dm' }])).toBe(false)
+  })
+
+  it('handed-over characters are synced like played ones (not for removed devices)', () => {
+    expect(playedCharacterIds(members, () => false, grants)).toEqual(['c1', 'c2', 'goblin'])
+    expect(playedCharacterIds(members, (id) => id === 'p1', grants)).toEqual(['c2'])
+  })
+
+  it("a phone reads only its own grants from the 'control' message", () => {
+    const body = { grants: [{ characterId: 'goblin', deviceId: 'p1' }, { characterId: 'wolf', deviceId: 'p2' }] }
+    expect(parseControl(body, 'p1')).toEqual(['goblin'])
+    expect(parseControl(body, 'p3')).toEqual([])
+    expect(parseControl({ grants: 'x' }, 'p1')).toBeNull()
   })
 })

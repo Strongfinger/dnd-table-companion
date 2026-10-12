@@ -10,7 +10,7 @@ import type { TurnInfo } from '../model/permissions'
 export function useCharacterAct(c: Character) {
   const lobby = useLobby()
   // A player playing this character in a live room: they spend, the DM gives back and starts rests.
-  const asPlayer = lobby.session?.role === 'player' && lobby.session.characterId === c.id
+  const asPlayer = lobby.session?.role === 'player' && lobby.myCharacterIds.includes(c.id)
   // Where I am in the running fight (from the DM's live view): Action / Bonus Action only on my turn.
   const myCombatant = lobby.fight?.combatants.find((x) => x.pc?.characterId === c.id)
   const turn: TurnInfo = myCombatant ? { inFight: true, myTurn: myCombatant.active } : { inFight: false }

@@ -35,7 +35,7 @@ export function PlayerFightList() {
 }
 
 export function PlayerFight({ id }: { id: string }) {
-  const { session, fight, fightList, fightLogs } = useLobby()
+  const { session, fight, fightList, fightLogs, myCharacterIds: lobbyIds } = useLobby()
   const summary = fightList.find((f) => f.id === id)
   const log = fightLogs[id] ?? []
   const rounds = new Map<number, typeof log>()
@@ -49,7 +49,7 @@ export function PlayerFight({ id }: { id: string }) {
         <h1 className="text-2xl font-bold text-amber-400">{summary.name}</h1>
         <p className="text-stone-400">{summary.status === 'active' ? `รอบที่ ${summary.round}` : `จบแล้ว (${summary.round} รอบ)`}</p>
       </header>
-      {fight?.id === id && <PlayerViewPanel view={fight} title="⚔️ ลำดับ Initiative" myCharacterId={session?.characterId ?? null} />}
+      {fight?.id === id && <PlayerViewPanel view={fight} title="⚔️ ลำดับ Initiative" myCharacterIds={session ? lobbyIds : null} />}
       <Section title="บันทึกการต่อสู้">
         {log.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีเหตุการณ์</p>}
         <div className="space-y-3 text-sm">

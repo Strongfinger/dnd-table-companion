@@ -4,7 +4,7 @@
 import { newId } from '../model/character'
 import { DATA_VERSION } from '../model/sync'
 
-export const MESSAGE_KINDS = ['hello', 'action', 'roll', 'state', 'ping', 'kick', 'fight', 'ack', 'endTurn', 'fights', 'log', 'campaign', 'rest', 'party'] as const
+export const MESSAGE_KINDS = ['hello', 'action', 'roll', 'state', 'ping', 'kick', 'fight', 'ack', 'endTurn', 'fights', 'log', 'campaign', 'rest', 'party', 'control'] as const
 export type MessageKind = (typeof MESSAGE_KINDS)[number]
 
 export interface Envelope {

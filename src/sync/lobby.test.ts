@@ -8,8 +8,13 @@ const member = (deviceId: string, name: string, role: Member['role'], online = t
 describe('parseLobbySession', () => {
   it('accepts a saved session and fills missing fields', () => {
     expect(parseLobbySession({ code: 'K7QX4M', role: 'player', characterId: 'c1' })).toEqual({
-      code: 'K7QX4M', role: 'player', campaignId: null, characterId: 'c1', characterName: null, local: false, kicked: [], shortRestSince: null,
+      code: 'K7QX4M', role: 'player', campaignId: null, characterId: 'c1', characterName: null, local: false, kicked: [], shortRestSince: null, grants: [],
     })
+  })
+
+  it('keeps the DM\'s handed-over characters, drops broken ones', () => {
+    const s = parseLobbySession({ code: 'K7QX4M', role: 'dm', grants: [{ characterId: 'gob', deviceId: 'p1' }, { characterId: 5 }] })
+    expect(s?.grants).toEqual([{ characterId: 'gob', deviceId: 'p1' }])
   })
 
   it('rejects bad codes, roles and junk', () => {

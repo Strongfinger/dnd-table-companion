@@ -33,7 +33,7 @@ import {
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
 import {
-  isEditHello, mayChange, mergeEdit, parseActionBody, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
+  isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
 } from '../sync/sheets'
 import { LobbyContext, type LobbyApi, type RoomRoll } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
@@ -95,6 +95,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   /** Player: the party cards from the DM. DM: the cards last sent (JSON), to skip repeats and resend on (re)join. */
   const [party, setParty] = useState<PartyCard[]>([])
   const lastParty = useRef<string | null>(null)
+  /** Player: extra characters the DM handed to this device ('control' messages). */
+  const [controlled, setControlledState] = useState<string[]>([])
+  const controlledRef = useRef<string[]>([])
+  const setControlled = (ids: string[]) => {
+    controlledRef.current = ids
+    setControlledState(ids)
+  }
+  /** Player: every character this device plays in the room (picked + handed over). */
+  const myIds = (s: LobbySession) => (s.role === 'player' ? [...(s.characterId ? [s.characterId] : []), ...controlledRef.current] : [])
   /** Player: the room's campaign (from the DM), so a character picked later joins it too. */
   const roomCampaign = useRef<string | null>(null)
   const [roomCampaignId, setRoomCampaignId] = useState<string | null>(null)
@@ -146,6 +155,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     setFightList([])
     setFightLogs({})
     setParty([])
+    setControlled([])
     setRestSince(null)
   }
 
@@ -194,8 +204,14 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (lastFight.current !== null) send('fight', { view: JSON.parse(lastFight.current) })
     if (sentFights.current) send('fights', { fights: sentFights.current })
     const theirCharacter = membersRef.current.find((m) => m.deviceId === from)?.characterId
+    const handedToThem = s.grants.filter((g) => g.deviceId === from).map((g) => g.characterId)
+    send('control', { grants: s.grants })
+    for (const id of handedToThem) {
+      const c = await getCharacter(id)
+      if (c) sendState(c)
+    }
     for (const { target, entries } of sentLogs.current.values()) {
-      if (target.kind === 'fight' || target.id === theirCharacter) send('log', { ...logKey(target), ...fullLog(entries) })
+      if (target.kind === 'fight' || target.id === theirCharacter || handedToThem.includes(target.id)) send('log', { ...logKey(target), ...fullLog(entries) })
     }
     if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
@@ -206,7 +222,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   /** DM: characters played in the room right now. */
   const playedNow = () => {
     const s = sessionRef.current
-    return s ? playedCharacterIds(membersRef.current, (id) => isKicked(s.kicked, id)) : []
+    return s ? playedCharacterIds(membersRef.current, (id) => isKicked(s.kicked, id), s.grants) : []
   }
 
   const logKey = (t: LogTarget) => (t.kind === 'fight' ? { encounterId: t.id } : { characterId: t.id })
@@ -234,10 +250,13 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (m?.target.kind === 'fight') {
         const id = m.target.id
         setFightLogs((old) => ({ ...old, [id]: applyLogMessage(old[id] ?? [], m) }))
-      } else if (m && m.target.id === s.characterId) {
+      } else if (m && myIds(s).includes(m.target.id)) {
         // My character's log follows the DM's (lines the DM deletes go away here too).
         void applyCharacterLog(m.target.id, m)
       }
+    } else if (e.kind === 'control') {
+      const ids = parseControl(e.body, deviceFor(s.local).id)
+      if (ids) setControlled(ids)
     } else if (e.kind === 'party') {
       const cards = parseParty(e.body)
       if (cards) setParty(cards)
@@ -339,9 +358,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
    * character may not be in our member list yet, so wait a moment once before saying no.
    */
   async function allowed(senderId: string, characterId: string) {
-    if (mayChange(membersRef.current, senderId, characterId)) return true
+    const grants = () => sessionRef.current?.grants ?? []
+    if (mayChange(membersRef.current, senderId, characterId, grants())) return true
     await new Promise((r) => setTimeout(r, 1500))
-    return mayChange(membersRef.current, senderId, characterId)
+    return mayChange(membersRef.current, senderId, characterId, grants())
   }
 
   /** Sheet messages (see src/sync/sheets.ts). */
@@ -381,11 +401,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       const fight = await getEncounter(t.encounterId)
       const active = fight?.combatants.find((c) => c.id === t.combatantId)
       if (fight?.activeId !== t.combatantId || active?.kind !== 'pc' || !active.characterId) return
-      if (!mayChange(membersRef.current, e.from, active.characterId)) return
+      if (!mayChange(membersRef.current, e.from, active.characterId, s.grants)) return
       await advanceTurn(t.encounterId, { activeId: t.combatantId, round: t.round })
     } else if (s.role === 'player' && e.kind === 'state' && isDm(membersRef.current, e.from)) {
       const c = parseSheetBody(e.body)
-      if (c && c.id === s.characterId) await saveReceivedCharacter(c, (stored) => takeDmState(stored, c))
+      if (c && myIds(s).includes(c.id)) await saveReceivedCharacter(c, (stored) => takeDmState(stored, c), roomCampaign.current)
     }
   }
 
@@ -468,7 +488,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
   // DM: whenever a played character changes on this device (a player's action, the tracker,
   // an edit), send the new copy to the room.
-  const played = session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id)).join(',') : ''
+  const played = session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id), session.grants).join(',') : ''
   useEffect(() => {
     if (!played) {
       // Nobody plays a character any more: clear the party cards on phones too.
@@ -526,7 +546,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
   const mine = (characterId: string) => {
     const s = sessionRef.current
-    return s?.role === 'player' && s.characterId === characterId
+    return !!s && myIds(s).includes(characterId)
   }
 
   const api: LobbyApi = {
@@ -559,9 +579,19 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     fightList,
     fightLogs,
     party,
+    myCharacterIds: session?.role === 'player' ? [...(session.characterId ? [session.characterId] : []), ...controlled] : [],
+    grant: (characterId, deviceId) => {
+      const s = sessionRef.current
+      if (s?.role !== 'dm') return
+      const grants = [...s.grants.filter((g) => g.characterId !== characterId), ...(deviceId ? [{ characterId, deviceId }] : [])].slice(-MAX_GRANTS)
+      save({ ...s, grants })
+      // A newly handed-over character's sheet goes out from the played-characters watcher.
+      lastSent.current.delete(characterId)
+      send('control', { grants })
+    },
     campaignId: session?.role === 'dm' ? session.campaignId : session ? roomCampaignId : null,
     create: (campaignId, local) =>
-      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null }),
+      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null, grants: [] }),
     setCampaign: async (campaignId) => {
       const s = sessionRef.current
       if (s?.role !== 'dm' || s.campaignId === campaignId) return
@@ -575,7 +605,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       send('campaign', { id: campaign.id, name: campaign.name })
     },
     join: (code, character, local) =>
-      connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null }),
+      connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null, grants: [] }),
     leave: () => {
       const s = sessionRef.current
       disconnect()
@@ -629,7 +659,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     endTurn: () => {
       const s = sessionRef.current
       const f = fightRef.current
-      const me = f?.combatants.find((c) => c.active && c.pc?.characterId === s?.characterId)
+      const me = s && f?.combatants.find((c) => c.active && !!c.pc && myIds(s).includes(c.pc.characterId))
       if (s?.role === 'player' && f && me) send('endTurn', { encounterId: f.id, round: f.round, combatantId: me.id })
     },
     send,

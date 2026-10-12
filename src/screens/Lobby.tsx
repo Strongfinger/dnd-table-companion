@@ -182,7 +182,7 @@ function InRoom() {
       {s.role === 'dm' && <PartyRest characterIds={playedCharacterIds(lobby.members, (id) => isKicked(s.kicked, id)).filter((id) => characters.some((c) => c.id === id))} />}
 
       {s.role === 'player' && lobby.fight && (
-        <PlayerViewPanel view={lobby.fight} title={`⚔️ ${lobby.fight.name} · รอบที่ ${lobby.fight.round}`} myCharacterId={s.characterId} />
+        <PlayerViewPanel view={lobby.fight} title={`⚔️ ${lobby.fight.name} · รอบที่ ${lobby.fight.round}`} myCharacterIds={lobby.myCharacterIds} />
       )}
 
       {s.role === 'player' && (
@@ -218,6 +218,13 @@ function InRoom() {
                         : `เล่นเป็น ${m.characterName}`}
                   </span>
                 )}
+                {/* DM: extra characters handed to this player (set on the character's row in a fight). */}
+                {s.role === 'dm' && s.grants.filter((g) => g.deviceId === m.deviceId).map((g) => (
+                  <span key={g.characterId} className="block text-xs text-sky-300">
+                    🎮 ควบคุม {characters.find((c) => c.id === g.characterId)?.name ?? 'ตัวละคร'}
+                    <button type="button" className="ml-2 underline" onClick={() => lobby.grant(g.characterId, null)}>เอาคืน</button>
+                  </span>
+                ))}
               </span>
               <span className="text-xs text-stone-400">{m.role === 'dm' ? 'DM' : 'ผู้เล่น'}</span>
               {s.role === 'dm' && m.role === 'player' && (

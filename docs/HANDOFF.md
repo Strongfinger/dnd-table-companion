@@ -52,7 +52,12 @@ sender taken from the connection (never the body), size limit; the DM device rat
   logs; can end their own turn (`endTurn`). The DM may give a use back only in the round it was spent.
 - **Party rest (DM room screen):** Long Rest = one tap; Short Rest = start/end period (`rest {since}`).
 - **Dice:** the floating roller shares rolls with the room (players on, DM off by default); the DM logs them.
-- **Campaign:** players adopt the DM's campaign id so their party overview works.
+- **Campaign:** players adopt the DM's campaign id; the DM can switch the room's campaign any time
+  (`setCampaign` → `campaign` message). Rename/delete only on the device that created it (`canManageCampaign`).
+- **Party view (players):** `party` message = read-only cards of every played character (`src/sync/party.ts`).
+- **Handed-over characters:** the tracker's "🧑 เป็นตัวละคร" turns a monster/NPC into a sheet
+  (`src/model/monsterCharacter.ts`, `monster` field: PB/Hit Die from the stat block). The DM can give it to a
+  player (🎮 on its row): `session.grants` + `control` message; `mayChange`/`playedCharacterIds` include grants.
 
 ## SRD data (offline, loaded only when opened)
 Built by scripts from 5e-bits/5e-database **2024** files (download to a scratch folder, then

@@ -3,6 +3,20 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 3 — owner requests, 2026-10-12
+| Request | Done |
+|---|---|
+| Room's campaign can't change after opening (e.g. after a campaign pack import) | DM picks the campaign on the room screen; players' phones and played characters follow |
+| Only the DM who created a campaign may manage it | ⚙️ rename/delete next to the campaign picker, only on the creating device; players see 🔒; a player in a room can't create campaigns or change a character's campaign |
+| Players see the party read-only | `#/party` on a player's phone in a room: name, class/level, AC, HP, conditions, Action/Bonus/Reaction of every played character; only their own cards open a sheet |
+| Monster/NPC → character file; DM gives control to a player | "🧑 เป็นตัวละคร" on a tracker row (full SRD stat block) → 📤 export on its sheet; 🎮 on its row hands it to a player in the room ("เอาคืน" on the room screen takes it back) |
+
+Also fixed: test-mode transport dropped the DM's catch-up messages after a tab reload.
+Rules review (all 341 SRD monsters): PB and average HP exact; known gaps written into the sheet's notes:
+Initiative = DEX (data lacks the 2024 Initiative bonus), Hit Dice capped at 20, 3 odd stat-block bonuses.
+**Note for testing:** in test mode (two tabs, one database) a player's damage shows applied twice; that's the
+shared database, not the app (real phones have separate databases).
+
 ## Pass 2 — owner reports, 2026-10-12
 | Bug | Fix |
 |---|---|

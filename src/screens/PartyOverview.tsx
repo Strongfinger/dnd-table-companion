@@ -29,7 +29,7 @@ export default function PartyOverview() {
     ?.slice().sort((a, b) => a.name.localeCompare(b.name))
 
   // A player in a live room: everyone's basic cards from the DM's device, read-only.
-  if (lobby.session?.role === 'player') return <RoomParty cards={lobby.party} myCharacterId={lobby.session.characterId} />
+  if (lobby.session?.role === 'player') return <RoomParty cards={lobby.party} myCharacterIds={lobby.myCharacterIds} />
 
   return (
     <div className="space-y-4">
@@ -144,7 +144,7 @@ function PartyCard({ c }: { c: Character }) {
 }
 
 /** Players in a room: the party as the DM's device sends it. Only my own card opens a sheet. */
-function RoomParty({ cards, myCharacterId }: { cards: RoomCard[]; myCharacterId: string | null }) {
+function RoomParty({ cards, myCharacterIds }: { cards: RoomCard[]; myCharacterIds: string[] }) {
   return (
     <div className="space-y-4">
       <a href="#/" className="text-sm text-stone-400">← ตัวละครทั้งหมด</a>
@@ -154,7 +154,7 @@ function RoomParty({ cards, myCharacterId }: { cards: RoomCard[]; myCharacterId:
       </header>
       {cards.length === 0 && <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีข้อมูลปาร์ตี้จาก DM (รอเชื่อมต่อ หรือยังไม่มีใครเลือกตัวละคร)</p>}
       <div className="grid gap-3 md:grid-cols-2">
-        {cards.map((c) => <RoomPartyCard key={c.characterId} c={c} mine={c.characterId === myCharacterId} />)}
+        {cards.map((c) => <RoomPartyCard key={c.characterId} c={c} mine={myCharacterIds.includes(c.characterId)} />)}
       </div>
     </div>
   )
@@ -189,7 +189,7 @@ function RoomPartyCard({ c, mine }: { c: RoomCard; mine: boolean }) {
         </div>
       )}
       <ActionEconomyBar economy={c.turn} compact />
-      {mine && <a href={`#/c/${c.characterId}`} className="block text-sm text-amber-400 underline">เปิดใบตัวละครของฉัน</a>}
+      {mine && <a href={`#/c/${c.characterId}`} className="block text-sm text-amber-400 underline">เปิดใบตัวละคร</a>}
     </div>
   )
 }

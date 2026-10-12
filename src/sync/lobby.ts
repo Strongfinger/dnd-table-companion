@@ -2,6 +2,7 @@
 // the join link in the QR code, kick messages and the member list shown on screen.
 import { isValidRoomCode } from './roomCode'
 import type { Member } from './transport'
+import { MAX_GRANTS, type Grant } from './sheets'
 
 /** The room this device is in, saved in settings so the app rejoins after a reload or sleep. */
 export interface LobbySession {
@@ -18,6 +19,8 @@ export interface LobbySession {
   kicked: Kicked[]
   /** DM: when the party's short rest started (players may spend Hit Dice until it ends), or null. */
   shortRestSince: number | null
+  /** DM: extra characters handed to players' devices (e.g. a monster made into a character). */
+  grants: Grant[]
 }
 
 export interface Kicked {
@@ -41,6 +44,11 @@ export function parseLobbySession(v: unknown): LobbySession | null {
     characterName: shortString(s.characterName, 60),
     local: s.local === true,
     shortRestSince: Number.isFinite(s.shortRestSince) ? (s.shortRestSince as number) : null,
+    grants: Array.isArray(s.grants) ? s.grants.slice(0, MAX_GRANTS).flatMap((g) => {
+      const characterId = shortString(g?.characterId, 64)
+      const deviceId = shortString(g?.deviceId, 64)
+      return characterId && deviceId ? [{ characterId, deviceId }] : []
+    }) : [],
     kicked: Array.isArray(s.kicked) ? s.kicked.flatMap((k) => {
       const deviceId = shortString(k?.deviceId, 64)
       return deviceId ? [{ deviceId, name: shortString(k.name, 40) ?? '' }] : []

@@ -1,5 +1,7 @@
 // One line in the initiative order; tap to open its controls.
 import { useState } from 'react'
+import { useLobby } from '../app/useLobby'
+import { visibleMembers } from '../sync/lobby'
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
@@ -297,6 +299,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
               </button>
             )}
             {isPc && character && <a href={`#/c/${character.id}`} className="rounded bg-stone-700 px-2 py-1">ดูใบตัวละคร</a>}
+            {isPc && character && <ControlPicker characterId={character.id} />}
             {!isPc && (
               <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={() => onUpdate((m) => same({ ...m, hidden: !m.hidden }, m.hidden ? `👁 ${c.name} ปรากฏตัว` : ''))}>
                 {c.hidden ? '👁 ให้ผู้เล่นเห็น' : '🙈 ซ่อนจากผู้เล่น'}
@@ -323,5 +326,32 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * DM in a live room: hand this character (e.g. a monster made into a character) to a player's phone,
+ * as an extra character they control. Not for a character a player picked themselves.
+ */
+function ControlPicker({ characterId }: { characterId: string }) {
+  const lobby = useLobby()
+  const s = lobby.session
+  if (s?.role !== 'dm') return null
+  const players = visibleMembers(lobby.members, s.kicked).filter((m) => m.role === 'player')
+  if (players.some((m) => m.characterId === characterId)) return null
+  const current = s.grants.find((g) => g.characterId === characterId)?.deviceId ?? ''
+  return (
+    <label className="flex items-center gap-1 rounded bg-stone-700 px-2 py-1">
+      🎮
+      <select
+        className="bg-transparent text-sm"
+        aria-label="ผู้ควบคุม"
+        value={current}
+        onChange={(e) => lobby.grant(characterId, e.target.value || null)}
+      >
+        <option value="">DM ควบคุม</option>
+        {players.map((m) => <option key={m.deviceId} value={m.deviceId}>ให้ {m.name}{m.characterName ? ` (${m.characterName})` : ''}</option>)}
+      </select>
+    </label>
   )
 }

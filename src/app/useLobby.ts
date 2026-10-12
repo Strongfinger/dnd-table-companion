@@ -37,6 +37,10 @@ export interface LobbyApi {
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
+  /** Player: every character this device plays in the room (the picked one + any the DM handed over). */
+  myCharacterIds: string[]
+  /** DM: hand a character to a player's device (null = take it back). */
+  grant: (characterId: string, deviceId: string | null) => void
   /** The room's campaign: the DM's choice (players get it from the DM), or null. */
   campaignId: string | null
   /** DM: switch the room to another campaign (players' phones follow it). */

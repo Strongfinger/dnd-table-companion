@@ -175,12 +175,14 @@ function NotFound() {
 
 /** In a live lobby: shows that this sheet is synced with the room (player: with the DM; DM: who plays it). */
 function LiveBadge({ characterId }: { characterId: string }) {
-  const { session, members, status, pending } = useLobby()
+  const { session, members, status, pending, myCharacterIds } = useLobby()
   if (!session) return null
-  const player = members.find((m) => m.role === 'player' && m.characterId === characterId)
+  // DM: the player who picked it, or the one it was handed to.
+  const grantedTo = session.grants.find((g) => g.characterId === characterId)?.deviceId
+  const player = members.find((m) => m.role === 'player' && (m.characterId === characterId || m.deviceId === grantedTo))
   const text = session.role === 'player'
-    ? session.characterId === characterId && `ซิงค์กับ DM ในห้อง ${session.code}`
-    : player && `${player.name} เล่นตัวนี้ในห้อง ${session.code}${player.online ? '' : ' (ออฟไลน์)'}`
+    ? myCharacterIds.includes(characterId) && `ซิงค์กับ DM ในห้อง ${session.code}${session.characterId === characterId ? '' : ' · DM ให้คุณควบคุมตัวนี้'}`
+    : player && `${player.name} ${grantedTo ? 'ควบคุม' : 'เล่น'}ตัวนี้ในห้อง ${session.code}${player.online ? '' : ' (ออฟไลน์)'}`
   if (!text) return null
   return (
     <a href="#/lobby" className="block rounded-lg bg-sky-950 px-3 py-2 text-sm text-sky-200">
