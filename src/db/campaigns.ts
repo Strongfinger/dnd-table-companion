@@ -35,3 +35,19 @@ export async function deleteCampaign(id: string): Promise<void> {
     })
   })
 }
+
+export function getCampaign(id: string): Promise<Campaign | undefined> {
+  return db.campaigns.get(id)
+}
+
+/**
+ * Live lobby (player device): keep the DM's campaign here with the same id, so this player's
+ * character can belong to it (party overview, lists). Owned by the DM's device.
+ */
+export async function adoptCampaign(id: string, name: string, ownerDeviceId: string): Promise<void> {
+  await db.transaction('rw', db.campaigns, async () => {
+    const c = await db.campaigns.get(id)
+    if (!c) await db.campaigns.put({ ...createCampaign(name, ownerDeviceId), id })
+    else if (c.name !== name) await db.campaigns.put({ ...c, name: name.trim().slice(0, 100) || c.name })
+  })
+}

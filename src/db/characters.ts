@@ -34,13 +34,16 @@ export async function saveCharacter(character: Character): Promise<Character> {
  * Change a character safely: read the latest saved copy, apply `fn`, save — in one transaction.
  * Quick taps (damage, then a condition) each start from the newest data, so none is lost.
  * `fn` returns the new character and a log line; the log line is returned (or null if not found).
+ * Returning the same character object it was given means "no change" (nothing is saved).
  */
 export async function updateCharacter(id: string, fn: (c: Character) => { character: Character; text: string }): Promise<string | null> {
   return db.transaction('rw', db.characters, async () => {
     const stored = await db.characters.get(id)
     if (!stored) return null
-    const r = fn(withDefaults(stored))
-    await db.characters.put(stampCharacter(r.character))
+    const current = withDefaults(stored)
+    const r = fn(current)
+    // Nothing changed (fn returned the same object): don't save, so the revision stays as it is.
+    if (r.character !== current) await db.characters.put(stampCharacter(r.character))
     return r.text
   })
 }
@@ -64,6 +67,14 @@ export async function saveReceivedCharacter(
     await db.characters.put(c)
     return { saved: true, stored: c }
   })
+}
+
+/**
+ * Put a character in a campaign on this device only (no new revision): which campaign a character
+ * is filed under is each device's own choice, so it isn't a change other devices need.
+ */
+export async function setCharacterCampaign(id: string, campaignId: string | null): Promise<void> {
+  await db.characters.update(id, { campaignId })
 }
 
 /** Call `onChange` with these characters now and after every change to them. Returns a stop function. */

@@ -5,6 +5,7 @@ import type { CharacterAction } from '../model/characterActions'
 import type { PlayerEncounterView } from '../model/playerView'
 import type { RollEvent } from '../model/rollEvent'
 import type { Envelope, MessageKind } from '../sync/envelope'
+import type { FightSummary, PlayerLogEntry } from '../sync/fights'
 import type { LobbySession } from '../sync/lobby'
 import type { ConnectionStatus, Member } from '../sync/transport'
 
@@ -25,6 +26,9 @@ export interface LobbyApi {
   fight: PlayerEncounterView | null
   /** Player: changes made here that the DM's device hasn't confirmed yet (re-sent until it does). */
   pending: number
+  /** Player: the DM's started fights (read-only) and their player-safe log lines. */
+  fightList: FightSummary[]
+  fightLogs: Record<string, PlayerLogEntry[]>
   /** Dice rolls shared in the room this session, newest first (mine included). */
   rolls: RoomRoll[]
   /** Set when the DM removed this device from the room. */
@@ -41,6 +45,8 @@ export interface LobbyApi {
   shareSheet: (characterId: string) => void
   /** Share a roll from the dice roller with the room (named by the room, e.g. my character). */
   shareRoll: (roll: Omit<RollEvent, 'type' | 'by'>) => void
+  /** Player: end my character's turn in the running fight (the DM's device checks it's really my turn). */
+  endTurn: () => void
   send: (kind: MessageKind, body: unknown) => void
   /** Hear messages from other devices; returns a function that stops listening. */
   subscribe: (listener: (e: Envelope) => void) => () => void

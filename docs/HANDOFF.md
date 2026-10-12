@@ -3,7 +3,7 @@
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (379 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (396 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -16,7 +16,9 @@
 | Lobby (real) | `src/app/lobby.tsx` (LobbyProvider: one connection for the whole app, `send`/`subscribe` for later steps), `src/app/useLobby.ts`, `src/sync/lobby.ts` (saved session, join link, kick), `src/screens/Lobby.tsx` (`#/lobby`, `#/lobby/CODE` from the QR) |
 | Sheet sync | `src/sync/sheets.ts` (protocol + pure checks), handled in `src/app/lobby.tsx`; `saveReceivedCharacter`/`watchCharacters` in `src/db/characters.ts`; callers: `PlayPanel` (`shareAction`), `CharacterEdit` (`shareSheet`) |
 | Outbox / applied-once | `src/sync/outbox.ts` (player outbox, retry rounds, acks); `mergeDraft` in `src/model/sync.ts` (edit screen); `mergeEdit` in `src/sync/sheets.ts` |
-| Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`, `resync.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
+| Player permissions | `src/model/permissions.ts` (pure rules), `src/db/play.ts` (`playAction`: every play change goes through it), `src/db/turns.ts` (`advanceTurn`, shared by the tracker and players' end-turn) |
+| Player combat tab | `src/sync/fights.ts`, `src/screens/PlayerFights.tsx`; `forPlayers` flag on log lines (`isPlayerSafe`) |
+| Lobby test scripts | `scripts/lobby-test/` (`player.cjs`, `dm.cjs`, `resync.cjs`, `permissions-dm.cjs`, `permissions-player.cjs`): a fake 2nd device over Firebase (two tabs share one IndexedDB, so they can't test sheet sync) |
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
@@ -79,6 +81,18 @@
    Fixed limits from 4.2: (a) edit screen overwrites, (b) double apply after DM reload, (d) partly (by field).
    Still open: (c) phone log lacks DM-made changes; (e) sheets over ~64 KB; old room messages pile up in
    Firebase (rules allow create only) — listed in Phase 5.
+6. ✅ Player permissions (2026-10-12, owner's request). In a room a player may spend but not give back
+   (Action/Bonus/Reaction, spell slots, feature uses), press ↻ new turn, or rest (DM-only; players can still
+   roll Hit Dice). Enforced on the phone (UI + `playAction(..., 'player')`) and again on the DM device for
+   arriving actions (refused → DM sends its copy back); `mergeEdit` keeps the DM's slot/feature uses.
+   The DM (or any device outside a room) may give a use back only in the round it was spent while the
+   character is in a running fight (`useRounds` setting records fight+round per use); outside fights any time.
+   Players' combat tab is read-only: the DM's started fights (`fights`) + player-safe log lines (`log`; lines
+   with characterId, or `forPlayers` = start/end, turns of visible creatures, rounds, shared rolls; never
+   monster HP or hidden creatures). Players end their own turn (`endTurn`, checked: their PC is active,
+   same round). Players adopt the DM's campaign (`campaign` → same id on the phone, their character filed
+   under it) so the party overview works. Rate limit now only on the DM device.
+   Owner decisions: party overview on phones = only my character; safe lines only; rests are DM-only.
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

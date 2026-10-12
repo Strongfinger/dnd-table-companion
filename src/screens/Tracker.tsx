@@ -3,12 +3,13 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { go } from '../app/router'
-import { listCharacters, updateCharacter } from '../db/characters'
+import { listCharacters } from '../db/characters'
 import { deleteEncounter, getEncounter, updateEncounter } from '../db/encounters'
 import { addLog, listEncounterLog } from '../db/log'
-import { isDead, type ActionResult } from '../model/actions'
-import type { Character } from '../model/character'
-import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
+import { playAction } from '../db/play'
+import { advanceTurn } from '../db/turns'
+import { isDead } from '../model/actions'
+import type { CharacterAction } from '../model/characterActions'
 import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
 import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
 import { Button, Section } from '../ui/kit'
@@ -27,14 +28,21 @@ export default function Tracker({ id }: { id: string }) {
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showPlayerView, setShowPlayerView] = useState(false)
+  /** Why the last change was refused (e.g. giving back a slot spent in an earlier round). */
+  const [notice, setNotice] = useState<string | null>(null)
 
   if (e === undefined) return null
   if (e === null) return <p className="text-center text-stone-400">ไม่พบการต่อสู้นี้</p>
 
   const enc = e
   const byId = new Map(characters.map((c) => [c.id, c]))
-  /** Write to the fight log (and to the PC's own sheet log when it's about a PC). */
-  const log = (text: string, characterId = '', round = enc.round) => addLog(characterId, text, { encounterId: enc.id, round })
+  /**
+   * Write to the fight log (and to the PC's own sheet log when it's about a PC).
+   * `forPlayers`: players in a live room may see the line (only when it holds no DM secrets).
+   */
+  const log = (text: string, characterId = '', round = enc.round, forPlayers = false) => addLog(characterId, text, { encounterId: enc.id, round }, forPlayers)
+  /** Lines naming a combatant are shown to players only while that combatant is visible. */
+  const visible = (c: Combatant | undefined) => !!c && !c.hidden
 
   /**
    * Change the encounter starting from its newest saved copy (never a stale screen copy).
@@ -66,22 +74,21 @@ export default function Tracker({ id }: { id: string }) {
     if (text) await log(text)
   }
 
-  /** Apply a character action to a linked PC (optionally logging it to the fight and the sheet). */
-  async function pcAction(characterId: string, action: CharacterAction, logIt = true) {
-    const text = await updateCharacter(characterId, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
-    if (text && logIt) await log(text, characterId)
-  }
-
-  async function updatePc(characterId: string, fn: (latest: Character) => ActionResult) {
-    const text = await updateCharacter(characterId, fn)
-    if (text) await log(text, characterId)
+  /**
+   * Apply a character action to a linked PC. From the DM's taps it's checked (give-backs only in the
+   * round of the use) and logged; `byApp` is the tracker's own bookkeeping (new turn, fight over).
+   */
+  async function pcAction(characterId: string, action: CharacterAction, byApp = false) {
+    const r = await playAction(characterId, action, byApp ? 'system' : 'dm')
+    if (r.refused) setNotice(r.refused)
+    else if (r.text && !byApp) await log(r.text, characterId)
   }
 
   /** Take tracker-applied conditions off PC sheets for these combatants (fight over / removed). */
   async function clearPcConditions(list: Combatant[]) {
     for (const c of list) {
       if (c.kind !== 'pc' || !c.characterId) continue
-      for (const condition of conditionsToClear(c.effects, [])) await pcAction(c.characterId, { type: 'setCondition', condition, on: false }, false)
+      for (const condition of conditionsToClear(c.effects, [])) await pcAction(c.characterId, { type: 'setCondition', condition, on: false }, true)
     }
   }
 
@@ -112,35 +119,21 @@ export default function Tracker({ id }: { id: string }) {
       return { encounter: { ...x, combatants, status: 'active', round: 1, activeId: r.state.activeId }, result: { name: who?.name, combatants, activeId: r.state.activeId } }
     })
     if (first) await refreshTurn(first.activeId, first.combatants)
-    await log('⚔️ เริ่มการต่อสู้ — รอบที่ 1 —', '', 1)
-    if (first?.name) await log(`ตาของ ${first.name}`, '', 1)
+    await log('⚔️ เริ่มการต่อสู้ — รอบที่ 1 —', '', 1, true)
+    const firstUp = first?.combatants.find((c) => c.id === first.activeId)
+    if (first?.name) await log(`ตาของ ${first.name}`, '', 1, visible(firstUp))
   }
 
   /** Start of a creature's turn: Action, Bonus Action and Reaction come back. */
   async function refreshTurn(activeId: string | null, combatants: Combatant[]) {
     const who = combatants.find((c) => c.id === activeId)
-    if (who?.kind === 'pc' && who.characterId) await pcAction(who.characterId, { type: 'resetTurn' }, false)
+    if (who?.kind === 'pc' && who.characterId) await pcAction(who.characterId, { type: 'resetTurn' }, true)
   }
   const freshMonster = (list: Combatant[], activeId: string | null) =>
     list.map((c) => (c.id === activeId && c.kind === 'monster' ? { ...c, turn: startOfTurn() } : c))
 
-  async function next() {
-    const r = await update((x) => {
-      const t = nextTurn(x.combatants, { round: x.round, activeId: x.activeId })
-      const combatants = freshMonster(t.combatants, t.state.activeId)
-      return { encounter: { ...x, combatants, round: t.state.round, activeId: t.state.activeId }, result: { t, before: x.combatants } }
-    })
-    if (!r) return
-    await refreshTurn(r.t.state.activeId, r.t.combatants)
-    // PC conditions live on the sheet too: when a timed condition runs out, take it off the sheet.
-    for (const b of r.before) {
-      if (b.kind !== 'pc' || !b.characterId) continue
-      const after = r.t.combatants.find((x) => x.id === b.id)?.effects ?? []
-      const clear = conditionsToClear(b.effects.filter((ef) => !after.some((x) => x.id === ef.id)), after)
-      for (const condition of clear) await pcAction(b.characterId, { type: 'setCondition', condition, on: false }, false)
-    }
-    for (const ev of r.t.events) await log(ev.text, '', r.t.state.round)
-  }
+  /** Next turn (shared with players ending their own turn from a phone in a live room). */
+  const next = () => advanceTurn(enc.id)
 
   async function previous() {
     const s2 = await update((x) => {
@@ -148,7 +141,7 @@ export default function Tracker({ id }: { id: string }) {
       return { encounter: { ...x, round: st.round, activeId: st.activeId }, result: st }
     })
     const who = s2 && enc.combatants.find((c) => c.id === s2.activeId)
-    if (s2 && who) await log(`↩︎ ย้อนกลับไปตาของ ${who.name} (รอบที่ ${s2.round}) · ระยะเวลาเอฟเฟกต์ไม่ย้อนกลับ`, '', s2.round)
+    if (s2 && who) await log(`↩︎ ย้อนกลับไปตาของ ${who.name} (รอบที่ ${s2.round}) · ระยะเวลาเอฟเฟกต์ไม่ย้อนกลับ`, '', s2.round, visible(who))
   }
 
   async function end() {
@@ -156,9 +149,9 @@ export default function Tracker({ id }: { id: string }) {
     await clearPcConditions(enc.combatants)
     // Out of combat: everyone's Action / Bonus Action / Reaction is available again.
     for (const c of enc.combatants) {
-      if (c.kind === 'pc' && c.characterId) await pcAction(c.characterId, { type: 'resetTurn' }, false)
+      if (c.kind === 'pc' && c.characterId) await pcAction(c.characterId, { type: 'resetTurn' }, true)
     }
-    await log(`🏁 จบการต่อสู้ (${enc.round} รอบ)`)
+    await log(`🏁 จบการต่อสู้ (${enc.round} รอบ)`, '', enc.round, true)
   }
 
   async function remove(cid: string) {
@@ -178,13 +171,13 @@ export default function Tracker({ id }: { id: string }) {
       return { encounter: { ...base, combatants: base.combatants.filter((m) => m.id !== cid) }, result: evs }
     })
     await clearPcConditions([c])
-    await log(`${c.name} ออกจากการต่อสู้`)
+    await log(`${c.name} ออกจากการต่อสู้`, '', enc.round, visible(c))
     for (const ev of events ?? []) await log(ev)
   }
 
   async function addCombatants(list: Combatant[]) {
     await patch((x) => ({ combatants: sortByInitiative([...x.combatants, ...list]) }))
-    for (const c of list) await log(`➕ ${c.name} เข้าร่วมการต่อสู้`, c.characterId ?? '')
+    for (const c of list) await log(`➕ ${c.name} เข้าร่วมการต่อสู้`, c.characterId ?? '', enc.round, visible(c))
     setAdding(false)
   }
 
@@ -216,6 +209,10 @@ export default function Tracker({ id }: { id: string }) {
         </div>
       </header>
 
+      {notice && (
+        <p role="status" onClick={() => setNotice(null)} className="rounded-lg bg-amber-950 p-3 text-sm text-amber-200">⚠️ {notice}</p>
+      )}
+
       {showPlayerView && <PlayerViewPanel view={playerView(enc, byId)} />}
 
       {adding && <AddCombatants encounter={enc} characters={characters} onAdd={addCombatants} />}
@@ -238,7 +235,7 @@ export default function Tracker({ id }: { id: string }) {
               onToggle={() => setOpenId(openId === c.id ? null : c.id)}
               onInitiative={(total, how) => setInitiative(c.id, total, how)}
               onUpdate={(fn) => updateCombatant(c.id, fn)}
-              onCharacter={(fn) => c.characterId && updatePc(c.characterId, fn)}
+              onPcAction={(action) => c.characterId && pcAction(c.characterId, action)}
               onRemove={() => remove(c.id)}
             />
           ))}

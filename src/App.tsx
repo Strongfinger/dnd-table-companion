@@ -16,6 +16,7 @@ import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
 import PartyOverview from './screens/PartyOverview'
+import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
 import RoomRollToast from './screens/RoomRollToast'
 import Tracker from './screens/Tracker'
 
@@ -46,8 +47,8 @@ export default function App() {
         {route.name === 'sheet' && <CharacterSheet id={route.id} />}
         {/* key makes React start a fresh form when switching characters */}
         {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
-        {route.name === 'fights' && <EncounterList />}
-        {route.name === 'fight' && <Tracker key={route.id} id={route.id} />}
+        {route.name === 'fights' && <FightsRoute />}
+        {route.name === 'fight' && <FightRoute key={route.id} id={route.id} />}
         {route.name === 'about' && <About />}
         {route.name === 'party' && <PartyOverview />}
         {route.name === 'lab' && <LobbyLab />}
@@ -70,4 +71,17 @@ function LobbyDot() {
   if (!session) return null
   const color = status === 'connected' ? 'bg-green-500' : status === 'offline' ? 'bg-stone-500' : 'bg-amber-500'
   return <span className={`ml-1 inline-block h-2 w-2 rounded-full align-middle ${color}`} aria-label={status} />
+}
+
+/** Players in a live room see the DM's fights read-only; everyone else gets the tracker. */
+const playingInRoom = (lobby: ReturnType<typeof useLobby>) => lobby.session?.role === 'player'
+
+function FightsRoute() {
+  const lobby = useLobby()
+  return playingInRoom(lobby) ? <PlayerFightList /> : <EncounterList />
+}
+
+function FightRoute({ id }: { id: string }) {
+  const lobby = useLobby()
+  return playingInRoom(lobby) ? <PlayerFight id={id} /> : <Tracker id={id} />
 }

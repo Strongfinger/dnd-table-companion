@@ -118,3 +118,14 @@ export function activeTurn(view: PlayerEncounterView): PlayerCombatant | 'hidden
   if (view.hiddenTurn) return 'hidden'
   return view.combatants.find((c) => c.active) ?? null
 }
+
+/**
+ * May players see this turn event in the fight log? Round changes and turns of visible creatures,
+ * and anything about a player character; not monsters' effects (DM notes) or hidden creatures.
+ */
+export function isTurnEventForPlayers(ev: { combatantId: string; text: string }, combatants: Combatant[]): boolean {
+  const who = combatants.find((c) => c.id === ev.combatantId)
+  if (!who) return true // e.g. "no one is left in the fight"
+  if (who.hidden) return false
+  return who.kind === 'pc' || ev.text.startsWith('ตาของ ') || ev.text.startsWith('— รอบที่')
+}

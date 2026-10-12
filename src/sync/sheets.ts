@@ -67,8 +67,8 @@ export const PLAY_FIELDS = ['hitDiceSpent', 'deathSaves', 'heroicInspiration', '
 
 /**
  * The DM device got a player's edit-screen save: take what the player builds (scores, items,
- * spells, notes, max HP, slots...) but keep the DM's play state (current HP, conditions, death
- * saves...), which may have changed since. The revision ends above both copies.
+ * spells, notes, max HP, max slots...) but keep the DM's play state (current HP, conditions, death
+ * saves, slots and feature uses...), which may have changed since. The revision ends above both copies.
  */
 export function mergeEdit(dm: Character, edit: Character): Character {
   const play = Object.fromEntries(PLAY_FIELDS.map((k) => [k, dm[k]])) as Pick<Character, (typeof PLAY_FIELDS)[number]>
@@ -76,6 +76,9 @@ export function mergeEdit(dm: Character, edit: Character): Character {
     ...edit,
     ...play,
     hitDiceSpent: Math.min(dm.hitDiceSpent, edit.level),
+    // Slot and feature uses stay the DM's (the edit screen can't give points back); the player sets the maximums.
+    spellSlots: edit.spellSlots.map((x, i) => ({ max: x.max, used: Math.min(dm.spellSlots[i]?.used ?? 0, x.max) })),
+    features: edit.features.map((f) => ({ ...f, used: Math.min(dm.features.find((d) => d.id === f.id)?.used ?? 0, f.max) })),
     hp: { max: edit.hp.max, current: Math.min(dm.hp.current, edit.hp.max), temp: dm.hp.temp },
     id: dm.id,
     campaignId: dm.campaignId,
@@ -83,4 +86,14 @@ export function mergeEdit(dm: Character, edit: Character): Character {
     createdAt: dm.createdAt,
     rev: Math.max(dm.rev, edit.rev),
   }
+}
+
+/** Body of a player's 'endTurn': the fight, round and combatant whose turn they end. */
+export function parseEndTurn(body: unknown): { encounterId: string; round: number; combatantId: string } | null {
+  if (typeof body !== 'object' || body === null) return null
+  const b = body as Record<string, unknown>
+  const short = (v: unknown) => typeof v === 'string' && v.length > 0 && v.length <= 64
+  return short(b.encounterId) && short(b.combatantId) && Number.isInteger(b.round)
+    ? { encounterId: b.encounterId as string, round: b.round as number, combatantId: b.combatantId as string }
+    : null
 }

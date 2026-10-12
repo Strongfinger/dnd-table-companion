@@ -2,12 +2,12 @@
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
-import { updateCharacter } from '../db/characters'
+import { playAction } from '../db/play'
 import { logCharacterEvent } from '../db/log'
 import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
-import { applyCharacterAction, type CharacterAction } from '../model/characterActions'
+import type { CharacterAction } from '../model/characterActions'
 import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
@@ -26,12 +26,16 @@ export default function PlayPanel({ c }: { c: Character }) {
   // Which confirm dialog is open: an Action / Bonus Action / Reaction, or Concentration.
   const [pending, setPending] = useState<SuggestionKind | null>(null)
 
+  // A player playing this character in a live room: they spend, the DM gives back and starts rests.
+  const asPlayer = lobby.session?.role === 'player' && lobby.session.characterId === c.id
+
   /**
-   * Send one action (see model/characterActions.ts): it's applied to the newest saved copy,
-   * shown, and logged. In a live lobby a player's action also goes to the DM's device.
+   * Send one action (see model/characterActions.ts): it's checked (src/model/permissions.ts), applied to
+   * the newest saved copy, shown, and logged. In a live lobby a player's action also goes to the DM's device.
    */
   const act = async (action: CharacterAction) => {
-    const text = await updateCharacter(c.id, (ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
+    const { text, refused } = await playAction(c.id, action, asPlayer ? 'player' : 'dm')
+    if (refused) return setMessage(`🔒 ${refused}`)
     lobby.shareAction(c.id, action)
     if (text) {
       setMessage(text)
@@ -143,13 +147,15 @@ export default function PlayPanel({ c }: { c: Character }) {
         <div className="flex-1">
           <ActionEconomyBar
             economy={c.turn}
-            // Using one asks what for (then logs it); tapping a used one gives it back.
+            // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).
             onToggle={(kind) => (c.turn[kind] ? act({ type: 'setActionUsed', kind, used: false }) : setPending(kind))}
           />
         </div>
-        <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
-          ↻ เทิร์นใหม่
-        </Button>
+        {!asPlayer && (
+          <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
+            ↻ เทิร์นใหม่
+          </Button>
+        )}
       </div>
 
       {/* Death saves */}
@@ -188,7 +194,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       )}
       {slots.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1 text-sm text-stone-400"><Term name="Spell Slots" />{c.className === 'Warlock' && ' (Pact Magic: คืนเมื่อพักสั้น)'} · แตะเพื่อใช้/คืน</div>
+          <div className="mb-1 text-sm text-stone-400"><Term name="Spell Slots" />{c.className === 'Warlock' && ' (Pact Magic: คืนเมื่อพักสั้น)'} · {asPlayer ? 'แตะเพื่อใช้ (DM เป็นคนคืน)' : 'แตะเพื่อใช้/คืน'}</div>
           {slots.map((s) => (
             <div key={s.level} className="flex items-center gap-2 py-1">
               <span className="w-10 text-sm">{SLOT_LABEL[s.level]}</span>
@@ -210,7 +216,7 @@ export default function PlayPanel({ c }: { c: Character }) {
       {/* Limited-use features */}
       {c.features.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1 text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · แตะเพื่อใช้/คืน</div>
+          <div className="mb-1 text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · {asPlayer ? 'แตะเพื่อใช้ (DM เป็นคนคืน)' : 'แตะเพื่อใช้/คืน'}</div>
           {c.features.map((f) => (
             <div key={f.id} className="flex flex-wrap items-center gap-2 py-1">
               <span className="min-w-28 text-sm">{f.name}</span>
@@ -231,10 +237,17 @@ export default function PlayPanel({ c }: { c: Character }) {
 
       {/* Rests */}
       <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c.className)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
-      <div className="mt-2 flex gap-2">
-        <HelpButton term="Short Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>☕ พักสั้น</HelpButton>
-        <HelpButton term="Long Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setConfirmLong(!confirmLong)}>🌙 พักยาว</HelpButton>
-      </div>
+      {asPlayer ? (
+        <div className="mt-2 space-y-2">
+          <p className="rounded-lg bg-stone-900 p-2 text-xs text-stone-400">🔒 พักสั้น/พักยาว: DM เป็นคนกดให้ทั้งปาร์ตี้ · ระหว่างพักสั้นใช้ Hit Dice ได้เอง</p>
+          <HelpButton term="Hit Dice" className="w-full rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>🎲 ใช้ Hit Die (ตอนพักสั้น)</HelpButton>
+        </div>
+      ) : (
+        <div className="mt-2 flex gap-2">
+          <HelpButton term="Short Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setResting(!resting)}>☕ พักสั้น</HelpButton>
+          <HelpButton term="Long Rest" className="flex-1 rounded-lg bg-stone-700 px-4 py-2 font-bold hover:bg-stone-600" onClick={() => setConfirmLong(!confirmLong)}>🌙 พักยาว</HelpButton>
+        </div>
+      )}
       {confirmLong && (
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
           <p className="text-sm">พักยาว 8 ชม.: HP, Hit Dice, Spell Slots และความสามารถทั้งหมดกลับมาเต็ม · Exhaustion −1</p>
@@ -245,7 +258,9 @@ export default function PlayPanel({ c }: { c: Character }) {
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
           <p className="text-sm">ใช้ Hit Die เพื่อฟื้น HP (d{hitDieSize(c.className)} + CON) ได้ทีละลูก · เหลือ {c.level - c.hitDiceSpent} ลูก</p>
           <DiceRoll sides={hitDieSize(c.className)} label="Hit Die" onRoll={useHitDie} />
-          <Button variant="primary" className="w-full" onClick={finishShortRest}>จบการพักสั้น</Button>
+          {asPlayer
+            ? <Button className="w-full" onClick={() => setResting(false)}>ปิด</Button>
+            : <Button variant="primary" className="w-full" onClick={finishShortRest}>จบการพักสั้น</Button>}
         </div>
       )}
 

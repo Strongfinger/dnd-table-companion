@@ -1,8 +1,11 @@
 // Play log: what happened to a character, newest first, so the table can look back after a fight.
 import { newId } from '../model/character'
+import { liveQuery } from 'dexie'
 import { withEncounterDefaults } from '../model/encounter'
 import { liveFight } from '../model/playerView'
+import { fightsForPlayers, MAX_LOG_LINES, type FightSummary, type PlayerLogEntry } from '../sync/fights'
 import { db, type LogEntry } from './db'
+import { runningFightOf } from './encounters'
 
 // Several entries can be written in the same millisecond (e.g. rolling for all monsters);
 // a strictly increasing time keeps them in the order they happened.
@@ -12,18 +15,23 @@ function nextTime(): number {
   return lastAt
 }
 
-/** characterId is '' for entries that aren't about a saved character (e.g. a monster). */
-export function addLog(characterId: string, text: string, fight?: { encounterId: string; round: number }): Promise<string> {
-  return db.log.add({ id: newId(), characterId, at: nextTime(), text, ...fight })
+/**
+ * characterId is '' for entries that aren't about a saved character (e.g. a monster).
+ * `forPlayers`: a fight-log line without DM secrets that players in a live room may see.
+ */
+export function addLog(characterId: string, text: string, fight?: { encounterId: string; round: number }, forPlayers = false): Promise<string> {
+  return db.log.add({ id: newId(), characterId, at: nextTime(), text, ...fight, ...(forPlayers ? { forPlayers: true as const } : {}) })
 }
+
+/** May players see this fight-log line? Lines about a player character, or ones marked for players. */
+export const isPlayerSafe = (e: Pick<LogEntry, 'characterId' | 'forPlayers'>) => e.characterId !== '' || e.forPlayers === true
 
 /**
  * Log something about a character. If the character is in a fight that's running on this
  * device, it goes into that fight's log too (with the current round).
  */
 export async function logCharacterEvent(characterId: string, text: string): Promise<string> {
-  const fights = await db.encounters.filter((e) => e.status === 'active' && e.combatants.some((c) => c.characterId === characterId)).toArray()
-  const fight = fights.sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  const fight = await runningFightOf(characterId)
   return addLog(characterId, text, fight ? { encounterId: fight.id, round: fight.round } : undefined)
 }
 
@@ -34,7 +42,7 @@ export async function logCharacterEvent(characterId: string, text: string): Prom
 export async function logSharedRoll(text: string, characterId: string | null, campaignId: string | null): Promise<void> {
   const fight = liveFight((await db.encounters.toArray()).map(withEncounterDefaults), campaignId)
   const known = characterId && (await db.characters.get(characterId)) ? characterId : ''
-  if (fight || known) await addLog(known, text, fight ? { encounterId: fight.id, round: fight.round } : undefined)
+  if (fight || known) await addLog(known, text, fight ? { encounterId: fight.id, round: fight.round } : undefined, true)
 }
 
 /** Remove one log line added by mistake (only the line: HP and other values are not changed back). */
@@ -54,4 +62,24 @@ export function listLog(characterId: string, limit = 100): Promise<LogEntry[]> {
 
 export function clearLog(characterId: string): Promise<number> {
   return db.log.where('characterId').equals(characterId).delete()
+}
+
+/**
+ * Live lobby (DM device): the started fights players may see and each one's player-safe log lines,
+ * now and after every change.
+ */
+export function watchFightsForPlayers(
+  campaignId: string | null,
+  onChange: (v: { fights: FightSummary[]; logs: Record<string, PlayerLogEntry[]> }) => void,
+): () => void {
+  const sub = liveQuery(async () => {
+    const fights = fightsForPlayers((await db.encounters.toArray()).map(withEncounterDefaults), campaignId)
+    const logs: Record<string, PlayerLogEntry[]> = {}
+    for (const f of fights) {
+      const entries = (await listEncounterLog(f.id)).filter(isPlayerSafe).slice(-MAX_LOG_LINES)
+      logs[f.id] = entries.map((e) => ({ id: e.id, at: e.at, round: e.round ?? 0, text: e.text }))
+    }
+    return { fights, logs }
+  }).subscribe({ next: onChange, error: (err) => console.error('watchFightsForPlayers', err) })
+  return () => sub.unsubscribe()
 }

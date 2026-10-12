@@ -13,6 +13,11 @@ export interface LogEntry {
   /** Set when it happened in a tracked fight. */
   encounterId?: string
   round?: number
+  /**
+   * Players in a live room may see this fight-log line (no DM secrets: turns of visible creatures,
+   * round changes, shared rolls...). Lines about a player character (characterId set) always may.
+   */
+  forPlayers?: true
 }
 
 export const db = new Dexie('dnd-table-companion') as Dexie & {

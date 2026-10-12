@@ -1,9 +1,9 @@
 // One line in the initiative order; tap to open its controls.
 import { useState } from 'react'
-import { isDead, type ActionResult } from '../model/actions'
+import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
-import { actionLabel, applyCharacterAction, type CharacterAction } from '../model/characterActions'
+import { actionLabel, type CharacterAction } from '../model/characterActions'
 import {
   addEffect, conditionsToClear, damageMonster, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
@@ -16,7 +16,7 @@ import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
 
-export default function CombatantRow({ c, character, active, open, onToggle, onInitiative, onUpdate, onCharacter, onRemove }: {
+export default function CombatantRow({ c, character, active, open, onToggle, onInitiative, onUpdate, onPcAction, onRemove }: {
   c: Combatant
   character: Character | undefined
   active: boolean
@@ -25,8 +25,8 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   onInitiative: (total: number, how: string) => void
   /** Change this combatant, starting from its newest saved state. */
   onUpdate: (fn: (latest: Combatant) => MonsterResult) => void
-  /** Change the linked PC sheet, starting from its newest saved state. */
-  onCharacter: (fn: (latest: Character) => ActionResult) => void
+  /** Change the linked PC sheet with a character action (checked and logged by the tracker). */
+  onPcAction: (action: CharacterAction) => void
   onRemove: () => void
 }) {
   const [amount, setAmount] = useState('')
@@ -52,7 +52,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   const initBonus = isPc && character ? deriveSheet(character).initiative : c.initBonus
   const same = (combatant: Combatant, text = ''): MonsterResult => ({ combatant, text })
   /** A PC change goes through the same actions as the player's own sheet. */
-  const pcAct = (action: CharacterAction) => onCharacter((ch) => applyCharacterAction(ch, action) ?? { character: ch, text: '' })
+  const pcAct = onPcAction
   // Action economy: on the sheet for PCs, on the combatant for monsters.
   const economy = isPc && character ? character.turn : (c.turn ?? FRESH_TURN)
   /** Using one asks what for (then logs it); tapping a used one gives it back without asking. */

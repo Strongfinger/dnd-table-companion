@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { createEncounter, createMonsters } from './encounter'
-import { activeTurn, healthStatus, liveFight, parsePlayerView, playerView } from './playerView'
+import { activeTurn, healthStatus, isTurnEventForPlayers, liveFight, parsePlayerView, playerView } from './playerView'
 
 describe('healthStatus', () => {
   it('full, hurt, Bloodied at half or below, down at 0', () => {
@@ -93,5 +93,20 @@ describe('parsePlayerView', () => {
     expect((activeTurn(view) as { name: string }).name).toBe('Boom')
     expect(activeTurn({ ...view, hiddenTurn: true })).toBe('hidden')
     expect(activeTurn({ ...view, combatants: [] })).toBeNull()
+  })
+})
+
+describe('isTurnEventForPlayers', () => {
+  const [goblin, shadow] = createMonsters({ name: 'Goblin', ac: 15, hpMax: 10, initBonus: 2 }, 2)
+  const hidden = { ...shadow, name: 'Shadow', hidden: true }
+  const pc = { ...createMonsters({ name: 'x', ac: 1, hpMax: 1, initBonus: 0 }, 1)[0], kind: 'pc' as const, characterId: 'c1', name: 'Boom' }
+  const list = [goblin, hidden, pc]
+  it('shows turns and rounds of visible creatures and PC events only', () => {
+    expect(isTurnEventForPlayers({ combatantId: goblin.id, text: 'ตาของ Goblin 1' }, list)).toBe(true)
+    expect(isTurnEventForPlayers({ combatantId: goblin.id, text: '— รอบที่ 2 —' }, list)).toBe(true)
+    expect(isTurnEventForPlayers({ combatantId: goblin.id, text: 'Goblin 1: Charmed by Strahd หมดแล้ว' }, list)).toBe(false)
+    expect(isTurnEventForPlayers({ combatantId: hidden.id, text: 'ตาของ Shadow' }, list)).toBe(false)
+    expect(isTurnEventForPlayers({ combatantId: pc.id, text: 'Boom: Prone หมดแล้ว' }, list)).toBe(true)
+    expect(isTurnEventForPlayers({ combatantId: '', text: 'ไม่มีใครเหลือในการต่อสู้' }, list)).toBe(true)
   })
 })

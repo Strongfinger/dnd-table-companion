@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
-import { isEditHello, mayChange, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
+import { isEditHello, mayChange, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
 import type { Member } from './transport'
 
 const nyx = createCharacter({ name: 'Nyx', className: 'Rogue', level: 3, scores: { str: 8, dex: 17, con: 14, int: 12, wis: 10, cha: 13 }, rev: 7 })
@@ -78,6 +78,14 @@ describe('mergeEdit', () => {
     expect(m.rev).toBe(12)
   })
 
+  it('keeps the DM\'s slot and feature uses (no give-backs through the edit screen)', () => {
+    const slots = (used: number, max = 3) => [{ max, used }, ...Array.from({ length: 8 }, () => ({ max: 0, used: 0 }))]
+    const feat = (used: number) => [{ id: 'sw', name: 'Second Wind', max: 2, used, recharge: 'short' as const }]
+    const m = mergeEdit({ ...dm, spellSlots: slots(2), features: feat(1) }, { ...edit, spellSlots: slots(0, 4), features: feat(0) })
+    expect(m.spellSlots[0]).toEqual({ max: 4, used: 2 })
+    expect(m.features[0].used).toBe(1)
+  })
+
   it('keeps current HP within a lowered max', () => {
     expect(mergeEdit({ ...dm, hp: { max: 20, current: 20, temp: 0 } }, { ...edit, hp: { max: 15, current: 15, temp: 0 } }).hp.current).toBe(15)
   })
@@ -85,5 +93,13 @@ describe('mergeEdit', () => {
   it('tells edits from plain syncs', () => {
     expect(isEditHello({ character: {}, edit: true })).toBe(true)
     expect(isEditHello({ character: {} })).toBe(false)
+  })
+})
+
+describe('parseEndTurn', () => {
+  it('reads the fight, round and combatant', () => {
+    expect(parseEndTurn({ encounterId: 'f1', round: 2, combatantId: 'c1' })).toEqual({ encounterId: 'f1', round: 2, combatantId: 'c1' })
+    expect(parseEndTurn({ encounterId: 'f1', round: '2', combatantId: 'c1' })).toBeNull()
+    expect(parseEndTurn(null)).toBeNull()
   })
 })

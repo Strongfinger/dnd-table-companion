@@ -58,3 +58,9 @@ export function watchPlayerFight(campaignId: string | null, onChange: (view: Pla
   }).subscribe({ next: onChange, error: (err) => console.error('watchPlayerFight', err) })
   return () => sub.unsubscribe()
 }
+
+/** The running fight a character is in (the most recently changed one), or null. */
+export async function runningFightOf(characterId: string): Promise<Encounter | null> {
+  const fights = await db.encounters.filter((e) => e.status === 'active' && e.combatants.some((c) => c.characterId === characterId)).toArray()
+  return fights.map(withEncounterDefaults).sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null
+}
