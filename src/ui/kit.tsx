@@ -217,19 +217,24 @@ const ACTION_LABEL = { action: 'Action', bonusAction: 'Bonus Action', reaction: 
  * Action / Bonus Action / Reaction for this turn. Lit = still available, dim and crossed = used.
  * Tap to mark used (or tap again to give it back).
  */
-export function ActionEconomyBar({ economy, onToggle, compact = false }: {
+export function ActionEconomyBar({ economy, onToggle, compact = false, locked = [] }: {
   economy: ActionEconomy
   onToggle?: (kind: ActionKind) => void
   compact?: boolean
+  /** Available but can't be used right now (e.g. not this player's turn): shown dimmed with 🔒. */
+  locked?: ActionKind[]
 }) {
   return (
     <div className="flex gap-1.5">
       {ACTION_KINDS.map((kind) => {
         const used = economy[kind]
-        const style = used ? 'border-stone-700 text-stone-500 line-through' : 'border-emerald-500 bg-emerald-900/60 text-emerald-100'
+        const isLocked = !used && locked.includes(kind)
+        const style = used ? 'border-stone-700 text-stone-500 line-through'
+          : isLocked ? 'border-stone-600 bg-stone-900 text-stone-400'
+            : 'border-emerald-500 bg-emerald-900/60 text-emerald-100'
         const size = compact ? 'px-1.5 text-[10px]' : 'flex-1 px-2 py-2 text-sm font-bold'
         return onToggle ? (
-          <EconomyButton key={kind} label={ACTION_LABEL[kind]} used={used} className={`rounded-lg border ${style} ${size}`} onClick={() => onToggle(kind)} />
+          <EconomyButton key={kind} label={ACTION_LABEL[kind]} used={used} locked={isLocked} className={`rounded-lg border ${style} ${size}`} onClick={() => onToggle(kind)} />
         ) : (
           <span key={kind} className={`rounded border ${style} ${size}`}>{compact ? ACTION_LABEL[kind].replace('Bonus Action', 'Bonus') : ACTION_LABEL[kind]}</span>
         )
@@ -255,6 +260,6 @@ export function HelpButton({ term, children, className = '', onClick, ...rest }:
   )
 }
 
-function EconomyButton({ label, used, className, onClick }: { label: string; used: boolean; className: string; onClick: () => void }) {
-  return <HelpButton term={label} aria-pressed={used} className={className} onClick={onClick}>{label}</HelpButton>
+function EconomyButton({ label, used, locked, className, onClick }: { label: string; used: boolean; locked: boolean; className: string; onClick: () => void }) {
+  return <HelpButton term={label} aria-pressed={used} className={className} onClick={onClick}>{locked && '🔒 '}{label}</HelpButton>
 }

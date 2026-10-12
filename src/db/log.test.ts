@@ -4,7 +4,7 @@ import { createCharacter } from '../model/character'
 import { deleteCharacter, saveCharacter } from './characters'
 import { db } from './db'
 import { createEncounter } from '../model/encounter'
-import { addLog, clearLog, deleteLog, listEncounterLog, listLog, logCharacterEvent, logSharedRoll } from './log'
+import { addLog, applyCharacterLog, clearLog, deleteLog, listEncounterLog, listLog, logCharacterEvent, logSharedRoll } from './log'
 
 beforeEach(async () => {
   await db.characters.clear()
@@ -75,5 +75,22 @@ describe('logSharedRoll (live lobby)', () => {
     await logSharedRoll('roll A', nyx.id, null)
     await logSharedRoll('roll B', null, null)
     expect((await db.log.toArray()).map((e) => e.text)).toEqual(['roll A'])
+  })
+})
+
+describe('applyCharacterLog (player phone in a live room)', () => {
+  const line = (id: string, at: number) => ({ id, at, round: 0, text: id })
+
+  it('adds the DM\'s lines and drops the ones the DM deleted', async () => {
+    await applyCharacterLog('c1', { entries: [line('a', 1), line('b', 2)], removed: [], from: null })
+    await applyCharacterLog('c1', { entries: [line('c', 3)], removed: ['a'], from: null })
+    expect((await listLog('c1')).map((e) => e.text)).toEqual(['c', 'b'])
+  })
+
+  it('a full copy replaces the DM lines from its time on, but keeps this phone\'s own lines', async () => {
+    await addLog('c1', 'my own old line')
+    await applyCharacterLog('c1', { entries: [line('a', 1), line('b', 2), line('c', 3)], removed: [], from: null })
+    await applyCharacterLog('c1', { entries: [line('c', 3)], removed: [], from: 2 }) // 'b' was deleted while offline
+    expect((await listLog('c1')).map((e) => e.text).sort()).toEqual(['a', 'c', 'my own old line'])
   })
 })

@@ -3,7 +3,7 @@
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (396 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (406 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -79,7 +79,7 @@
    after a DM reload only acked; edit with stale HP keeps the DM's HP; player outbox survives a reload with
    no DM online and is delivered in order when the DM joins, then the sheet hello follows.
    Fixed limits from 4.2: (a) edit screen overwrites, (b) double apply after DM reload, (d) partly (by field).
-   Still open: (c) phone log lacks DM-made changes; (e) sheets over ~64 KB; old room messages pile up in
+   Still open: (e) sheets over ~64 KB; old room messages pile up in
    Firebase (rules allow create only) — listed in Phase 5.
 6. ✅ Player permissions (2026-10-12, owner's request). In a room a player may spend but not give back
    (Action/Bonus/Reaction, spell slots, feature uses), press ↻ new turn, or rest (DM-only; players can still
@@ -93,6 +93,13 @@
    same round). Players adopt the DM's campaign (`campaign` → same id on the phone, their character filed
    under it) so the party overview works. Rate limit now only on the DM device.
    Owner decisions: party overview on phones = only my character; safe lines only; rests are DM-only.
+   Update (same day): in a fight, players use Action / Bonus Action only on their own turn (Reaction, slots,
+   features any time) — `playerMay(c, a, turn)`; the phone passes its turn from the live view, the DM device
+   reads its fight. Logs are read-only for players in a room (no ✕, no clear). 'log' messages now carry
+   deletions (`logDiff`: deleted vs just dropped out of the newest 200) and full copies on (re)connect
+   (`fullLog` with `from`), for fight logs and for each played character's log: the phone's character log
+   mirrors the DM's (`applyCharacterLog`, lines marked `fromDm`); the phone no longer logs its own taps in a
+   room (the DM's line arrives instead). Test: `scripts/lobby-test/logs-player.cjs`, `permissions-dm.cjs --not-my-turn`.
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

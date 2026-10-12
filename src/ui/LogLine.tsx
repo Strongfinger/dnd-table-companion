@@ -1,10 +1,12 @@
 // One log line with a small ✕ to delete it (asks first). Deleting removes only the line:
-// HP, conditions and other values are not changed back.
+// HP, conditions and other values are not changed back. `readOnly`: just the line (players in a live room).
 import { useState, type ReactNode } from 'react'
 import { deleteLog } from '../db/log'
 
-export default function LogLine({ id, children }: { id: string; children: ReactNode }) {
+export default function LogLine({ id, children, readOnly = false }: { id: string; children: ReactNode; readOnly?: boolean }) {
   const [confirm, setConfirm] = useState(false)
+  // Players in a live room can only read logs.
+  if (readOnly) return <div>{children}</div>
   return (
     <div className="group flex items-start gap-2">
       <div className="min-w-0 flex-1">{children}</div>

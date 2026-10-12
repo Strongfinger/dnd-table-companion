@@ -8,6 +8,7 @@ import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestio
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import type { CharacterAction } from '../model/characterActions'
+import type { TurnInfo } from '../model/permissions'
 import { CONDITIONS, exhaustionPenalty, hitDieSize, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
@@ -28,19 +29,24 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   // A player playing this character in a live room: they spend, the DM gives back and starts rests.
   const asPlayer = lobby.session?.role === 'player' && lobby.session.characterId === c.id
+  // Where I am in the running fight (from the DM's live view): Action / Bonus Action only on my turn.
+  const myCombatant = lobby.fight?.combatants.find((x) => x.pc?.characterId === c.id)
+  const turn: TurnInfo = myCombatant ? { inFight: true, myTurn: myCombatant.active } : { inFight: false }
+  const waitingForTurn = asPlayer && turn.inFight && !turn.myTurn
 
   /**
    * Send one action (see model/characterActions.ts): it's checked (src/model/permissions.ts), applied to
    * the newest saved copy, shown, and logged. In a live lobby a player's action also goes to the DM's device.
    */
   const act = async (action: CharacterAction) => {
-    const { text, refused } = await playAction(c.id, action, asPlayer ? 'player' : 'dm')
+    const { text, refused } = asPlayer ? await playAction(c.id, action, 'player', turn) : await playAction(c.id, action, 'dm')
     if (refused) return setMessage(`🔒 ${refused}`)
     lobby.shareAction(c.id, action)
     if (text) {
       setMessage(text)
       // Also lands in the fight log if this character is in a running fight on this device.
-      logCharacterEvent(c.id, text)
+      // (A player in a room gets the DM's log line instead, so the two logs stay the same.)
+      if (!asPlayer) logCharacterEvent(c.id, text)
     }
   }
   const value = Math.max(0, Math.floor(Number(amount) || 0))
@@ -148,7 +154,12 @@ export default function PlayPanel({ c }: { c: Character }) {
           <ActionEconomyBar
             economy={c.turn}
             // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).
-            onToggle={(kind) => (c.turn[kind] ? act({ type: 'setActionUsed', kind, used: false }) : setPending(kind))}
+            onToggle={(kind) => {
+              if (c.turn[kind]) return act({ type: 'setActionUsed', kind, used: false })
+              if (waitingForTurn && kind !== 'reaction') return setMessage('🔒 ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)')
+              setPending(kind)
+            }}
+            locked={waitingForTurn ? ['action', 'bonusAction'] : []}
           />
         </div>
         {!asPlayer && (

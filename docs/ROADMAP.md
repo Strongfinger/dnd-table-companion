@@ -59,13 +59,12 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [x] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied") (step 4.3, 2026-10-12)
 - [x] Shared dice log: rolls from any phone appear in the fight log (step 4.4, 2026-10-12)
 - [x] Reconnect after a phone sleeps; full state resync on join; offline changes merged on reconnect (step 4.5: saved outbox + acks, applied-once ids, edits merged by field)
-- [x] Player permissions: no self give-backs/rests/new turn, DM gives back in the same round only, read-only combat tab with safe log, players end their own turn (2026-10-12)
+- [x] Player permissions: no self give-backs/rests/new turn, DM gives back in the same round only, read-only combat tab with safe log, players end their own turn; Action/Bonus Action on own turn only; read-only logs that follow the DM's deletions (2026-10-12)
 - [x] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character, rate limit per device (4.4)
 
 ## Phase 5 — Hardening · 1–2 sessions
 - [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
 - [ ] Clean up old room messages in Firebase (they pile up; the rules only allow creating, not deleting)
-- [ ] Players' phone logs: also show changes the DM made to their character (now only their own actions)
 
 ## Later
 - [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content

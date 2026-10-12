@@ -3,7 +3,7 @@ import { newId } from '../model/character'
 import { liveQuery } from 'dexie'
 import { withEncounterDefaults } from '../model/encounter'
 import { liveFight } from '../model/playerView'
-import { fightsForPlayers, MAX_LOG_LINES, type FightSummary, type PlayerLogEntry } from '../sync/fights'
+import { fightsForPlayers, MAX_LOG_LINES, type FightSummary, type LogMessage, type PlayerLogEntry } from '../sync/fights'
 import { db, type LogEntry } from './db'
 import { runningFightOf } from './encounters'
 
@@ -64,6 +64,8 @@ export function clearLog(characterId: string): Promise<number> {
   return db.log.where('characterId').equals(characterId).delete()
 }
 
+const toPlayerEntry = (e: LogEntry): PlayerLogEntry => ({ id: e.id, at: e.at, round: e.round ?? 0, text: e.text })
+
 /**
  * Live lobby (DM device): the started fights players may see and each one's player-safe log lines,
  * now and after every change.
@@ -76,10 +78,35 @@ export function watchFightsForPlayers(
     const fights = fightsForPlayers((await db.encounters.toArray()).map(withEncounterDefaults), campaignId)
     const logs: Record<string, PlayerLogEntry[]> = {}
     for (const f of fights) {
-      const entries = (await listEncounterLog(f.id)).filter(isPlayerSafe).slice(-MAX_LOG_LINES)
-      logs[f.id] = entries.map((e) => ({ id: e.id, at: e.at, round: e.round ?? 0, text: e.text }))
+      logs[f.id] = (await listEncounterLog(f.id)).filter(isPlayerSafe).slice(-MAX_LOG_LINES).map(toPlayerEntry)
     }
     return { fights, logs }
   }).subscribe({ next: onChange, error: (err) => console.error('watchFightsForPlayers', err) })
   return () => sub.unsubscribe()
+}
+
+/** Live lobby (DM device): the logs of these characters (newest MAX_LOG_LINES, oldest first), now and after every change. */
+export function watchCharacterLogs(ids: string[], onChange: (logs: Record<string, PlayerLogEntry[]>) => void): () => void {
+  const sub = liveQuery(async () => {
+    const logs: Record<string, PlayerLogEntry[]> = {}
+    for (const id of ids) logs[id] = (await listLog(id, MAX_LOG_LINES)).reverse().map(toPlayerEntry)
+    return logs
+  }).subscribe({ next: onChange, error: (err) => console.error('watchCharacterLogs', err) })
+  return () => sub.unsubscribe()
+}
+
+/**
+ * Live lobby (player device): keep my character's log in step with the DM's: add new lines, drop
+ * deleted ones; a full copy replaces the DM lines kept here from its `from` time on.
+ */
+export async function applyCharacterLog(characterId: string, m: Pick<LogMessage, 'entries' | 'removed' | 'from'>): Promise<void> {
+  await db.transaction('rw', db.log, async () => {
+    if (m.from !== null) {
+      const keep = new Set(m.entries.map((e) => e.id))
+      const from = m.from
+      await db.log.where('characterId').equals(characterId).filter((e) => e.fromDm === true && e.at >= from && !keep.has(e.id)).delete()
+    }
+    if (m.removed.length) await db.log.bulkDelete(m.removed)
+    await db.log.bulkPut(m.entries.map((e) => ({ id: e.id, characterId, at: e.at, text: e.text, ...(e.round ? { round: e.round } : {}), fromDm: true as const })))
+  })
 }

@@ -18,6 +18,8 @@ export interface LogEntry {
    * round changes, shared rolls...). Lines about a player character (characterId set) always may.
    */
   forPlayers?: true
+  /** On a player's phone: a copy of the DM device's line for this character (kept in step with it). */
+  fromDm?: true
 }
 
 export const db = new Dexie('dnd-table-companion') as Dexie & {

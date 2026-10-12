@@ -55,3 +55,22 @@ describe('playAction', () => {
     expect((await getCharacter(c.id))?.turn.action).toBe(false)
   })
 })
+
+describe('playAction: Action on my turn only (players)', () => {
+  it('uses the fight on this device (the DM\'s) to know whose turn it is', async () => {
+    const c = await wizard()
+    const e = await inFight(c, 1)
+    const someoneElse = { ...e, activeId: 'goblin' }
+    await db.encounters.put(someoneElse)
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'action', used: true }, 'player')).refused).toMatch(/ตาของตัวเอง/)
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'reaction', used: true }, 'player')).refused).toBeNull()
+    await db.encounters.put({ ...e, activeId: e.combatants[0].id })
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'action', used: true }, 'player')).refused).toBeNull()
+  })
+
+  it('a phone passes where it is in the fight (it has no copy of the fight)', async () => {
+    const c = await wizard()
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: true, myTurn: false })).refused).not.toBeNull()
+    expect((await playAction(c.id, { type: 'setActionUsed', kind: 'bonusAction', used: true }, 'player', { inFight: false })).refused).toBeNull()
+  })
+})

@@ -16,7 +16,7 @@ import { adoptCampaign, getCampaign } from '../db/campaigns'
 import { getCharacter, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { getEncounter, watchPlayerFight } from '../db/encounters'
-import { logCharacterEvent, logSharedRoll, watchFightsForPlayers } from '../db/log'
+import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs, watchFightsForPlayers } from '../db/log'
 import { playAction } from '../db/play'
 import { advanceTurn } from '../db/turns'
 import type { Character } from '../model/character'
@@ -27,7 +27,9 @@ import { firebaseTransport } from '../sync/firebaseTransport'
 import { isDm, isKicked, parseKick, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
-import { mergeLog, parseFights, parseLogBody, type FightSummary, type PlayerLogEntry } from '../sync/fights'
+import {
+  applyLogMessage, fullLog, logDiff, parseFights, parseLogBody, type FightSummary, type LogTarget, type PlayerLogEntry,
+} from '../sync/fights'
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import {
   isEditHello, mayChange, mergeEdit, parseActionBody, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet,
@@ -89,9 +91,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [fightLogs, setFightLogs] = useState<Record<string, PlayerLogEntry[]>>({})
   /** Player: the room's campaign (from the DM), so a character picked later joins it too. */
   const roomCampaign = useRef<string | null>(null)
-  /** DM: the fight list and logs as last sent to players, and the log lines already sent. */
-  const sentToPlayers = useRef<{ fights: FightSummary[]; logs: Record<string, PlayerLogEntry[]> } | null>(null)
-  const sentLogIds = useRef(new Set<string>())
+  /** DM: the fight list as last sent to players, and each log as last sent (fights' and played characters'). */
+  const sentFights = useRef<FightSummary[] | null>(null)
+  const sentLogs = useRef(new Map<string, { target: LogTarget; entries: PlayerLogEntry[] }>())
   const limiter = useRef(new RateLimiter())
   // Refs: the message handler below runs long after render, so it reads the latest values here.
   const conn = useRef<RoomConnection | null>(null)
@@ -172,37 +174,53 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       setFight(body?.view == null ? null : parsePlayerView(body.view))
     }
     // DM: a player (re)connected; give them the running fight, the fight list with logs, and the campaign.
-    if (e.kind === 'hello' && s.role === 'dm' && !isEditHello(e.body)) void resyncPlayer(s)
+    if (e.kind === 'hello' && s.role === 'dm' && !isEditHello(e.body)) void resyncPlayer(s, e.from)
     if (s.role === 'player' && isDm(membersRef.current, e.from)) onDmMessage(e, s)
     void syncSheet(e, s).catch((err) => console.error('lobby: sheet sync', err))
     listeners.current.forEach((listen) => listen(e))
   }
 
-  /** DM: everything a (re)connecting player needs besides their sheet. */
-  async function resyncPlayer(s: LobbySession) {
+  /** DM: everything a (re)connecting player needs besides their sheet: fights, logs (full copies), campaign. */
+  async function resyncPlayer(s: LobbySession, from: string) {
     if (lastFight.current !== null) send('fight', { view: JSON.parse(lastFight.current) })
-    const sent = sentToPlayers.current
-    if (sent) {
-      send('fights', { fights: sent.fights })
-      for (const [encounterId, entries] of Object.entries(sent.logs)) sendLog(encounterId, entries)
+    if (sentFights.current) send('fights', { fights: sentFights.current })
+    const theirCharacter = membersRef.current.find((m) => m.deviceId === from)?.characterId
+    for (const { target, entries } of sentLogs.current.values()) {
+      if (target.kind === 'fight' || target.id === theirCharacter) send('log', { ...logKey(target), ...fullLog(entries) })
     }
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
     if (campaign) send('campaign', { id: campaign.id, name: campaign.name })
   }
 
-  /** Log lines go in chunks (a message has a size limit). */
-  function sendLog(encounterId: string, entries: PlayerLogEntry[]) {
-    for (let i = 0; i < entries.length; i += LOG_CHUNK) send('log', { encounterId, entries: entries.slice(i, i + LOG_CHUNK) })
+  const logKey = (t: LogTarget) => (t.kind === 'fight' ? { encounterId: t.id } : { characterId: t.id })
+
+  /** DM: send what changed in a log since last time: new lines (in chunks, messages have a size limit) and deleted ones. */
+  function syncLog(target: LogTarget, entries: PlayerLogEntry[]) {
+    const key = `${target.kind}:${target.id}`
+    const before = sentLogs.current.get(key)
+    sentLogs.current.set(key, { target, entries })
+    const { added, removed } = logDiff(new Map((before?.entries ?? []).map((e) => [e.id, e.at])), entries)
+    if (removed.length) send('log', { ...logKey(target), entries: [], removed })
+    for (let i = 0; i < added.length; i += LOG_CHUNK) send('log', { ...logKey(target), entries: added.slice(i, i + LOG_CHUNK) })
   }
 
   /** Player: the fight list, fight logs and campaign sent by the DM's device. */
   function onDmMessage(e: Envelope, s: LobbySession) {
     if (e.kind === 'fights') {
       const list = parseFights(e.body)
-      if (list) setFightList(list)
+      if (!list) return
+      setFightList(list)
+      // Logs of fights the DM deleted go too.
+      setFightLogs((old) => Object.fromEntries(Object.entries(old).filter(([id]) => list.some((f) => f.id === id))))
     } else if (e.kind === 'log') {
-      const l = parseLogBody(e.body)
-      if (l) setFightLogs((old) => ({ ...old, [l.encounterId]: mergeLog(old[l.encounterId] ?? [], l.entries) }))
+      const m = parseLogBody(e.body)
+      if (m?.target.kind === 'fight') {
+        const id = m.target.id
+        setFightLogs((old) => ({ ...old, [id]: applyLogMessage(old[id] ?? [], m) }))
+      } else if (m && m.target.id === s.characterId) {
+        // My character's log follows the DM's (lines the DM deletes go away here too).
+        void applyCharacterLog(m.target.id, m)
+      }
     } else if (e.kind === 'campaign') {
       const b = e.body as { id?: unknown; name?: unknown } | null
       if (typeof b?.id !== 'string' || b.id.length > 64 || typeof b.name !== 'string') return
@@ -353,8 +371,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     const run = connectRun.current
     lastSent.current.clear()
     lastFight.current = null
-    sentToPlayers.current = null
-    sentLogIds.current = new Set()
+    sentFights.current = null
+    sentLogs.current = new Map()
     roomCampaign.current = null
     needHello.current = false
     save(s)
@@ -439,16 +457,21 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (dmCampaign === null) return
     return watchFightsForPlayers(dmCampaign || null, (v) => {
-      if (JSON.stringify(v.fights) !== JSON.stringify(sentToPlayers.current?.fights)) send('fights', { fights: v.fights })
-      for (const [encounterId, entries] of Object.entries(v.logs)) {
-        const fresh = entries.filter((x) => !sentLogIds.current.has(x.id))
-        fresh.forEach((x) => sentLogIds.current.add(x.id))
-        if (fresh.length) sendLog(encounterId, fresh)
-      }
-      sentToPlayers.current = v
+      if (JSON.stringify(v.fights) !== JSON.stringify(sentFights.current)) send('fights', { fights: v.fights })
+      sentFights.current = v.fights
+      for (const [id, entries] of Object.entries(v.logs)) syncLog({ kind: 'fight', id }, entries)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
   }, [dmCampaign])
+
+  // DM: each played character's log goes to the room too (the player's phone keeps it in step).
+  useEffect(() => {
+    if (!played) return
+    return watchCharacterLogs(played.split(','), (logs) => {
+      for (const [id, entries] of Object.entries(logs)) syncLog({ kind: 'character', id }, entries)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
+  }, [played])
 
   // DM: send what players see of the running fight whenever it changes (turns, rounds, HP...).
   useEffect(() => {

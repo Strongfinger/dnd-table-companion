@@ -2,6 +2,8 @@
 //   node scripts/lobby-test/permissions-dm.cjs TESTPQ [seconds]
 // It sends the campaign, a fight list with a log, and a fight where it's the player's turn; it confirms
 // actions and prints them (a give-back must never arrive), and prints 'endTurn' requests.
+// --not-my-turn: start on the Goblin's turn (Action/Bonus Action locked on the phone); after 25 s it
+// deletes a character-log line and makes it the player's turn.
 const { join, sleep } = require('./fb.cjs')
 const code = process.argv[2]
 const log = (...a) => console.log(new Date().toISOString().slice(17, 23), ...a)
@@ -22,11 +24,24 @@ let sheet = null
         { id: 'l2', at: 2, round: 1, text: `ตาของ ${sheet.name}` },
         { id: 'l3', at: 3, round: 2, text: '— รอบที่ 2 —' },
       ] })
-      await conn.send('fight', { view: { id: 'f-live', name: fights[0].name, status: 'active', round: 2, hiddenTurn: false, combatants: [
-        { id: 'pc1', name: sheet.name, kind: 'pc', initiative: 15, active: true, effects: [], health: 'healthy', pc: { characterId: sheet.id, hp: sheet.hp } },
-        { id: 'g1', name: 'Goblin 1', kind: 'monster', initiative: 10, active: false, effects: [], health: 'bloodied', pc: null },
-      ] } })
-      log('sent campaign, fights, log, fight (player\'s turn)')
+      const view = (mine) => ({ id: 'f-live', name: fights[0].name, status: 'active', round: 2, hiddenTurn: false, combatants: [
+        { id: 'pc1', name: sheet.name, kind: 'pc', initiative: 15, active: mine, effects: [], health: 'healthy', pc: { characterId: sheet.id, hp: sheet.hp } },
+        { id: 'g1', name: 'Goblin 1', kind: 'monster', initiative: 10, active: !mine, effects: [], health: 'bloodied', pc: null },
+      ] })
+      // The player's character log follows the DM's: two lines now, one deleted later.
+      await conn.send('log', { characterId: sheet.id, entries: [
+        { id: 'cl-1', at: Date.now() - 2000, round: 1, text: `${sheet.name} โดน 3 ดาเมจ (จาก DM)` },
+        { id: 'cl-2', at: Date.now() - 1000, round: 1, text: `บรรทัดที่ DM จะลบ` },
+      ] })
+      const firstMine = !process.argv.includes('--not-my-turn')
+      await conn.send('fight', { view: view(firstMine) })
+      log('sent campaign, fights, log, character log, fight', firstMine ? "(player's turn)" : '(Goblin\'s turn)')
+      if (!firstMine) {
+        await sleep(25000)
+        await conn.send('log', { characterId: sheet.id, entries: [], removed: ['cl-2'] })
+        await conn.send('fight', { view: view(true) })
+        log("deleted character-log line cl-2; now it's the player's turn")
+      }
     } else if (e.kind === 'action') {
       log('ACTION', JSON.stringify(e.body.action))
       await conn.send('ack', { ids: [e.id] })

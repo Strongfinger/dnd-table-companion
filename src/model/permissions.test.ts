@@ -45,6 +45,23 @@ describe('playerMay (in a live room)', () => {
   })
 })
 
+describe('playerMay: Action and Bonus Action on my turn only', () => {
+  const use = (kind: 'action' | 'bonusAction' | 'reaction') => ({ type: 'setActionUsed' as const, kind, used: true })
+  const fresh = { ...cleric, turn: { action: false, bonusAction: false, reaction: false } }
+  it('in a fight, not on my turn: only the Reaction', () => {
+    const notMine = { inFight: true as const, myTurn: false }
+    expect(playerMay(fresh, use('action'), notMine).ok).toBe(false)
+    expect(playerMay(fresh, use('bonusAction'), notMine).ok).toBe(false)
+    expect(playerMay(fresh, use('reaction'), notMine).ok).toBe(true)
+    expect(playerMay(fresh, { type: 'setSlotUsed', level: 0, used: 3 }, notMine).ok).toBe(true)
+  })
+
+  it('on my turn, or outside a fight: all of them', () => {
+    expect(playerMay(fresh, use('action'), { inFight: true, myTurn: true }).ok).toBe(true)
+    expect(playerMay(fresh, use('bonusAction'), { inFight: false }).ok).toBe(true)
+  })
+})
+
 describe('refundAllowed (DM)', () => {
   const fight = { id: 'f1', round: 3 }
   const uses = recordUses({}, cleric.id, ['slot:0', 'turn:action'], fight)
