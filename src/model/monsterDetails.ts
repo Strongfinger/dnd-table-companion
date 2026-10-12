@@ -75,3 +75,13 @@ export function challengeLine(m: Pick<FullMonster, 'cr' | 'xp' | 'xpInLair' | 'p
 export function immunitiesLine(m: Pick<FullMonster, 'immunities' | 'conditionImmunities'>): string {
   return [m.immunities.join(', '), m.conditionImmunities.join(', ')].filter(Boolean).join('; ')
 }
+
+/**
+ * The SRD monster a tracker combatant is, from its name: "Goblin Warrior 2" → Goblin Warrior.
+ * Exact name first, then without the copy number. Renamed or homebrew monsters give undefined.
+ */
+export function findMonsterForCombatant<T extends { name: string }>(list: T[], combatantName: string): T | undefined {
+  const name = combatantName.trim().toLowerCase()
+  const base = name.replace(/\s+\d+$/, '')
+  return list.find((m) => m.name.toLowerCase() === name) ?? list.find((m) => m.name.toLowerCase() === base)
+}

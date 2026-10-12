@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2 lookup done (monsters, spells, rules); next: 3.3 DM screen, then notebook, generators, planner
+# Handoff: state on 2026-10-12, Phase 4 done; Phase 3 redesigned (see ROADMAP): 3.1 notes done; 3.2 lookup + 3.3 DM panel done; next: 3.4 campaign notebook, then generators, planner
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (440 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (441 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -23,6 +23,7 @@
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | DM tools (Phase 3) | `src/screens/DmHome.tsx` (`#/dm`, hidden for players in a room), `NoteEdit.tsx` (`#/dm/note/<id>`, auto-save); `src/model/note.ts`, `src/db/notes.ts` (DB version 5: `notes`) |
 | Character spells | `src/screens/SpellList.tsx` (sheet section + SRD picker + cast panel), `src/model/characterSpells.ts`, `src/model/castSpell.ts` (cast plan), `src/rules/preparedSpells.ts` (2024 limits, rules-reviewed), `src/screens/useCharacterAct.ts` (shared checked actions); spells match SRD cards by name (homebrew = name only); in a room, changes go to the DM as sheet edits |
+| DM panel (3.3) | `src/screens/DmPanel.tsx` (in `Tracker.tsx`; tabs remembered in localStorage), `findMonsterForCombatant` (name → SRD, strips the copy number), `NoteEditor` in `NoteEdit.tsx`, search pieces exported from `Lookup.tsx`, data hooks in `useSrdData.ts` |
 | SRD lookup | `src/screens/Lookup.tsx` (`#/lookup`, `#/lookup/monster/<id>`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `src/model/spells.ts`, data `src/data/srd-monster-details.json` + `srd-spells.json` (built by `scripts/srd/*.mjs`); `addMonstersToFight` in `src/db/turns.ts` |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 

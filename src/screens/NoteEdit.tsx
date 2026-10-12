@@ -1,4 +1,5 @@
 // Write one session note. Saves by itself a moment after you stop typing.
+// NoteEditor is also used inside the DM panel next to the fight tracker.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'react'
 import { go } from '../app/router'
@@ -10,6 +11,10 @@ import { Button, TextInput } from '../ui/kit'
 const SAVE_AFTER_MS = 700
 
 export default function NoteEdit({ id }: { id: string }) {
+  return <NoteEditor id={id} onBack={() => go('/dm')} backLabel="← ผู้ช่วย DM" />
+}
+
+export function NoteEditor({ id, onBack, backLabel }: { id: string; onBack: () => void; backLabel: string }) {
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [status, setStatus] = useState<'saved' | 'saving' | 'changed' | 'idle'>('idle')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -34,7 +39,7 @@ export default function NoteEdit({ id }: { id: string }) {
   }, [note])
 
   if (note === undefined) return null
-  if (note === null) return <p className="text-center text-stone-400">ไม่พบบันทึกนี้ · <a href="#/dm" className="underline">กลับ</a></p>
+  if (note === null) return <p className="text-center text-stone-400">ไม่พบบันทึกนี้ · <button type="button" onClick={onBack} className="underline">กลับ</button></p>
 
   const n = note
   const set = (patch: Partial<Note>) => {
@@ -46,12 +51,12 @@ export default function NoteEdit({ id }: { id: string }) {
   async function back() {
     // Don't lose the last few letters typed just before leaving.
     if (dirty.current) await saveNote(n)
-    go('/dm')
+    onBack()
   }
 
   return (
     <div className="space-y-3 pb-24">
-      <button type="button" onClick={back} className="text-sm text-stone-400">← ผู้ช่วย DM</button>
+      <button type="button" onClick={back} className="text-sm text-stone-400">{backLabel}</button>
       <TextInput value={n.title} placeholder="ชื่อบันทึก เช่น เซสชัน 3: ถ้ำก็อบลิน" onChange={(title) => set({ title })} />
       <div className="flex flex-wrap gap-2">
         <input
@@ -82,7 +87,7 @@ export default function NoteEdit({ id }: { id: string }) {
         <span className="text-xs text-stone-500">{status === 'saving' ? 'กำลังบันทึก…' : status === 'saved' ? '✓ บันทึกแล้ว' : status === 'changed' ? '…' : 'บันทึกให้อัตโนมัติ'}</span>
         <div className="flex gap-2">
           <Button className="text-sm" onClick={() => setConfirmDelete(!confirmDelete)}>🗑 ลบ</Button>
-          {confirmDelete && <Button variant="danger" className="text-sm" onClick={async () => { await deleteNote(n.id); go('/dm') }}>ยืนยันลบ</Button>}
+          {confirmDelete && <Button variant="danger" className="text-sm" onClick={async () => { await deleteNote(n.id); onBack() }}>ยืนยันลบ</Button>}
         </div>
       </div>
     </div>

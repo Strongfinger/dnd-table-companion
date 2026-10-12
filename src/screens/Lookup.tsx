@@ -1,16 +1,17 @@
 // SRD lookup (Phase 3.2): monsters (full stat blocks, DM only), spells and rules & conditions (everyone).
 // The data loads only when its tab opens.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useLobby } from '../app/useLobby'
 import { getCharacter } from '../db/characters'
 import { listEncounters } from '../db/encounters'
 import { addMonstersToFight } from '../db/turns'
 import { GLOSSARY_TERMS, lookupTerm } from '../model/glossary'
-import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
+import type { FullMonster } from '../model/monsterDetails'
 import { formatCR, monsterInput, searchMonsters } from '../model/monsters'
-import { castingTimeLine, componentsLine, loadSrdSpells, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
+import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
+import { useMonsters, useSpells } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
 export type LookupTab = 'monsters' | 'spells' | 'rules'
@@ -23,13 +24,6 @@ const CR_FILTERS = [
 /** Monster stats are the DM's: a player in a live room only gets spells and rules & conditions. */
 const useIsPlayer = () => useLobby().session?.role === 'player'
 
-function useMonsters(): FullMonster[] | null {
-  const [list, setList] = useState<FullMonster[] | null>(null)
-  useEffect(() => {
-    loadFullMonsters().then(setList)
-  }, [])
-  return list
-}
 
 export default function Lookup({ tab }: { tab: LookupTab | null }) {
   const isPlayer = useIsPlayer()
@@ -57,7 +51,17 @@ export default function Lookup({ tab }: { tab: LookupTab | null }) {
   )
 }
 
-function MonsterSearch() {
+/** Open a result: on the lookup page it's a link; inside the DM panel it opens in the panel. */
+export type OpenResult = (r: { kind: 'monster' | 'spell'; id: string }) => void
+
+/** A result row: a link to its page, or a button when `onOpen` is given (DM panel). */
+function ResultLink({ href, onOpen, className, children }: { href: string; onOpen?: () => void; className: string; children: ReactNode }) {
+  return onOpen
+    ? <button type="button" onClick={onOpen} className={`w-full text-left ${className}`}>{children}</button>
+    : <a href={href} className={className}>{children}</a>
+}
+
+export function MonsterSearch({ onOpen }: { onOpen?: OpenResult }) {
   const monsters = useMonsters()
   const [query, setQuery] = useState('')
   const [crMax, setCrMax] = useState(30)
@@ -75,13 +79,13 @@ function MonsterSearch() {
       <ul className="space-y-1">
         {found.slice(0, 100).map((m) => (
           <li key={m.id}>
-            <a href={`#/lookup/monster/${m.id}`} className="flex items-center justify-between rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
+            <ResultLink href={`#/lookup/monster/${m.id}`} onOpen={onOpen && (() => onOpen({ kind: 'monster', id: m.id }))} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
               <span>
                 <b>{m.name}</b>
                 <span className="ml-2 text-xs text-stone-400">{m.size} {m.type}</span>
               </span>
-              <span className="text-sm text-stone-400">CR {formatCR(m.cr)} · AC {m.ac} · HP {m.hp}</span>
-            </a>
+              <span className="text-right text-sm text-stone-400">CR {formatCR(m.cr)} · AC {m.ac} · HP {m.hp}</span>
+            </ResultLink>
           </li>
         ))}
       </ul>
@@ -92,15 +96,8 @@ function MonsterSearch() {
 
 const CLASS_OPTIONS = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard']
 
-function useSpells(): SrdSpell[] | null {
-  const [list, setList] = useState<SrdSpell[] | null>(null)
-  useEffect(() => {
-    loadSrdSpells().then(setList)
-  }, [])
-  return list
-}
 
-function SpellSearch() {
+export function SpellSearch({ onOpen }: { onOpen?: OpenResult }) {
   const spells = useSpells()
   // A player in a room starts with their own character's class.
   const myCharacterId = useLobby().session?.characterId ?? null
@@ -130,7 +127,7 @@ function SpellSearch() {
       <ul className="space-y-1">
         {found.slice(0, 150).map((sp) => (
           <li key={sp.id}>
-            <a href={`#/lookup/spell/${sp.id}`} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
+            <ResultLink href={`#/lookup/spell/${sp.id}`} onOpen={onOpen && (() => onOpen({ kind: 'spell', id: sp.id }))} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
               <span>
                 <b>{sp.name}</b>
                 {sp.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
@@ -138,7 +135,7 @@ function SpellSearch() {
                 <span className="block text-xs text-stone-400">{spellLevelLine(sp)}</span>
               </span>
               <span className="text-right text-xs text-stone-400">{sp.castingTime.split(',')[0]} · {sp.range}</span>
-            </a>
+            </ResultLink>
           </li>
         ))}
       </ul>
@@ -157,26 +154,33 @@ export function SpellView({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <a href="#/lookup/spells" className="text-sm text-stone-400">← คาถาทั้งหมด</a>
-      <article className="space-y-3 rounded-xl border border-violet-900/60 bg-stone-900 p-4 text-sm leading-relaxed">
-        <header>
-          <h2 className="text-2xl font-bold text-amber-400">{sp.name}</h2>
-          <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
-        </header>
-        <div className="space-y-0.5">
-          <Row label="Casting Time">{castingTimeLine(sp)}</Row>
-          <Row label="Range">{sp.range}</Row>
-          <Row label="Components">{componentsLine(sp)}</Row>
-          <Row label="Duration">{sp.concentration && !sp.duration.startsWith('Concentration') ? `Concentration, ${sp.duration}` : sp.duration}</Row>
-        </div>
-        <div className="whitespace-pre-line">{sp.text.replace(/\n\s+/g, '\n')}</div>
-        {sp.higher && <p><b><i>{sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'}</i></b> {sp.higher.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')}</p>}
-        <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
-      </article>
+      <SpellCard sp={sp} />
     </div>
   )
 }
 
-function RulesSearch() {
+/** One spell, 2024 style. */
+export function SpellCard({ sp }: { sp: SrdSpell }) {
+  return (
+    <article className="space-y-3 rounded-xl border border-violet-900/60 bg-stone-900 p-4 text-sm leading-relaxed">
+      <header>
+        <h2 className="text-2xl font-bold text-amber-400">{sp.name}</h2>
+        <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
+      </header>
+      <div className="space-y-0.5">
+        <Row label="Casting Time">{castingTimeLine(sp)}</Row>
+        <Row label="Range">{sp.range}</Row>
+        <Row label="Components">{componentsLine(sp)}</Row>
+        <Row label="Duration">{sp.concentration && !sp.duration.startsWith('Concentration') ? `Concentration, ${sp.duration}` : sp.duration}</Row>
+      </div>
+      <div className="whitespace-pre-line">{sp.text.replace(/\n\s+/g, '\n')}</div>
+      {sp.higher && <p><b><i>{sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'}</i></b> {sp.higher.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')}</p>}
+      <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
+    </article>
+  )
+}
+
+export function RulesSearch() {
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const entries = GLOSSARY_TERMS.map((t) => ({ term: t, entry: lookupTerm(t)! }))

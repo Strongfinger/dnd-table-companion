@@ -34,7 +34,7 @@ export default function App() {
       <NavBar route={route} />
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
-      <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' || route.name === 'party' ? 'max-w-5xl' : 'max-w-xl'}`}>
+      <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' ? 'max-w-7xl' : route.name === 'party' ? 'max-w-5xl' : 'max-w-xl'}`}>
         {route.name === 'list' && <CharacterList />}
         {route.name === 'new' && <CreateWizard />}
         {route.name === 'import' && <ImportCharacter />}

@@ -12,12 +12,13 @@ import { isDead } from '../model/actions'
 import type { CharacterAction } from '../model/characterActions'
 import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
 import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
-import { Button, Section } from '../ui/kit'
+import { Button } from '../ui/kit'
 import { playerView } from '../model/playerView'
 import LogLine from '../ui/LogLine'
 import AddCombatants from './AddCombatants'
 import PlayerViewPanel from './PlayerViewPanel'
 import CombatantRow from './CombatantRow'
+import DmPanel from './DmPanel'
 
 
 export default function Tracker({ id }: { id: string }) {
@@ -217,8 +218,9 @@ export default function Tracker({ id }: { id: string }) {
 
       {adding && <AddCombatants encounter={enc} characters={characters} onAdd={addCombatants} />}
 
-      <div className="gap-4 space-y-4 lg:grid lg:grid-cols-3 lg:space-y-0">
-        <div className="space-y-2 lg:col-span-2">
+      {/* Laptop: combatants on the left, the DM panel (stat block, lookup, notes, log) on the right. */}
+      <div className="gap-4 space-y-4 lg:grid lg:grid-cols-5 lg:items-start lg:space-y-0">
+        <div className="space-y-2 lg:col-span-3">
           {enc.combatants.length === 0 && (
             <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีใคร กด "+ เพิ่มผู้ร่วมต่อสู้"</p>
           )}
@@ -241,19 +243,26 @@ export default function Tracker({ id }: { id: string }) {
           ))}
         </div>
 
-        <Section title="บันทึกการต่อสู้">
-          {fightLog.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีเหตุการณ์</p>}
-          <div className="max-h-[60vh] space-y-3 overflow-y-auto text-sm">
-            {rounds.map(([round, entries]) => (
-              <div key={round}>
-                {round > 0 && <div className="mb-1 text-xs font-bold text-amber-400">รอบที่ {round}</div>}
-                <ul className="space-y-0.5">
-                  {entries.map((x) => <li key={x.id}><LogLine id={x.id}>{x.text}</LogLine></li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </Section>
+        <div className="lg:col-span-2">
+          <DmPanel
+            encounter={enc}
+            log={
+              <>
+                {fightLog.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีเหตุการณ์</p>}
+                <div className="space-y-3 text-sm">
+                  {rounds.map(([round, entries]) => (
+                    <div key={round}>
+                      {round > 0 && <div className="mb-1 text-xs font-bold text-amber-400">รอบที่ {round}</div>}
+                      <ul className="space-y-0.5">
+                        {entries.map((x) => <li key={x.id}><LogLine id={x.id}>{x.text}</LogLine></li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </>
+            }
+          />
+        </div>
       </div>
 
       {enc.status === 'ended' && (
@@ -266,7 +275,7 @@ export default function Tracker({ id }: { id: string }) {
       {/* Turn controls stay at the bottom of the screen. */}
       {enc.status !== 'ended' && enc.combatants.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 border-t border-stone-700 bg-stone-900/95 p-3">
-          <div className="mx-auto flex max-w-5xl gap-2">
+          <div className="mx-auto flex max-w-7xl gap-2">
             {enc.status === 'setup' ? (
               <Button
                 variant="primary"

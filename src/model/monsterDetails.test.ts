@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { abilityRows, challengeLine, immunitiesLine, loadFullMonsters, sensesLine } from './monsterDetails'
+import { abilityRows, challengeLine, findMonsterForCombatant, immunitiesLine, loadFullMonsters, sensesLine } from './monsterDetails'
 
 describe('SRD stat blocks', () => {
   it('every quick-add monster has a full stat block', async () => {
@@ -24,5 +24,15 @@ describe('SRD stat blocks', () => {
     expect(sensesLine({ senses: [], passivePerception: 10 })).toBe('Passive Perception 10')
     expect(sensesLine(dragon)).toBe('Darkvision 120 ft., Blindsight 60 ft.; Passive Perception 23')
     expect(immunitiesLine({ immunities: ['Fire'], conditionImmunities: ['Charmed'] })).toBe('Fire; Charmed')
+  })
+})
+
+describe('findMonsterForCombatant', () => {
+  const list = [{ name: 'Goblin Warrior' }, { name: 'Goblin Boss' }, { name: 'Werewolf, Hybrid Form' }]
+  it('matches tracker names, with or without the copy number', () => {
+    expect(findMonsterForCombatant(list, 'Goblin Warrior 2')?.name).toBe('Goblin Warrior')
+    expect(findMonsterForCombatant(list, 'goblin boss')?.name).toBe('Goblin Boss')
+    expect(findMonsterForCombatant(list, 'Werewolf, Hybrid Form 1')?.name).toBe('Werewolf, Hybrid Form')
+    expect(findMonsterForCombatant(list, 'Snaggletooth')).toBeUndefined()
   })
 })
