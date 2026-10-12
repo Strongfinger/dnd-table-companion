@@ -53,7 +53,7 @@ Estimates are in "sessions" (one long working block like the ones that built Pha
 - [ ] Session notes (belong to a campaign from day one)
 
 ## Phase 4 — Lobby & live sync · 3–4 sessions
-- [ ] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin
+- [x] Create/join lobby with room code (+ QR), player list with online status, kick/rejoin (step 4.1, 2026-10-12: `#/lobby`, rejoins after reload)
 - [ ] DM device is the source of truth during a session; players send actions, DM device applies and broadcasts
 - [ ] Players' sheets synced both ways (HP, conditions, slots, death saves, action economy)
 - [ ] Players see initiative order, round and whose turn; monsters with name + rough health ("Bloodied")

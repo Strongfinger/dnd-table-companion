@@ -59,7 +59,7 @@ export default function LobbyLab() {
     const transport: RoomTransport | null = mode === 'local' ? localTransport() : online
     if (!transport) return
     conn.current?.leave()
-    conn.current = transport.join(code, { id: me.id, name: me.name, role, characterId: null }, {
+    conn.current = transport.join(code, { id: me.id, name: me.name, role, characterId: null, characterName: null }, {
       onMessage,
       onMembers: setMembers,
       onStatus: setStatus,

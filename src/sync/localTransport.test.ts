@@ -10,7 +10,7 @@ afterEach(() => open.splice(0).forEach((c) => c.leave()))
 function device(id: string, role: 'dm' | 'player', code = 'TEST22') {
   const got: Envelope[] = []
   let members: Member[] = []
-  const conn = localTransport({ heartbeatMs: 20, timeoutMs: 80 }).join(code, { id, name: id, role, characterId: null }, {
+  const conn = localTransport({ heartbeatMs: 20, timeoutMs: 80 }).join(code, { id, name: id, role, characterId: null, characterName: null }, {
     onMessage: (e) => got.push(e),
     onMembers: (m) => (members = m),
     onStatus: () => {},

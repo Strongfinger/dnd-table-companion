@@ -13,6 +13,7 @@
 | Player view (no DM secrets) | `src/model/playerView.ts`, `src/screens/PlayerViewPanel.tsx` |
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION, stamp, newerOf), `src/model/campaign.ts`, `src/db/device.ts` |
 | Lobby transport | `src/sync/` (`envelope.ts`, `roomCode.ts`, `transport.ts`, `localTransport.ts`, `firebaseTransport.ts`) |
+| Lobby (real) | `src/app/lobby.tsx` (LobbyProvider: one connection for the whole app, `send`/`subscribe` for later steps), `src/app/useLobby.ts`, `src/sync/lobby.ts` (saved session, join link, kick), `src/screens/Lobby.tsx` (`#/lobby`, `#/lobby/CODE` from the QR) |
 | Lobby test page | `src/screens/LobbyLab.tsx` (`#/lab`, linked from About) |
 | Storage | `src/db/` (Dexie DB version 4: characters, log, encounters, campaigns, settings) |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
@@ -29,7 +30,12 @@
   browser share one Firebase sign-in, so test a second member from a separate device or a node script.
 
 ## Phase 4 plan (from docs/ROADMAP.md)
-1. Create/join lobby for a **campaign** (room code + QR), player list with online status, kick/rejoin.
+1. ✅ Step 4.1 (2026-10-12): create/join lobby for a **campaign** (room code + QR), player list with online
+   status and picked character, kick (DM re-kicks if they come back) and "let back in", rejoin after reload.
+   The room is saved in settings (test mode: per browser tab, in sessionStorage). Test mode = checkbox on
+   the lobby screen in `npm run dev` (two tabs). Verified over Firebase with a node script as the 2nd device.
+   Kick is enforced by the DM device ignoring that device (no rule change needed). Not yet enforced: who may
+   claim `role: 'dm'` (any member can); players should only trust `state` from the DM member (step 4.2).
 2. **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

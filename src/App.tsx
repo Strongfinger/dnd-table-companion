@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
 import { HelpProvider } from './ui/help'
+import { LobbyProvider } from './app/lobby'
+import { useLobby } from './app/useLobby'
 import { useRoute } from './app/router'
 import About from './screens/About'
 import CharacterEdit from './screens/CharacterEdit'
@@ -10,6 +12,7 @@ import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import EncounterList from './screens/EncounterList'
 import ImportCharacter from './screens/ImportCharacter'
+import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
 import PartyOverview from './screens/PartyOverview'
 import Tracker from './screens/Tracker'
@@ -19,13 +22,16 @@ export default function App() {
   // Dice history lives here so it survives moving between screens.
   const [rolls, setRolls] = useState<RollRecord[]>([])
   const inFights = route.name === 'fights' || route.name === 'fight'
+  const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
 
   return (
     <HelpProvider>
+    <LobbyProvider>
       <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
         <div className="mx-auto flex max-w-5xl">
-          <a href="#/" className={`flex-1 py-3 text-center font-bold ${inFights ? 'text-stone-500' : 'border-b-2 border-amber-400 text-amber-400'}`}>📜 ตัวละคร</a>
-          <a href="#/fights" className={`flex-1 py-3 text-center font-bold ${inFights ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`}>⚔️ การต่อสู้</a>
+          <a href="#/" className={tab(!inFights && route.name !== 'lobby')}>📜 ตัวละคร</a>
+          <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
+          <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
         </div>
       </nav>
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
@@ -42,12 +48,22 @@ export default function App() {
         {route.name === 'about' && <About />}
         {route.name === 'party' && <PartyOverview />}
         {route.name === 'lab' && <LobbyLab />}
+        {route.name === 'lobby' && <Lobby code={route.code} />}
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>
         </footer>
       </main>
       <UpdatePrompt />
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
+    </LobbyProvider>
     </HelpProvider>
   )
+}
+
+/** Small connection light on the lobby tab, only while in a room. */
+function LobbyDot() {
+  const { session, status } = useLobby()
+  if (!session) return null
+  const color = status === 'connected' ? 'bg-green-500' : status === 'offline' ? 'bg-stone-500' : 'bg-amber-500'
+  return <span className={`ml-1 inline-block h-2 w-2 rounded-full align-middle ${color}`} aria-label={status} />
 }

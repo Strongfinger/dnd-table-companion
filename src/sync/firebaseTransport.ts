@@ -30,7 +30,7 @@ export function firebaseTransport(): RoomTransport | null {
     label: 'ออนไลน์ (Firebase)',
     join(code: string, me: Me, handlers: RoomHandlers): RoomConnection {
       let closed = false
-      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId }
+      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId, characterName: me.characterName }
       const queue: Envelope[] = []
       let sendNow: ((e: Envelope) => void) | null = null
       let updateSelf: (() => void) | null = null
@@ -86,7 +86,7 @@ export function firebaseTransport(): RoomTransport | null {
             const m = child.val() as Member
             if (typeof m?.deviceId !== 'string' || typeof m?.name !== 'string') return
             byUid.set(child.key!, { id: m.deviceId, name: m.name.slice(0, 40) })
-            list.push({ deviceId: m.deviceId, name: m.name, role: m.role === 'dm' ? 'dm' : 'player', characterId: m.characterId ?? null, online: !!m.online })
+            list.push({ deviceId: m.deviceId, name: m.name, role: m.role === 'dm' ? 'dm' : 'player', characterId: typeof m.characterId === 'string' ? m.characterId : null, characterName: typeof m.characterName === 'string' ? m.characterName.slice(0, 60) : null, online: !!m.online })
           })
           handlers.onMembers(list)
         }))

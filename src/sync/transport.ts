@@ -11,6 +11,8 @@ export interface Member {
   role: 'dm' | 'player'
   /** For players: the character they play (once picked). */
   characterId: string | null
+  /** The character's name, so the DM sees who plays whom before their sheet arrives. */
+  characterName: string | null
   online: boolean
 }
 
@@ -19,6 +21,7 @@ export interface Me {
   name: string
   role: 'dm' | 'player'
   characterId: string | null
+  characterName: string | null
 }
 
 export interface RoomHandlers {
@@ -32,7 +35,7 @@ export interface RoomConnection {
   readonly code: string
   send: (e: Envelope) => void
   /** Update what others see about me (e.g. the character I picked). */
-  updateMe: (patch: Partial<Pick<Me, 'name' | 'characterId'>>) => void
+  updateMe: (patch: Partial<Pick<Me, 'name' | 'characterId' | 'characterName'>>) => void
   leave: () => void
 }
 

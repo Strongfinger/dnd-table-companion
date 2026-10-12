@@ -12,7 +12,7 @@ export default function About() {
       <h1 className="text-2xl font-bold text-amber-400">เกี่ยวกับแอป</h1>
 
       <Section title="อุปกรณ์นี้">
-        <p className="mb-2 text-xs text-stone-400">ชื่อที่ผู้เล่นคนอื่นจะเห็นเมื่อเข้าห้องเล่นร่วมกัน (ฟีเจอร์ในอนาคต)</p>
+        <p className="mb-2 text-xs text-stone-400">ชื่อที่ผู้เล่นคนอื่นเห็นในห้องเล่นร่วมกัน (แท็บ 🌐 ห้อง)</p>
         <div className="flex gap-2">
           <div className="flex-1"><TextInput value={name} onChange={(v) => { setName(v); setSaved(false) }} /></div>
           <Button onClick={async () => { setName((await setDeviceName(name)).name); setSaved(true) }}>{saved ? '✓ บันทึกแล้ว' : 'บันทึก'}</Button>
