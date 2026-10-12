@@ -3,6 +3,11 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Next QA pass should also cover (new 2026-10-13)
+Equip/unequip on a real phone in a live room (the DM's copy follows), Action Surge and Second Wind as a player on
+and off their turn, a level-up adding features, the wizard's equipment step for each class, older characters
+(hand AC, plain inventory) still working, the floating 🎲 over the new right-hand toggle buttons.
+
 ## Research pass — 2026-10-13 (see docs/RESEARCH.md)
 Findings for the implementor:
 1. ✅ Fixed (F1). **Bug (rules): Short Rest gave back all uses of every "short" feature.** 2024: Second Wind, Rage,

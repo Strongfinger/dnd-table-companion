@@ -102,3 +102,12 @@ export function armorClassLine(a: SrdArmor): string {
 export function costLine(c: SrdItem['cost']): string {
   return `${c.qty.toLocaleString('en-US')} ${c.unit.toUpperCase()}`
 }
+
+/** Kind filters for item pickers (Thai labels). */
+export const KIND_FILTERS: { label: string; kinds: EquipmentKind[] }[] = [
+  { label: 'อาวุธ', kinds: ['weapon', 'ammunition'] },
+  { label: 'เกราะ/โล่', kinds: ['armor', 'shield'] },
+  { label: 'แพ็ก', kinds: ['pack'] },
+  { label: 'เครื่องมือ', kinds: ['tool'] },
+  { label: 'ของใช้', kinds: ['gear', 'focus'] },
+]

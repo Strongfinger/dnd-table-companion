@@ -1,13 +1,15 @@
-# Handoff — state on 2026-10-12
+# Handoff — state on 2026-10-13
 
-**Phases 0–4 and 3 are done** (sheets, tracker, offline PWA, live rooms, DM assistant). Everything is on
-`main` and deployed. **Suggested next:** Phase 5 — play a real session with friends on several phones, then fix
-what comes up (see "Next steps"). History of how things were built: `git log` and `docs/ROADMAP.md`.
+**Phases 0–4 and 3 are done**, plus the content plan in [docs/RESEARCH.md](RESEARCH.md) (2026-10-13): SRD weapons,
+armor and gear in the inventory (equip on the sheet), attacks with separate attack/damage rolls, AC from armor,
+the 2024 Short Rest rule + pools, a limited-use feature catalog, every class feature's text on the sheet, monster
+Initiative and Legendary uses from the official PDF, starting equipment in the wizard, Lookup tabs for equipment and
+features. **Suggested next:** answer the open decisions in RESEARCH.md §6, then Phase 5 (a real session).
 
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (456 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (541 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run

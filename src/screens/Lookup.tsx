@@ -1,4 +1,5 @@
-// SRD lookup (Phase 3.2): monsters (full stat blocks, DM only), spells and rules & conditions (everyone).
+// SRD lookup (Phase 3.2): monsters (full stat blocks, DM only); spells, rules & conditions, equipment and
+// features (everyone).
 // The data loads only when its tab opens.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
@@ -11,10 +12,11 @@ import type { FullMonster } from '../model/monsterDetails'
 import { formatCR, monsterInput, searchMonsters } from '../model/monsters'
 import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
+import { EquipmentSearch, FeatureSearch } from './LookupMore'
 import { useMonsters, useSpells } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
-export type LookupTab = 'monsters' | 'spells' | 'rules'
+export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'features'
 
 const CR_FILTERS = [
   { value: 30, label: 'ทุก CR' }, { value: 0.25, label: 'CR ≤ 1/4' }, { value: 1, label: 'CR ≤ 1' },
@@ -32,6 +34,8 @@ export default function Lookup({ tab }: { tab: LookupTab | null }) {
     ...(isPlayer ? [] : [{ id: 'monsters' as const, label: '👹 มอนสเตอร์' }]),
     { id: 'spells', label: '✨ คาถา' },
     { id: 'rules', label: '📖 กติกา & Conditions' },
+    { id: 'equipment', label: '⚔️ อุปกรณ์' },
+    { id: 'features', label: '🧬 ความสามารถ' },
   ]
   return (
     <div className="space-y-4">
@@ -46,7 +50,8 @@ export default function Lookup({ tab }: { tab: LookupTab | null }) {
           </a>
         ))}
       </div>
-      {current === 'monsters' ? <MonsterSearch /> : current === 'spells' ? <SpellSearch /> : <RulesSearch />}
+      {current === 'monsters' ? <MonsterSearch /> : current === 'spells' ? <SpellSearch />
+        : current === 'equipment' ? <EquipmentSearch /> : current === 'features' ? <FeatureSearch /> : <RulesSearch />}
     </div>
   )
 }

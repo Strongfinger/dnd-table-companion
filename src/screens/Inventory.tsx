@@ -6,18 +6,11 @@ import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
 import type { Character, InventoryItem } from '../model/character'
-import { armorClassLine, costLine, findItem, searchItems, weaponPropertiesLine, type EquipmentKind, type SrdEquipment, type SrdItem } from '../model/equipment'
+import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
 import { addSrdItem, isEquippable, toggleEquipped } from '../model/inventory'
 import { Button, Section, TextInput } from '../ui/kit'
 import { useEquipment } from './useSrdData'
 
-const KIND_FILTERS: { label: string; kinds: EquipmentKind[] }[] = [
-  { label: 'อาวุธ', kinds: ['weapon', 'ammunition'] },
-  { label: 'เกราะ/โล่', kinds: ['armor', 'shield'] },
-  { label: 'แพ็ก', kinds: ['pack'] },
-  { label: 'เครื่องมือ', kinds: ['tool'] },
-  { label: 'ของใช้', kinds: ['gear', 'focus'] },
-]
 
 export default function Inventory({ c }: { c: Character }) {
   const lobby = useLobby()
@@ -77,7 +70,7 @@ function ItemRow({ item, srd, onToggle }: { item: InventoryItem; srd: SrdItem | 
   )
 }
 
-function ItemDetails({ srd }: { srd: SrdItem }) {
+export function ItemDetails({ srd }: { srd: SrdItem }) {
   return (
     <div className="mt-1 space-y-1 rounded-lg bg-stone-900 p-2 text-sm text-stone-300">
       {srd.weapon && <p>{srd.weapon.category} {srd.weapon.type} · {srd.weapon.dice} {srd.weapon.damageType}{srd.weapon.properties.length > 0 && ` · ${weaponPropertiesLine(srd.weapon)}`} · Mastery: {srd.weapon.mastery}</p>}

@@ -151,13 +151,26 @@ Each step: build script / pure rules in `src/rules/` with tests → UI → `rule
 | **E4** ✅ | All class features listed on the sheet up to the character's level (English text); wizard and level-up add catalog features automatically | M | Uses F2 data |
 | **E5** ✅ | Starting equipment in the wizard (class A/B + background) → inventory with armor/weapons equipped | M | Needs E1–E3 |
 | **E6** ✅ | Monster Initiative from Open5e `srd-2024`; Legendary Action uses from the PDF | S | Known gaps |
-| **E7** | Lookup tabs: Equipment, Weapon Mastery & Properties, Feats, Class features, Poisons | S | |
+| **E7** ✅ | Lookup tabs: Equipment, Weapon Mastery & Properties, Feats, Class features, Poisons | S | |
 | Q | QA #2 (🎲 button covers buttons), QA #3 (`React.lazy` DM screens) | S | |
 
-E1, E2, E3, F1, F2, E4, E6, E5 done 2026-10-13 (not modelled yet: the once-per-Long-Rest lineage spells of Elf/Gnome/Tiefling, Warlock Mystic Arcanum uses) (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
+E1–E7, F1, F2 all done 2026-10-13 (not modelled yet: the once-per-Long-Rest lineage spells of Elf/Gnome/Tiefling, Warlock Mystic Arcanum uses) (E2: equip on the sheet, decided by the owner) (the official SRD 5.2.1 PDF found ~40 more cost/weight/tool/pack errors in the source; all fixed).
 Order: **E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7**. Before Phase 5 (first real session): E1–F2.
 
-## 6. Licensing notes
+## 6. Open decisions for the owner (collected 2026-10-13, nothing blocked on them)
+1. **Older characters:** characters made before these steps keep a hand-typed AC and have no SRD-linked items or
+   catalog features until edited. Offer a one-tap "อัปเกรด" (match inventory names to SRD items, add catalog
+   features)? Today: "+ เพิ่มของ" / "+ จาก SRD" by hand, and AC turns automatic once SRD armor is equipped.
+2. **Free-cast features not in the catalog:** Elf/Gnome/Tiefling lineage spells (once per Long Rest each) and Warlock
+   Mystic Arcanum. Track them as features, or as a "free cast" mark on the spell list?
+3. **Poisons** (14 SRD items): add a Lookup tab / items? Skipped for now.
+4. **Wizard equips all starting weapons** (e.g. Fighter A: Greatsword, Flail, Javelins). Fine, or equip only the first?
+5. **Damage roll for Critical:** the 💥 button opens the roller and the player turns Critical on. Want a separate
+   "💥 Critical" button instead?
+6. **Weapon Mastery choices** stay untracked (owner decision); revisit if players forget which weapons they picked.
+7. **Bundle size:** the main JS chunk is 754 KB (warning). QA #3 (lazy-load DM screens) would cut it; do it before Phase 5?
+
+## 7. Licensing notes
 - Keep the existing CC-BY attribution (About page + `src/data/README.md`); add Open5e as the source of the
   Initiative numbers (the numbers are SRD 5.2.1 content, CC-BY-4.0).
 - Never import Open5e documents other than `srd-2024`, and nothing from the PHB 2024 beyond the SRD

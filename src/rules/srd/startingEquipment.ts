@@ -33,7 +33,7 @@ export const CLASS_STARTING_GEAR: Record<ClassName, GearOption[]> = {
     { label: 'B', items: [i('Studded Leather Armor'), i('Scimitar'), i('Shortsword'), i('Longbow'), i('Arrows', 20), i('Quiver'), i("Dungeoneer's Pack")], gp: 11 },
     gold('C', 155),
   ],
-  Monk: [{ label: 'A', items: [i('Spear'), i('Dagger', 5), pick("Artisan's Tools or Musical Instrument (the one you're proficient with)"), i("Explorer's Pack")], gp: 11 }, gold('B', 50)],
+  Monk: [{ label: 'A', items: [i('Spear'), i('Dagger', 5), pick("Artisan's Tools / Musical Instrument"), i("Explorer's Pack")], gp: 11 }, gold('B', 50)],
   Paladin: [{ label: 'A', items: [i('Chain Mail'), i('Shield'), i('Longsword'), i('Javelin', 6), pick('Holy Symbol'), i("Priest's Pack")], gp: 9 }, gold('B', 150)],
   Ranger: [{ label: 'A', items: [i('Studded Leather Armor'), i('Scimitar'), i('Shortsword'), i('Longbow'), i('Arrows', 20), i('Quiver'), i('Sprig of Mistletoe'), i("Explorer's Pack")], gp: 7 }, gold('B', 150)],
   Rogue: [{ label: 'A', items: [i('Leather Armor'), i('Dagger', 2), i('Shortsword'), i('Shortbow'), i('Arrows', 20), i('Quiver'), i("Thieves' Tools"), i("Burglar's Pack")], gp: 8 }, gold('B', 100)],
@@ -47,7 +47,7 @@ export const BACKGROUND_STARTING_GEAR: Record<BackgroundName, GearOption[]> = {
   Acolyte: [{ label: 'A', items: [i("Calligrapher's Supplies"), i('Book'), pick('Holy Symbol'), i('Parchment', 10), i('Robe')], gp: 8 }, gold('B', 50)],
   Criminal: [{ label: 'A', items: [i('Dagger', 2), i("Thieves' Tools"), i('Crowbar'), i('Pouch', 2), i("Clothes, Traveler's")], gp: 16 }, gold('B', 50)],
   Sage: [{ label: 'A', items: [i('Quarterstaff'), i("Calligrapher's Supplies"), i('Book'), i('Parchment', 8), i('Robe')], gp: 8 }, gold('B', 50)],
-  Soldier: [{ label: 'A', items: [i('Spear'), i('Shortbow'), i('Arrows', 20), pick('Gaming Set (same as your proficiency)'), i("Healer's Kit"), i('Quiver'), i("Clothes, Traveler's")], gp: 14 }, gold('B', 50)],
+  Soldier: [{ label: 'A', items: [i('Spear'), i('Shortbow'), i('Arrows', 20), pick('Gaming Set'), i("Healer's Kit"), i('Quiver'), i("Clothes, Traveler's")], gp: 14 }, gold('B', 50)],
 }
 
 /** "Greataxe, 4 Handaxe, Explorer's Pack, 15 GP" for the choice buttons. */

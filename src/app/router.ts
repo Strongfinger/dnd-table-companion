@@ -17,8 +17,8 @@ export type Route =
   | { name: 'note'; id: string }
   /** Import a campaign pack (prepared pages, session plans, fights). */
   | { name: 'packImport' }
-  /** SRD lookup: #/lookup, #/lookup/monsters, #/lookup/spells, #/lookup/rules */
-  | { name: 'lookup'; tab: 'monsters' | 'spells' | 'rules' | null }
+  /** SRD lookup: #/lookup, #/lookup/monsters, #/lookup/spells, #/lookup/rules, #/lookup/equipment, #/lookup/features */
+  | { name: 'lookup'; tab: 'monsters' | 'spells' | 'rules' | 'equipment' | 'features' | null }
   | { name: 'monster'; id: string }
   | { name: 'spell'; id: string }
   | { name: 'fight'; id: string }
@@ -37,7 +37,7 @@ export function parseRoute(hash: string): Route {
   if (first === 'lookup') {
     if (id === 'monster' && action) return { name: 'monster', id: action }
     if (id === 'spell' && action) return { name: 'spell', id: action }
-    return { name: 'lookup', tab: id === 'monsters' || id === 'spells' || id === 'rules' ? id : null }
+    return { name: 'lookup', tab: id === 'monsters' || id === 'spells' || id === 'rules' || id === 'equipment' || id === 'features' ? id : null }
   }
   if (first === 'dm') {
     if (id === 'note' && action) return { name: 'note', id: action }
