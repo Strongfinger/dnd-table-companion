@@ -1,5 +1,7 @@
 // Play log: what happened to a character, newest first, so the table can look back after a fight.
 import { newId } from '../model/character'
+import { withEncounterDefaults } from '../model/encounter'
+import { liveFight } from '../model/playerView'
 import { db, type LogEntry } from './db'
 
 // Several entries can be written in the same millisecond (e.g. rolling for all monsters);
@@ -23,6 +25,16 @@ export async function logCharacterEvent(characterId: string, text: string): Prom
   const fights = await db.encounters.filter((e) => e.status === 'active' && e.combatants.some((c) => c.characterId === characterId)).toArray()
   const fight = fights.sort((a, b) => b.updatedAt - a.updatedAt)[0]
   return addLog(characterId, text, fight ? { encounterId: fight.id, round: fight.round } : undefined)
+}
+
+/**
+ * Live lobby (DM device): a roll shared from a phone goes into the running fight's log (the one
+ * players see), and into the roller's sheet log if they play a character saved here.
+ */
+export async function logSharedRoll(text: string, characterId: string | null, campaignId: string | null): Promise<void> {
+  const fight = liveFight((await db.encounters.toArray()).map(withEncounterDefaults), campaignId)
+  const known = characterId && (await db.characters.get(characterId)) ? characterId : ''
+  if (fight || known) await addLog(known, text, fight ? { encounterId: fight.id, round: fight.round } : undefined)
 }
 
 /** Remove one log line added by mistake (only the line: HP and other values are not changed back). */

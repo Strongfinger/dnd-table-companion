@@ -69,3 +69,31 @@ export class Deduper {
     return true
   }
 }
+
+/**
+ * Limits how many messages each sender may get through in a time window, so one
+ * misbehaving (or stuck) device can't flood the DM's device. Generous for real play:
+ * quick taps on HP or slots stay far below it.
+ */
+export class RateLimiter {
+  private times = new Map<string, number[]>()
+  private max: number
+  private windowMs: number
+
+  constructor(max = 40, windowMs = 10_000) {
+    this.max = max
+    this.windowMs = windowMs
+  }
+
+  /** True if a message from `sender` at `now` is allowed (and counts it). */
+  allow(sender: string, now = Date.now()): boolean {
+    const recent = (this.times.get(sender) ?? []).filter((t) => now - t < this.windowMs)
+    if (recent.length >= this.max) {
+      this.times.set(sender, recent)
+      return false
+    }
+    recent.push(now)
+    this.times.set(sender, recent)
+    return true
+  }
+}

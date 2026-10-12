@@ -6,22 +6,23 @@
 // Character sheets are synced here too (protocol in src/sync/sheets.ts). The DM device is the
 // source of truth: it applies players' actions and sends its copy of every played character back.
 // The running fight is sent to players too, as the secret-free player view ('fight' messages).
-// Later steps (dice log) use `send` and `subscribe` from here.
+// Dice rolls are shared with everyone in the room; the DM device writes them into the fight log.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getCharacter, saveReceivedCharacter, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { watchPlayerFight } from '../db/encounters'
-import { logCharacterEvent } from '../db/log'
+import { logCharacterEvent, logSharedRoll } from '../db/log'
 import type { Character } from '../model/character'
 import { applyCharacterAction } from '../model/characterActions'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
-import { makeEnvelope, type Envelope } from '../sync/envelope'
+import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
+import { makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { firebaseTransport } from '../sync/firebaseTransport'
-import { isDm, isKicked, parseKick, parseLobbySession, type LobbySession } from '../sync/lobby'
+import { isDm, isKicked, parseKick, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
 import { mayChange, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from '../sync/sheets'
-import { LobbyContext, type LobbyApi } from './useLobby'
+import { LobbyContext, type LobbyApi, type RoomRoll } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
 
 const SETTING = 'lobby'
@@ -47,6 +48,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Member[]>([])
   const [kickedNotice, setKickedNotice] = useState<string | null>(null)
   const [fight, setFight] = useState<PlayerEncounterView | null>(null)
+  const [rolls, setRolls] = useState<RoomRoll[]>([])
+  const limiter = useRef(new RateLimiter())
   // Refs: the message handler below runs long after render, so it reads the latest values here.
   const conn = useRef<RoomConnection | null>(null)
   const sessionRef = useRef<LobbySession | null>(null)
@@ -76,6 +79,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     membersRef.current = []
     setMembers([])
     setFight(null)
+    setRolls([])
   }
 
   function onMessage(e: Envelope) {
@@ -83,6 +87,14 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (!s) return
     // The DM ignores devices it removed (the DM device is the source of truth).
     if (s.role === 'dm' && isKicked(s.kicked, e.from)) return
+    if (!limiter.current.allow(e.from)) {
+      console.warn('lobby: too many messages, dropped one from', e.fromName)
+      return
+    }
+    if (e.kind === 'roll') {
+      onRoll(e, s)
+      return
+    }
     if (e.kind === 'kick') {
       const kick = parseKick(e.body)
       // Only the DM may remove someone, and only this device reacts to its own kick.
@@ -101,6 +113,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (e.kind === 'hello' && s.role === 'dm' && lastFight.current !== null) send('fight', { view: JSON.parse(lastFight.current) })
     void syncSheet(e, s).catch((err) => console.error('lobby: sheet sync', err))
     listeners.current.forEach((listen) => listen(e))
+  }
+
+  function addRoll(r: RoomRoll) {
+    setRolls((old) => [r, ...old].slice(0, 30))
+  }
+
+  /** A roll from another device: named by the member list, shown, and (DM) logged in the fight. */
+  function onRoll(e: Envelope, s: LobbySession) {
+    const parsed = parseRollEvent(e.body)
+    if (!parsed) return
+    const roll = { ...parsed, by: rollerName(membersRef.current, e.from, e.fromName) }
+    addRoll({ id: e.id, at: e.at, roll, mine: false })
+    if (s.role === 'dm') {
+      const characterId = membersRef.current.find((m) => m.deviceId === e.from && m.role === 'player')?.characterId ?? null
+      void logSharedRoll(rollEventText(roll), characterId, s.campaignId)
+    }
   }
 
   function send(kind: Envelope['kind'], body: unknown) {
@@ -232,6 +260,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     onlineAvailable: !!online,
     kickedNotice,
     fight,
+    rolls,
     create: (campaignId, local) =>
       connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [] }),
     join: (code, character, local) =>
@@ -264,6 +293,17 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     },
     shareSheet: (characterId) => {
       if (mine(characterId)) void sendHello(characterId)
+    },
+    shareRoll: (r) => {
+      const s = sessionRef.current
+      if (!s) return
+      const me = deviceFor(s.local)
+      const roll: RollEvent = { ...r, type: 'roll', by: s.role === 'dm' ? 'DM' : (s.characterName || me.name).slice(0, 60) }
+      const envelope = makeEnvelope('roll', roll, me)
+      conn.current?.send(envelope)
+      addRoll({ id: envelope.id, at: envelope.at, roll, mine: true })
+      // The DM's shared rolls go into the fight log too, like the players'.
+      if (s.role === 'dm') void logSharedRoll(rollEventText(roll), null, s.campaignId)
     },
     send,
     subscribe: (listener) => {

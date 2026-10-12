@@ -1,10 +1,13 @@
 // Floating dice roller: any expression ("2d6+3"), advantage/disadvantage, Critical Hit,
 // rolled in the app or typed in from real dice. History stays while the app is open.
+// In a live lobby, rolls can be shared with the room (players: on by default; DM: off, DM rolls are often secret).
 import { useState } from 'react'
 import {
   addDie, addModifier, canBeCritical, canUseAdvantage, criticalDice, diceRange, formatDice, naturalD20, naturalFromManual,
   parseDice, resolveRollMode, rollDice, totalFromManualDice, type RollMode,
 } from '../rules'
+import { useLobby } from '../app/useLobby'
+import { rollEventText } from '../model/rollEvent'
 import { Button } from '../ui/kit'
 
 export interface RollRecord {
@@ -28,6 +31,17 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
   const [disadvantage, setDisadvantage] = useState(false)
   const [critical, setCritical] = useState(false)
   const [manual, setManual] = useState('')
+  const lobby = useLobby()
+  // null = the default for my role in the room.
+  const [shareChoice, setShareChoice] = useState<boolean | null>(null)
+  const share = !!lobby.session && (shareChoice ?? lobby.session.role === 'player')
+  const roomRolls = lobby.rolls.filter((r) => !r.mine)
+
+  /** Keep it here, and share it with the room if sharing is on. */
+  function record(r: Omit<RollRecord, 'id'>) {
+    onRoll(r)
+    if (share) lobby.shareRoll(r)
+  }
 
   const parsed = parseDice(text)
   // Advantage/disadvantage: single d20 only. Both at once cancel out (2024).
@@ -45,13 +59,13 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
   function roll() {
     if (!expr) return
     const r = rollDice(expr, effectiveMode)
-    onRoll({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: r.rolls, total: r.total, natural: naturalD20(expr, r) })
+    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: r.rolls, total: r.total, natural: naturalD20(expr, r) })
   }
 
   function useManual() {
     if (!expr || manualTotal === null) return
     // With advantage at the table, the player rolls two d20s and types the one they keep.
-    onRoll({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: null, total: manualTotal, natural: naturalFromManual(expr, manualSum) })
+    record({ expression: formatDice(expr), mode: effectiveMode, critical: crit, faces: null, total: manualTotal, natural: naturalFromManual(expr, manualSum) })
     setManual('')
   }
 
@@ -156,6 +170,27 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
               </Button>
             </div>
             {effectiveMode !== 'normal' && <p className="text-xs text-stone-500">ทอยจริง: ทอย d20 สองลูก แล้วใส่ลูกที่{effectiveMode === 'advantage' ? 'สูงกว่า' : 'ต่ำกว่า'}</p>}
+
+            {lobby.session && (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={share} onChange={(e) => setShareChoice(e.target.checked)} />
+                🌐 แชร์ผลทอยให้ทุกคนในห้อง {lobby.session.code} เห็น{lobby.session.role === 'dm' && ' (ปกติ DM ทอยลับ)'}
+              </label>
+            )}
+
+            {/* Rolls from others in the room */}
+            {roomRolls.length > 0 && (
+              <div>
+                <div className="mb-1 text-xs text-stone-400">🌐 ทอยล่าสุดในห้อง</div>
+                <ul className="space-y-1 text-sm">
+                  {roomRolls.slice(0, 8).map((r) => (
+                    <li key={r.id} className={`rounded bg-sky-950 px-2 py-1 ${r.roll.natural === 20 ? 'text-emerald-300' : r.roll.natural === 1 ? 'text-red-300' : ''}`}>
+                      {rollEventText(r.roll)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* History */}
             {history.length > 1 && (

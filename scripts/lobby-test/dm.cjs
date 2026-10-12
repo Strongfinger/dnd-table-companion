@@ -31,6 +31,8 @@ let sheet = null
         await sleep(8000)
         await conn.send('fight', { view: { ...view, hiddenTurn: true, combatants: view.combatants.map((c) => ({ ...c, active: false })) } }); log('sent fight: hidden turn')
       }
+    } else if (e.kind === 'roll') {
+      log('ROLL', JSON.stringify(e.body), 'from device', e.fromName)
     } else if (e.kind === 'action') {
       log('ACTION', JSON.stringify(e.body))
     } else log('msg', e.kind)

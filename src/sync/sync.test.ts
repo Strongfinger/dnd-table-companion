@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DATA_VERSION } from '../model/sync'
-import { Deduper, makeEnvelope, MAX_MESSAGE_BYTES, parseEnvelope } from './envelope'
+import { Deduper, makeEnvelope, MAX_MESSAGE_BYTES, parseEnvelope, RateLimiter } from './envelope'
 import { isValidRoomCode, newRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH } from './roomCode'
 
 describe('room codes', () => {
@@ -51,5 +51,14 @@ describe('envelope', () => {
     d.firstTime('b')
     d.firstTime('c') // 'a' is forgotten now
     expect(d.firstTime('a')).toBe(true)
+  })
+})
+
+describe('RateLimiter', () => {
+  it('allows up to the limit per sender in the window, then recovers', () => {
+    const limit = new RateLimiter(3, 1000)
+    expect([0, 10, 20, 30].map((t) => limit.allow('a', t))).toEqual([true, true, true, false])
+    expect(limit.allow('b', 30)).toBe(true) // other senders are counted separately
+    expect(limit.allow('a', 1005)).toBe(true) // the first message left the window
   })
 })

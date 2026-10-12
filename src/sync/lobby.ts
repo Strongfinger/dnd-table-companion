@@ -76,3 +76,13 @@ export function visibleMembers(members: Member[], kicked: Kicked[]): Member[] {
 }
 
 export const isKicked = (kicked: Kicked[], deviceId: string) => kicked.some((k) => k.deviceId === deviceId)
+
+/**
+ * The name shown for a roll, from the member list (never from the message): the DM is "DM",
+ * a player is their character's name (or their device name before they pick one).
+ */
+export function rollerName(members: Member[], deviceId: string, fallback: string): string {
+  const m = members.find((x) => x.deviceId === deviceId)
+  const name = !m ? fallback : m.role === 'dm' ? 'DM' : m.characterName || m.name
+  return name.slice(0, 60)
+}

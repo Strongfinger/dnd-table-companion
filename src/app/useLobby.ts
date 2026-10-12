@@ -3,6 +3,7 @@
 import { createContext, useContext } from 'react'
 import type { CharacterAction } from '../model/characterActions'
 import type { PlayerEncounterView } from '../model/playerView'
+import type { RollEvent } from '../model/rollEvent'
 import type { Envelope, MessageKind } from '../sync/envelope'
 import type { LobbySession } from '../sync/lobby'
 import type { ConnectionStatus, Member } from '../sync/transport'
@@ -22,6 +23,8 @@ export interface LobbyApi {
   onlineAvailable: boolean
   /** Players: the running fight as the DM's device shows it to players (null = no fight running). */
   fight: PlayerEncounterView | null
+  /** Dice rolls shared in the room this session, newest first (mine included). */
+  rolls: RoomRoll[]
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
@@ -34,9 +37,18 @@ export interface LobbyApi {
   shareAction: (characterId: string, action: CharacterAction) => void
   /** This device saved an edit to a character (players: the full sheet goes to the DM if it's mine here). */
   shareSheet: (characterId: string) => void
+  /** Share a roll from the dice roller with the room (named by the room, e.g. my character). */
+  shareRoll: (roll: Omit<RollEvent, 'type' | 'by'>) => void
   send: (kind: MessageKind, body: unknown) => void
   /** Hear messages from other devices; returns a function that stops listening. */
   subscribe: (listener: (e: Envelope) => void) => () => void
+}
+
+export interface RoomRoll {
+  id: string
+  at: number
+  roll: RollEvent
+  mine: boolean
 }
 
 export const LobbyContext = createContext<LobbyApi | null>(null)

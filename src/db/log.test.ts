@@ -4,7 +4,7 @@ import { createCharacter } from '../model/character'
 import { deleteCharacter, saveCharacter } from './characters'
 import { db } from './db'
 import { createEncounter } from '../model/encounter'
-import { addLog, clearLog, deleteLog, listEncounterLog, listLog, logCharacterEvent } from './log'
+import { addLog, clearLog, deleteLog, listEncounterLog, listLog, logCharacterEvent, logSharedRoll } from './log'
 
 beforeEach(async () => {
   await db.characters.clear()
@@ -56,5 +56,24 @@ describe('fight-aware logging and deleting', () => {
     await addLog('a', 'keep')
     await deleteLog(id)
     expect((await listLog('a')).map((e) => e.text)).toEqual(['keep'])
+  })
+})
+
+describe('logSharedRoll (live lobby)', () => {
+  it('goes into the running fight, and the sheet log of a known character', async () => {
+    const nyx = await saveCharacter(createCharacter({ name: 'Nyx' }))
+    const fight = { ...createEncounter('Ambush', 'camp'), status: 'active' as const, round: 3 }
+    await db.encounters.put(fight)
+    await logSharedRoll('🎲 Nyx: 1d20+5 = 17', nyx.id, 'camp')
+    await logSharedRoll('🎲 Stranger: 1d6 = 4', 'not-here', 'camp')
+    expect((await listEncounterLog(fight.id)).map((e) => [e.text, e.round])).toEqual([['🎲 Nyx: 1d20+5 = 17', 3], ['🎲 Stranger: 1d6 = 4', 3]])
+    expect((await listLog(nyx.id)).map((e) => e.text)).toEqual(['🎲 Nyx: 1d20+5 = 17'])
+  })
+
+  it('without a running fight: only a known character\'s sheet log', async () => {
+    const nyx = await saveCharacter(createCharacter({ name: 'Nyx' }))
+    await logSharedRoll('roll A', nyx.id, null)
+    await logSharedRoll('roll B', null, null)
+    expect((await db.log.toArray()).map((e) => e.text)).toEqual(['roll A'])
   })
 })

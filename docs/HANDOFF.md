@@ -1,9 +1,9 @@
-# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync, 4.3 live fight view done; next: 4.4 shared dice log)
+# Handoff: state on 2026-10-12, Phase 4 in progress (4.1 lobby, 4.2 sheet sync, 4.3 live fight view, 4.4 dice log done; next: 4.5 reconnect/offline merge)
 
 ## Where things are
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Rules:** D&D 2024 / SRD 5.2.1. `src/rules/` = pure rule functions (run the `rules-reviewer` agent after changes)
-- **Tests:** `npm test` (364 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
+- **Tests:** `npm test` (368 passing); `npm run build`; dev server `npm run dev` (launch config `dev`; `preview` = production build on :4173)
 
 | Area | Files |
 |---|---|
@@ -56,6 +56,13 @@
    from the DM, check it with `parsePlayerView`, and show `LiveFightBar` (round, whose turn, "🎯 ตาของคุณ!",
    vibrate; tap = initiative list) and the list on the lobby screen. DM's lobby screen says which fight players
    see. Verified over Firebase both ways (hidden monster left out, no HP/AC leak, turn changes arrive).
+4. ✅ Step 4.4 (2026-10-12): shared dice log. The floating roller shares rolls with the room (`roll` =
+   RollEvent; players on by default, DM off: "ปกติ DM ทอยลับ"). Every device hears them (no relay);
+   the name comes from the member list (`rollerName`: "DM", the character, or the device), never the body.
+   DM device logs each shared roll with `logSharedRoll` (running fight log + roller's sheet log).
+   Others' rolls show in the roller ("ทอยล่าสุดในห้อง") and as a 5 s toast (`RoomRollToast`).
+   `RateLimiter` (40 messages / 10 s per device) drops floods. Verified over Firebase in all directions.
+   Not shared yet: death-save / hit-die rolls are already in the action log lines; initiative rolls by players.
    Original plan: **DM device is the source of truth.** Players send `CharacterAction`s inside an envelope;
    the DM device checks `parseCharacterAction`, applies with `applyCharacterAction`, broadcasts the result.
 3. Players' sheets synced both ways; players see `playerView(encounter)` (initiative, round, whose

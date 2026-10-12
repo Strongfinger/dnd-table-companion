@@ -16,6 +16,7 @@ import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
 import PartyOverview from './screens/PartyOverview'
+import RoomRollToast from './screens/RoomRollToast'
 import Tracker from './screens/Tracker'
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
         </footer>
       </main>
       <UpdatePrompt />
+      <RoomRollToast />
       <DiceRoller history={rolls} onRoll={(r) => setRolls((old) => [{ ...r, id: Date.now() + Math.random() }, ...old].slice(0, 50))} />
     </LobbyProvider>
     </HelpProvider>

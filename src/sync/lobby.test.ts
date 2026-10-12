@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDm, joinLink, parseKick, parseLobbySession, visibleMembers } from './lobby'
+import { isDm, joinLink, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
 import type { Member } from './transport'
 
 const member = (deviceId: string, name: string, role: Member['role'], online = true): Member =>
@@ -54,5 +54,15 @@ describe('members', () => {
   it('shows a device listed twice once, preferring the online entry', () => {
     const twice = [member('p1', 'old', 'player', false), member('p1', 'new', 'player', true), member('p1', 'older', 'player', false)]
     expect(visibleMembers(twice, [])).toEqual([member('p1', 'new', 'player', true)])
+  })
+})
+
+describe('rollerName', () => {
+  const list = [member('dm', 'ต้น', 'dm'), { ...member('p1', 'มุก', 'player'), characterName: 'Nyx' }, member('p2', 'บอส', 'player')]
+  it('uses DM, the character name, or the device name', () => {
+    expect(rollerName(list, 'dm', '?')).toBe('DM')
+    expect(rollerName(list, 'p1', '?')).toBe('Nyx')
+    expect(rollerName(list, 'p2', '?')).toBe('บอส')
+    expect(rollerName(list, 'gone', 'เครื่องเก่า')).toBe('เครื่องเก่า')
   })
 })
