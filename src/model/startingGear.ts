@@ -1,5 +1,5 @@
 // A new character's starting equipment (wizard): the class's and background's "A or B" choices become
-// inventory items (packs unpacked) and gold; armor, Shield and weapons start equipped, so AC and attacks work.
+// inventory items (packs unpacked) and gold; armor and Shield start worn, so AC is right; weapons are equipped by the player.
 import { BACKGROUND_STARTING_GEAR, CLASS_STARTING_GEAR, type GearOption } from '../rules'
 import type { Character } from './character'
 import type { SrdEquipment } from './equipment'
@@ -13,7 +13,10 @@ export function backgroundGearOptions(background: string): GearOption[] {
   return BACKGROUND_STARTING_GEAR[background as keyof typeof BACKGROUND_STARTING_GEAR] ?? []
 }
 
-/** Add the chosen options' items and gold. Armor, Shield and weapons are equipped (one armor, one Shield). */
+/**
+ * Add the chosen options' items and gold. Armor and a Shield are worn (so AC is right from the start);
+ * weapons stay in the pack for the player to equip on the sheet (owner decision 2026-10-13).
+ */
 export function applyStartingGear(c: Character, options: GearOption[], data: SrdEquipment): Character {
   let next = c
   for (const o of options) {
@@ -27,7 +30,7 @@ export function applyStartingGear(c: Character, options: GearOption[], data: Srd
   let shieldOn = false
   const inventory = next.inventory.map((i) => {
     const srd = i.srdId ? data.items.find((x) => x.id === i.srdId) : undefined
-    if (!isEquippable(srd)) return i
+    if (!isEquippable(srd) || srd!.kind === 'weapon') return i
     if (srd!.kind === 'armor') { if (armorOn) return i; armorOn = true }
     if (srd!.kind === 'shield') { if (shieldOn) return i; shieldOn = true }
     return { ...i, equipped: true as const }

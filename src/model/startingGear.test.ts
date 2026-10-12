@@ -5,7 +5,7 @@ import { equippedWeapons } from './inventory'
 import { applyStartingGear, backgroundGearOptions, classGearOptions } from './startingGear'
 
 describe('starting equipment (2024)', () => {
-  it('Rogue A + Criminal A: items, packs unpacked, gold, armor and weapons equipped, AC from armor', async () => {
+  it('Rogue A + Criminal A: items, packs unpacked, gold, armor worn, AC from armor, weapons not equipped', async () => {
     const data = await loadSrdEquipment()
     const rogue = createCharacter({ name: 'Nyx', className: 'Rogue', background: 'Criminal', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
     const c = applyStartingGear(rogue, [classGearOptions(rogue)[0], backgroundGearOptions('Criminal')[0]], data)
@@ -16,7 +16,9 @@ describe('starting equipment (2024)', () => {
     expect(qty("Burglar's Pack")).toBe(0)
     expect(c.coins.gp).toBe(8 + 16)
     expect(c.ac).toBe(14) // Leather Armor 11 + DEX 3
-    expect(equippedWeapons(c, data).map((w) => w.name)).toEqual(['Dagger', 'Shortsword', 'Shortbow'])
+    // Weapons wait in the pack until the player equips them.
+    expect(equippedWeapons(c, data)).toEqual([])
+    expect(c.inventory.some((i) => i.name === 'Shortsword' && !i.equipped)).toBe(true)
   })
 
   it('option B is gold only; a pick-your-own item stays a plain item', async () => {

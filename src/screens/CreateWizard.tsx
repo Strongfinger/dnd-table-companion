@@ -437,7 +437,7 @@ function GearStep({ c, gear, setGear }: { c: CreationChoices; gear: { cls: numbe
   )
   return (
     <>
-      <p className="text-sm text-stone-400">เลือกอุปกรณ์เริ่มต้น (กติกา 2024): ชุดของ หรือรับเป็นเงิน GP ไว้ซื้อเอง · เกราะ/โล่/อาวุธจะถูกสวมให้ และคำนวณ AC ให้</p>
+      <p className="text-sm text-stone-400">เลือกอุปกรณ์เริ่มต้น (กติกา 2024): ชุดของ หรือรับเป็นเงิน GP ไว้ซื้อเอง · เกราะ/โล่จะถูกสวมให้และคำนวณ AC ให้ · อาวุธอยู่ในกระเป๋า กด "ถือ" ในหน้าตัวละครเพื่อใช้โจมตี</p>
       {choice(`${c.className}`, classGearOptions(c), gear.cls, (i) => setGear({ ...gear, cls: i }))}
       {choice(`${c.background} (Background)`, backgroundGearOptions(c.background), gear.bg, (i) => setGear({ ...gear, bg: i }))}
       <p className="text-xs text-stone-500">ของที่ต้องเลือกเอง (เช่น Musical Instrument, Holy Symbol, Gaming Set) จะถูกใส่ไว้ให้เปลี่ยนชื่อในหน้าแก้ไข · แพ็กจะถูกแกะเป็นของข้างใน</p>
