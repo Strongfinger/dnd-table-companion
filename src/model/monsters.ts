@@ -18,6 +18,8 @@ export interface SrdMonster {
   speed: string
   /** STR, DEX, CON, INT, WIS, CHA */
   scores: [number, number, number, number, number, number]
+  /** 2024 Initiative bonus from the stat block (DEX, often + PB); from the SRD 5.2.1 PDF. */
+  init?: number
 }
 
 /** Loaded only when the monster picker opens, so the rest of the app stays small. */
@@ -42,10 +44,10 @@ export function searchMonsters(list: SrdMonster[], query: string, crMax = 30): S
     .sort((a, b) => a.cr - b.cr || a.name.localeCompare(b.name))
 }
 
-/** Turn a stat block into tracker input. Initiative bonus = DEX modifier (the data has no initiative). */
+/** Turn a stat block into tracker input, with the stat block's Initiative bonus (DEX if missing). */
 export function monsterInput(m: SrdMonster): MonsterInput {
   const dex = abilityModifier(m.scores[1])
-  return { name: m.name, ac: m.ac, hpMax: m.hp, initBonus: dex, dexMod: dex }
+  return { name: m.name, ac: m.ac, hpMax: m.hp, initBonus: m.init ?? dex, dexMod: dex }
 }
 
 /** Roll HP from the stat block's dice ("9d8 + 18"), at least 1. Falls back to the average. */

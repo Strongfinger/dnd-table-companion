@@ -19,9 +19,10 @@ CR, XP, AC, HP (average and dice), speed, and the six ability scores.
   ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd.
   The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License,
   available at https://creativecommons.org/licenses/by/4.0/legalcode.
-- **Note:** the data has no initiative field, so the app uses the DEX modifier as the
-  initiative bonus. Many 2024 stat blocks add their Proficiency Bonus (or twice it) to
-  Initiative, e.g. Lich, adult dragons, Archmage; the DM can adjust the number when adding.
+- **Initiative (`init`):** the 2024 Initiative bonus of each stat block, added on 2026-10-13 from the official
+  SRD 5.2.1 PDF by `scripts/srd/monster-initiative.mjs` (the 5e-bits data has none). All 341 ACs match the PDF,
+  and every value equals Open5e's `srd-2024` data. The PDF misprints two scores (Gray Ooze "−2 (13)", Invisible
+  Stalker "+7 (22)"); the bonus is used. Archmage's +7 isn't DEX + n×PB but is what the SRD prints.
 
 ## srd-monster-details.json
 
@@ -37,9 +38,9 @@ legendary actions (name, usage such as "Recharge 5–6" or "3/Day, or 4/Day in L
   checks every value, writes only the fields above). Run it again to rebuild.
 - **Spell lists:** where a Spellcasting text stops at "the following spells:", the spells are added
   from the source's structured list, grouped as At Will / N/Day Each.
-- **Not in the source data:** each monster's 2024 Initiative bonus (the app shows the DEX modifier and
-  says so), the number of Legendary Action uses per round, and some spell notes such as
-  "(level 5 version)". Check the SRD for those.
+- **Legendary Action uses (`legendaryUses`, e.g. "3 (4 in Lair)"):** added from the SRD 5.2.1 PDF by
+  `scripts/srd/monster-initiative.mjs` (32 entries, counting each Vampire form).
+- **Not in the source data:** some spell notes such as "(level 5 version)". Check the SRD for those.
 
 ## srd-spells.json
 

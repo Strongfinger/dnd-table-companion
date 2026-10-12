@@ -66,8 +66,8 @@ Built by scripts from 5e-bits/5e-database **2024** files (download to a scratch 
 `node scripts/srd/<script>.mjs <file>`); details, checksums and corrections in `src/data/README.md`:
 `srd-monsters.json` (quick-add), `srd-monster-details.json` (stat blocks, `monster-details.mjs`),
 `srd-spells.json` (`spells.mjs`), `srd-equipment.json` (`equipment.mjs`, checked line by line against the official SRD 5.2.1 PDF), `srd-magic-items.json` (`magic-items.mjs`; healing potion and spell scroll
-tiers rules-reviewed). Known gaps in the source: monsters' 2024 Initiative bonus (app shows DEX), Legendary
-Action uses per round, some spell notes like "(level 5 version)".
+tiers rules-reviewed). Monster Initiative and Legendary Action uses come from the official SRD 5.2.1 PDF
+(`scripts/srd/monster-initiative.mjs`). Known gap: some spell notes like "(level 5 version)".
 
 ## Firebase
 - Project `dnd-table-companion`, Realtime Database **asia-southeast1**, **anonymous** sign-in; rules in

@@ -36,6 +36,8 @@ describe('SRD monster data', async () => {
   it('Goblin Warrior matches the stat block', () => {
     expect(byName('Goblin Warrior')).toMatchObject({ ac: 15, hp: 10, hpRoll: '3d6', cr: 0.25, xp: 50 })
     expect(monsterInput(byName('Goblin Warrior'))).toEqual({ name: 'Goblin Warrior', ac: 15, hpMax: 10, initBonus: 2, dexMod: 2 })
+    // 2024 stat blocks often add PB (or twice it): Lich +17 = DEX 3 + 2 × PB 7.
+    expect(monsterInput(byName('Lich')).initBonus).toBe(17)
   })
 
   it('search by name or type, lower CR first, with a CR limit', () => {

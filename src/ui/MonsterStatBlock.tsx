@@ -45,10 +45,7 @@ export default function MonsterStatBlock({ m }: { m: FullMonster }) {
 
       <div className="space-y-0.5">
         <Line label="AC">{m.ac}{m.acFrom.length > 0 && ` (${m.acFrom.join(', ')})`}</Line>
-        <Line label="Initiative">
-          {formatModifier(dex)} ({10 + dex})
-          <span className="ml-1 text-xs text-stone-500" title="ข้อมูลต้นทางไม่มีค่า Initiative ของ 2024 (บางตัวบวก Proficiency Bonus เพิ่ม)">· ใช้ค่า DEX</span>
-        </Line>
+        <Line label="Initiative">{formatModifier(m.init ?? dex)} ({10 + (m.init ?? dex)})</Line>
         <Line label="HP">{m.hp} ({m.hpRoll})</Line>
         <Line label="Speed">{m.speed}</Line>
       </div>
@@ -85,7 +82,7 @@ export default function MonsterStatBlock({ m }: { m: FullMonster }) {
       <Entries
         title="Legendary Actions"
         list={m.legendaryActions}
-        note="ใช้ได้ทันทีหลังตาของสิ่งมีชีวิตอื่น ทีละ 1 ตัวเลือก · จำนวนครั้งต่อรอบไม่มีในข้อมูลต้นทาง ดูใน SRD"
+        note={`Legendary Action Uses: ${m.legendaryUses ?? '—'} · ใช้ได้ทันทีหลังตาของสิ่งมีชีวิตอื่น ทีละ 1 ครั้ง · ได้คืนทั้งหมดเมื่อเริ่มตาของตัวเอง`}
       />
       <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
     </article>

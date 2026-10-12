@@ -79,6 +79,8 @@ export function characterFromMonster(m: FullMonster, opts: { name?: string; hp?:
     ac: Math.min(40, Math.max(1, m.ac)),
     speed: walkSpeed(m.speed),
     monster: { cr: m.cr, pb: m.pb, hitDie: hd.size, source: m.name },
+    // The stat block's Initiative (2024: DEX, often + PB) = DEX + this.
+    initiativeMisc: Math.max(-20, Math.min(20, (m.init ?? mod('dex')) - mod('dex'))),
     proficienciesText: [
       `Speed: ${m.speed}`,
       `Senses: ${[...m.senses, `Passive Perception ${m.passivePerception}`].join(', ')}`,
@@ -91,11 +93,10 @@ export function characterFromMonster(m: FullMonster, opts: { name?: string; hp?:
       section('Actions', m.actions),
       section('Bonus Actions', m.bonusActions),
       section('Reactions', m.reactions),
-      section('Legendary Actions', m.legendaryActions),
+      section(m.legendaryUses ? `Legendary Actions (Uses: ${m.legendaryUses})` : 'Legendary Actions', m.legendaryActions),
     ].filter(Boolean).join('\n\n'),
     notes: [
       `แปลงจาก ${m.name} (CR ${formatCR(m.cr)}) · ${CREDIT}`,
-      'Initiative = DEX modifier (ข้อมูล SRD ยังไม่มีค่า Initiative ของ 2024) ปรับได้ที่ แก้ไข',
       hd.dice > 20 ? `Hit Dice จริง ${hd.dice}d${hd.size} (แอปเก็บได้สูงสุด 20 ลูก)` : '',
       odd.length ? `ค่าตาม Stat block ที่ใบตัวละครแสดงต่างไป: ${odd.join(', ')}` : '',
     ].filter(Boolean).join('\n'),

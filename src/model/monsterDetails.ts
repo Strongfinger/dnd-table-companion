@@ -36,6 +36,8 @@ export interface MonsterDetail {
   bonusActions: StatBlockEntry[]
   reactions: StatBlockEntry[]
   legendaryActions: StatBlockEntry[]
+  /** e.g. "3 (4 in Lair)" (from the SRD 5.2.1 PDF). */
+  legendaryUses?: string
 }
 
 export type FullMonster = SrdMonster & MonsterDetail
