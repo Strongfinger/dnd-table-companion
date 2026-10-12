@@ -75,8 +75,11 @@ export default function PlayPanel({ c }: { c: Character }) {
     act({ type: 'longRest' })
   }
 
-  /** Tap pip i: if it's used, give it back; otherwise use up to it. */
-  const tapPip = (used: number, i: number) => (i < used ? i : i + 1)
+  /**
+   * One tap = one use: tap a full pip to spend one, an empty pip to give one back.
+   * (Never several at once: a mis-tap on a phone can't burn all the slots.)
+   */
+  const tapPip = (used: number, i: number) => (i < used ? used - 1 : used + 1)
 
   const slots = c.spellSlots.map((s, i) => ({ ...s, level: i })).filter((s) => s.max > 0)
   // Characters made before slots existed have none set; offer the class table in one tap.
@@ -134,7 +137,7 @@ export default function PlayPanel({ c }: { c: Character }) {
 
       {/* Action economy for this turn (the combat tracker resets it automatically) */}
       <div className="mt-3 flex items-center gap-2">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <ActionEconomyBar
             economy={c.turn}
             // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).

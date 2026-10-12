@@ -86,6 +86,8 @@ Action uses per round, some spell notes like "(level 5 version)".
 - Generators' loot amounts and encounter XP budget are a homebrew guide (labelled in the UI).
 
 ## Next steps (suggested)
+0. **QA findings:** see [docs/QA.md](QA.md) (bugs fixed, open findings for the implementor; top one: attacks/weapons
+   and class features on the sheet).
 1. **Phase 5:** a real session with friends on several phones; collect what broke or felt clunky; fix.
 2. Firebase room cleanup (needs a rules change + re-publish).
 3. "Later" list in `docs/ROADMAP.md`: SRD weapons/armor help and data, class-feature actions, QR export.

@@ -32,7 +32,7 @@ export default function About() {
           available at{' '}
           <a className="text-amber-400 underline" href="https://www.dndbeyond.com/srd" target="_blank" rel="noreferrer">https://www.dndbeyond.com/srd</a>.
           The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at{' '}
-          <a className="text-amber-400 underline" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noreferrer">
+          <a className="break-all text-amber-400 underline" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noreferrer">
             https://creativecommons.org/licenses/by/4.0/legalcode
           </a>.
         </p>

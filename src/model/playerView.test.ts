@@ -53,6 +53,15 @@ describe('playerView keeps DM secrets out', () => {
     expect(json).not.toContain('Strahd')
   })
 
+  it('PCs also show conditions set on their sheet, without doubling tracker effects', () => {
+    const down = { ...boom, hp: { max: 19, current: 0, temp: 0 }, conditions: ['Unconscious' as const, 'Prone' as const] }
+    const withProne = { ...enc, combatants: [{ ...pc, initiative: 10, effects: [{ id: 'p', name: 'Prone', rounds: 1, ends: 'end' as const }] }] }
+    expect(playerView(withProne, new Map([[boom.id, down]])).combatants[0].effects).toEqual([
+      { name: 'Prone', rounds: 1 },
+      { name: 'Unconscious', rounds: null },
+    ])
+  })
+
   it('PCs show their sheet HP to the party', () => {
     expect(view.combatants[1].pc).toEqual({ characterId: boom.id, hp: { max: 19, current: 12, temp: 0 } })
   })

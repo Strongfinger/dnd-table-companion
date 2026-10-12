@@ -18,7 +18,13 @@ export default function AddCombatants({ encounter, characters, onAdd }: {
   const [srdPick, setSrdPick] = useState<SrdMonster | null>(null)
   const [rollHp, setRollHp] = useState(false)
 
-  const addPcs = () => onAdd(available.filter((c) => picked.includes(c.id)).map(combatantFromCharacter))
+  // Only count picks that are still available (added ones drop out of the list).
+  const toAdd = available.filter((c) => picked.includes(c.id))
+  const addPcs = () => {
+    if (toAdd.length === 0) return
+    onAdd(toAdd.map(combatantFromCharacter))
+    setPicked([])
+  }
   const addMonsters = () => {
     if (!monster.name.trim()) return
     let list = createMonsters(monster, monster.count, encounter.combatants)
@@ -57,8 +63,8 @@ export default function AddCombatants({ encounter, characters, onAdd }: {
           ))}
         </div>
         {available.length > 0 && (
-          <Button variant="primary" className={`mt-2 w-full ${picked.length ? '' : 'opacity-50'}`} onClick={addPcs}>
-            เพิ่มผู้เล่น ({picked.length})
+          <Button variant="primary" className={`mt-2 w-full ${toAdd.length ? '' : 'opacity-50'}`} onClick={addPcs}>
+            เพิ่มผู้เล่น ({toAdd.length})
           </Button>
         )}
         <p className="mt-2 text-xs text-stone-500">HP ของผู้เล่นเชื่อมกับใบตัวละคร: ดาเมจในการต่อสู้จะอัปเดตใบตัวละครในเครื่องนี้</p>

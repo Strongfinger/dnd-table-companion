@@ -168,6 +168,16 @@ const CONDITION_NAMES = CONDITIONS.filter((x): x is Condition => x !== 'Exhausti
 export const isConditionName = (name: string): name is Condition => (CONDITION_NAMES as readonly string[]).includes(name)
 
 /**
+ * Conditions on a PC's sheet that no tracker effect shows yet: set on the sheet itself
+ * (Unconscious at 0 HP, or tapped by the player on their phone). Shown next to the effects.
+ */
+export function sheetOnlyConditions(effects: { name: string }[], sheet: Character | undefined | null): Condition[] {
+  if (!sheet) return []
+  const shown = new Set(effects.map((e) => e.name))
+  return sheet.conditions.filter((cond) => !shown.has(cond))
+}
+
+/**
  * Conditions to take off a PC's sheet when some of its tracker effects go away:
  * only real conditions, and only if no remaining effect still applies the same one.
  */

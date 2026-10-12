@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sampleCharacters } from '../dev/sampleCharacters'
 import {
   addEffect, combatantFromCharacter, conditionsToClear, createEncounter, createMonsters, damageMonster, healMonster, removeEffect,
-  rollInitiative, tempHpMonster,
+  rollInitiative, sheetOnlyConditions, tempHpMonster,
 } from './encounter'
 
 const goblin = { name: 'Goblin', ac: 15, hpMax: 7, initBonus: 2 }
@@ -109,5 +109,15 @@ describe('conditionsToClear', () => {
   it('only real conditions, and not while another effect still applies it', () => {
     expect(conditionsToClear([ef('Prone'), ef('Bless')], [])).toEqual(['Prone'])
     expect(conditionsToClear([ef('Prone')], [ef('Prone')])).toEqual([])
+  })
+})
+
+describe('sheetOnlyConditions', () => {
+  const sheet = { ...sampleCharacters()[0], conditions: ['Unconscious' as const, 'Prone' as const] }
+  it('lists sheet conditions the tracker does not already show', () => {
+    expect(sheetOnlyConditions([{ name: 'Prone' }], sheet)).toEqual(['Unconscious'])
+  })
+  it('nothing without a linked sheet', () => {
+    expect(sheetOnlyConditions([], undefined)).toEqual([])
   })
 })

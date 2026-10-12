@@ -61,7 +61,8 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
           </button>
         ))}
       </div>
-      <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+      {/* Extra bottom padding (lg) so the last buttons can scroll clear of the floating 🎲 button */}
+      <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-20">
         {tab === 'stats' && <StatsTab encounter={encounter} />}
         {tab === 'lookup' && <LookupTab encounter={encounter} />}
         {tab === 'gen' && <Generators campaignId={encounter.campaignId} encounter={encounter} />}

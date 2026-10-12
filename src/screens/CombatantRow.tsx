@@ -5,7 +5,7 @@ import type { Character } from '../model/character'
 import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
 import { actionLabel, type CharacterAction } from '../model/characterActions'
 import {
-  addEffect, conditionsToClear, damageMonster, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
+  addEffect, conditionsToClear, damageMonster, sheetOnlyConditions, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
 } from '../model/encounter'
 import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
@@ -140,6 +140,10 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           <div className="mt-1 flex flex-wrap gap-1">
             {c.effects.map((ef) => (
               <span key={ef.id} className="rounded-full bg-red-900 px-2 text-xs"><Term name={ef.name} />{ef.rounds !== null && ` (${ef.rounds})`}</span>
+            ))}
+            {/* Conditions set on the PC's own sheet (Unconscious at 0 HP, or by the player) */}
+            {isPc && sheetOnlyConditions(c.effects, character).map((cond) => (
+              <span key={cond} className="rounded-full bg-red-900 px-2 text-xs"><Term name={cond} /></span>
             ))}
             {concentration && <span className="rounded-full bg-violet-900 px-2 text-xs">🔮 {concentration}</span>}
           </div>

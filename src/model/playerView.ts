@@ -1,7 +1,7 @@
 // What players may see of a fight (sent to their phones in a live lobby as a 'fight' message).
 // DM secrets stay out: hidden creatures, monsters' exact HP and AC, monster concentration, notes.
 import type { Character } from './character'
-import { isConditionName, type Combatant, type Encounter } from './encounter'
+import { isConditionName, sheetOnlyConditions, type Combatant, type Encounter } from './encounter'
 
 export type HealthStatus = 'healthy' | 'hurt' | 'bloodied' | 'down'
 
@@ -66,7 +66,11 @@ function toPlayer(c: Combatant, activeId: string | null, characters: Map<string,
     initiative: c.initiative,
     active: c.id === activeId,
     // Monsters: only real conditions (Prone, Frightened…); custom DM notes like "Charmed by Strahd" stay secret.
-    effects: c.effects.filter((ef) => c.kind === 'pc' || isConditionName(ef.name)).map((ef) => ({ name: ef.name, rounds: ef.rounds })),
+    // PCs also show conditions set on their sheet (e.g. Unconscious at 0 HP).
+    effects: [
+      ...c.effects.filter((ef) => c.kind === 'pc' || isConditionName(ef.name)).map((ef) => ({ name: ef.name, rounds: ef.rounds })),
+      ...sheetOnlyConditions(c.effects, sheet).map((name) => ({ name, rounds: null })),
+    ],
     health: healthStatus(hp, c.defeated),
     pc: sheet ? { characterId: sheet.id, hp: { ...sheet.hp } } : null,
   }
