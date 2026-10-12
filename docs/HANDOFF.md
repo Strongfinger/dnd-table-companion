@@ -81,6 +81,10 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
 - Gotchas: write the member record **before** `onDisconnect`; start the message listener **after** joining;
   records carry the **send** time (`at`) because listeners read only recent ones; room codes never contain
   0/O/1/I/L (the rules reject them).
+- **Cleanup (2026-10-13):** the rules let a room member delete messages older than 1 hour; the DM's device
+  deletes its rooms' messages older than 2 hours (current + last 5 hosted, `lobby-hosted-rooms` setting) on
+  opening and every 15 min (`cleanupOldMessages`). **Needs the new `database.rules.json` published in the
+  console**; until then the delete is refused quietly. Old abandoned rooms the DM device was never in stay.
 
 ## Testing tips
 - Two tabs of one browser share IndexedDB **and** the Firebase sign-in, so they can't test sync. Use the
@@ -92,10 +96,9 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
 
 ## Known limits / open items
 - Anyone can join a room claiming `role: 'dm'` (fine among friends).
-- Old room messages pile up in Firebase (rules allow create only) → Phase 5 cleanup.
 - Sheets over ~64 KB can't be sent; whole-sheet "higher rev wins" when a plain `hello` meets an old DM copy.
-- Spell casting doesn't warn about the 2024 "Bonus Action spell → only a 1-action cantrip that turn" rule,
-  nor about ritual casting unprepared spells for non-Wizards.
+- Casting warns (2024, SRD 5.2.1): Ritual needs the spell prepared (not Wizards); one spell slot per turn
+  (`turn.spellSlot`, Reactions excepted). The old 2014 "Bonus Action spell → cantrip" rule no longer exists.
 - Generators' loot amounts and encounter XP budget are a homebrew guide (labelled in the UI).
 
 ## Next steps (suggested)
@@ -105,7 +108,7 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
    owner decisions, limited-use feature catalog (F1–F2), steps E1–E7 (weapons/attacks, equipped armor AC, class features,
    starting gear, monster Initiative). Order: E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7.
 1. **Phase 5:** a real session with friends on several phones; collect what broke or felt clunky; fix.
-2. Firebase room cleanup (needs a rules change + re-publish).
+2. Publish the new `database.rules.json` in the Firebase console (room message cleanup).
 3. "Later" list in `docs/ROADMAP.md`: SRD weapons/armor help and data, class-feature actions, QR export.
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)

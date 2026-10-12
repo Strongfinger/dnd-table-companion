@@ -14,7 +14,7 @@
           ".read": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid).exists()",
           ".indexOn": ["at"],
           "$msg": {
-            ".write": "auth != null && !data.exists() && root.child('rooms/' + $code + '/members/' + auth.uid).exists()",
+            ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid).exists() && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists() && data.child('at').val() < now - 3600000))",
             ".validate": "newData.child('fromUid').val() === auth.uid && newData.child('at').isNumber() && newData.child('json').isString() && newData.child('json').val().length < 64000"
           }
         }

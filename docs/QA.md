@@ -3,6 +3,29 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 5 — 2026-10-13 (new content features)
+**Tested** (dev, phone 375 px): older characters on new code (Nyx, Boom), inventory add/wear/hold → AC
+(Leather 11 + DEX = 14) and attack card (Dagger +5, 1d4+3, off-hand, Nick), attack roll via roller, the upgrade
+banner (Boom: + Second Wind, Action Surge), feature card use (Bonus Action + use spent, logged), 2024 Short
+Rest (Second Wind +1 use, Action Surge back), level 2 → 4 (Second Wind max 3, typed level + Save tap saved),
+starting gear for all 12 classes × options and 4 backgrounds (items, gold and AC match 2024), Lookup equipment
+and features tabs, overflow scan of 24 routes at 375 px, lazy chunks all in the offline cache.
+
+| Found | Fix |
+|---|---|
+| Second Wind's roll was only shown; the player had to type it into heal | The roller hands the total back: Second Wind, Uncanny Metabolism, Wholeness of Body heal, Tireless gives Temp HP (minimum 1), once per use |
+| 🎲 button covered row buttons on phones (Pass 1 #2) | Slides away while scrolling down, back on scroll up / at the top |
+| No warning for unprepared Ritual casting (non-Wizard) | Warning, per SRD 5.2.1 (Wizard Ritual Adept excepted) |
+| "Bonus Action spell" rule (HANDOFF) | That's 2014; SRD 5.2.1 has **One Spell with a Spell Slot per Turn**: warned (not blocked), Reactions excepted (rules-reviewer) |
+| Fight row's HP copy of a character went stale (Pass 1 #4) | Deleting a character saves its last HP/AC into linked fight rows (the only time the copy is shown) |
+| Firebase messages piled up | Rules allow deleting messages > 1 h old; the DM's device cleans its rooms. **Owner: publish `database.rules.json` in the Firebase console** |
+
+**Open (low):**
+- The edit screen's rule check says ✓ at level 3+ with no Subclass, and at level 4 with no ASI/feat. A warning would help.
+- The roller's big "last result" shows the last roll from any sheet (e.g. Nyx's Dagger while on Boom's sheet).
+- **Not verified live:** the Firebase cleanup (needs the published rules), and everything in "Next QA pass" below
+  that needs real phones.
+
 ## Next QA pass should also cover (new 2026-10-13)
 Equip/unequip on a real phone in a live room (the DM's copy follows), Action Surge and Second Wind as a player on
 and off their turn, a level-up adding features, the wizard's equipment step for each class, older characters
@@ -35,7 +58,7 @@ Findings for the implementor:
 
 Also fixed: test-mode transport dropped the DM's catch-up messages after a tab reload.
 Rules review (all 341 SRD monsters): PB and average HP exact; known gaps written into the sheet's notes:
-Initiative = DEX (data lacks the 2024 Initiative bonus), Hit Dice capped at 20, 3 odd stat-block bonuses.
+Hit Dice capped at 20, 3 odd stat-block bonuses. (Initiative now uses the 2024 stat-block value, added 2026-10-13.)
 **Note for testing:** in test mode (two tabs, one database) a player's damage shows applied twice; that's the
 shared database, not the app (real phones have separate databases).
 
@@ -69,20 +92,19 @@ offline/PWA update, notebook and session planner editing.
 | About page scrolled sideways on phones (long license URL) | `About.tsx`: `break-all` |
 
 ### Findings for the implementor (not fixed: features or design choices)
-1. **High: no attacks, weapons, equipment or class features on the sheet.** E.g. Nyx (Rogue 1) shows no
+1. ✅ Done 2026-10-13 (verified in pass 5: attacks, inventory, AC from armor, class features). **High: no attacks, weapons, equipment or class features on the sheet.** E.g. Nyx (Rogue 1) shows no
    Sneak Attack, Thieves' Cant, Weapon Mastery, and has no attack rolls. At a real table players need
    "attack +X, damage YdZ+M" in one tap. Already in ROADMAP "Later"; recommend doing it **before** Phase 5.
    Needs SRD 5.2.1 weapon/armor data (name, damage, properties, mastery) and AC from worn armor
    (Nyx shows AC 13 = unarmored; Rogues start with Leather Armor). Run `rules-reviewer` after.
-2. **Medium: floating 🎲 button covers content on phones**: the last "+ เพิ่ม" in the spell picker and the
+2. ✅ Fixed in pass 5 (tucks away on scroll). **Medium: floating 🎲 button covers content on phones**: the last "+ เพิ่ม" in the spell picker and the
    monster form's "เพิ่ม" sit under it until you scroll. Option: bottom padding on `<main>` equal to the
    button's height, or hide the button while a picker/form is open.
 3. ✅ Done 2026-10-13 (DM screens lazy-loaded; main chunk 754 → 426 KB). **Low: first load is one 676 KB JS chunk** (build warning). Lazy-load the DM-only screens (tracker, DM
    panel, notebook, generators, lookup) with `React.lazy` so players' phones load faster.
-4. **Low: a PC combatant's own `hp` copy goes stale** (the sheet is the source; the copy is only a fallback
+4. ✅ Fixed in pass 5 (snapshot on delete). **Low: a PC combatant's own `hp` copy goes stale** (the sheet is the source; the copy is only a fallback
    if the sheet is deleted). Harmless now; either keep it in sync or drop it.
-5. Known from HANDOFF and still open: 2024 "Bonus Action spell → only a cantrip with your action" warning,
-   ritual casting for non-Wizards, Firebase room cleanup.
+5. ✅ Done in pass 5 (Ritual warning; one slot per turn, the real 2024 rule; Firebase cleanup needs the rules published).
 
 ### Next QA pass should cover
 Live room with 2+ real phones (join by QR, player damage/heal/slots, end turn, kick, reload mid-fight,

@@ -144,3 +144,44 @@ export function firebaseTransport(): RoomTransport | null {
     },
   }
 }
+
+/** Messages older than this are deleted (the rules allow deleting ones over 1 hour old; the extra hour covers a wrong phone clock). */
+export const CLEANUP_AFTER_MS = 2 * 60 * 60 * 1000
+
+/**
+ * The DM's device clears old messages from rooms it hosts (now and recently): nothing reads them any more,
+ * since each device only listens from when it joined. Allowed only to room members (this sign-in stays a
+ * member of rooms it was in). Returns how many were deleted; quietly 0 if not allowed or offline.
+ */
+export async function cleanupOldMessages(codes: string[], now = Date.now()): Promise<number> {
+  const config = firebaseConfig()
+  if (!config || codes.length === 0) return 0
+  try {
+    const [{ initializeApp, getApps }, auth, db] = await Promise.all([
+      import('firebase/app'), import('firebase/auth'), import('firebase/database'),
+    ])
+    const app = getApps()[0] ?? initializeApp(config)
+    await auth.signInAnonymously(auth.getAuth(app))
+    const database = db.getDatabase(app)
+    let removed = 0
+    for (const code of codes) {
+      try {
+        const messages = db.ref(database, `rooms/${code}/messages`)
+        const old = await db.get(db.query(messages, db.orderByChild('at'), db.endAt(now - CLEANUP_AFTER_MS), db.limitToFirst(500)))
+        // One update for all of them: each path set to null = deleted.
+        const patch: Record<string, null> = {}
+        old.forEach((child) => {
+          patch[child.key!] = null
+        })
+        const n = Object.keys(patch).length
+        if (n) await db.update(messages, patch)
+        removed += n
+      } catch {
+        // Not a member of that room any more, or the new rules aren't published yet.
+      }
+    }
+    return removed
+  } catch {
+    return 0
+  }
+}

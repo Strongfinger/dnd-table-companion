@@ -23,7 +23,7 @@ import type { Character } from '../model/character'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
-import { firebaseTransport } from '../sync/firebaseTransport'
+import { cleanupOldMessages, firebaseTransport } from '../sync/firebaseTransport'
 import { isDm, isKicked, parseKick, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
@@ -43,6 +43,8 @@ const SETTING = 'lobby'
 const OUTBOX = 'lobby-outbox'
 /** DM: ids of players' changes and rolls already handled. */
 const APPLIED = 'lobby-applied'
+/** DM: the last room codes hosted on this device (their old messages are cleaned up). */
+const HOSTED_ROOMS = 'lobby-hosted-rooms'
 const RETRY_MS = 4000
 /** Fight-log lines per message. */
 const LOG_CHUNK = 100
@@ -478,6 +480,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on start
   }, [])
+
+  // DM (online): clear old messages from this room and the last rooms hosted here, now and every 15 minutes.
+  const hostingCode = session?.role === 'dm' && !session.local ? session.code : null
+  useEffect(() => {
+    if (!hostingCode) return
+    const run = async () => {
+      const previous = (await getSetting<string[]>(HOSTED_ROOMS)) ?? []
+      const codes = [hostingCode, ...previous.filter((c) => c !== hostingCode)].slice(0, 5)
+      await setSetting(HOSTED_ROOMS, codes)
+      const removed = await cleanupOldMessages(codes)
+      if (removed) console.info(`lobby: removed ${removed} old room message(s)`)
+    }
+    void run()
+    const timer = setInterval(() => void run(), 15 * 60 * 1000)
+    return () => clearInterval(timer)
+  }, [hostingCode])
 
   // Player: re-send unconfirmed changes every few seconds while connected.
   const isPlayer = session?.role === 'player'
