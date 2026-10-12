@@ -17,7 +17,7 @@ import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import LobbyLab from './screens/LobbyLab'
 import Lookup, { MonsterView, SpellView } from './screens/Lookup'
-import NoteEdit from './screens/NoteEdit'
+import NotePageRoute from './screens/Notebook'
 import PartyOverview from './screens/PartyOverview'
 import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
 import RoomRollToast from './screens/RoomRollToast'
@@ -48,7 +48,7 @@ export default function App() {
         {route.name === 'lab' && <LobbyLab />}
         {route.name === 'lobby' && <Lobby code={route.code} />}
         {route.name === 'dm' && <DmHome />}
-        {route.name === 'note' && <NoteEdit key={route.id} id={route.id} />}
+        {route.name === 'note' && <NotePageRoute key={route.id} id={route.id} />}
         {route.name === 'lookup' && <Lookup tab={route.tab} />}
         {route.name === 'monster' && <MonsterView key={route.id} id={route.id} />}
         {route.name === 'spell' && <SpellView key={route.id} id={route.id} />}

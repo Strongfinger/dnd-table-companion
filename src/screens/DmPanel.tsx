@@ -1,27 +1,24 @@
 // The DM's side panel next to the fight tracker (Phase 3.3), so nothing at the table needs leaving the fight:
 // - Stat block: follows the active monster's turn (or pick one of this fight's monsters)
 // - Lookup: monsters, spells and rules, opened right here
-// - Notes: this campaign's session notes, edited in place
+// - Notebook: this campaign's pages (sessions, NPCs, places, quests…), read and edited in place
 // - Fight log
-import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
-import { listNotes, saveNote } from '../db/notes'
 import { addMonstersToFight } from '../db/turns'
 import type { Encounter } from '../model/encounter'
 import { findMonsterForCombatant, type FullMonster } from '../model/monsterDetails'
 import { monsterInput } from '../model/monsters'
-import { createNote, noteTitle, thaiDate } from '../model/note'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { Button } from '../ui/kit'
 import { MonsterSearch, RulesSearch, SpellCard, SpellSearch, type OpenResult } from './Lookup'
-import { NoteEditor } from './NoteEdit'
+import { NotebookList, NotebookPage } from './Notebook'
 import { useMonsters, useSpells } from './useSrdData'
 
 type PanelTab = 'stats' | 'lookup' | 'notes' | 'log'
 const TABS: { id: PanelTab; label: string }[] = [
   { id: 'stats', label: '👹 Stat block' },
   { id: 'lookup', label: '🔎 ค้นหา' },
-  { id: 'notes', label: '📝 โน้ต' },
+  { id: 'notes', label: '📒 สมุด' },
   { id: 'log', label: '📜 บันทึก' },
 ]
 const TAB_KEY = 'dm-panel-tab'
@@ -160,30 +157,9 @@ function LookupTab({ encounter }: { encounter: Encounter }) {
   )
 }
 
-/** This campaign's session notes (all notes if the fight has no campaign), edited in place. */
+/** This campaign's notebook (all pages if the fight has no campaign); pages open and edit in place. */
 function NotesTab({ campaignId }: { campaignId: string | null }) {
-  const all = useLiveQuery(listNotes) ?? []
-  const notes = campaignId ? all.filter((n) => n.campaignId === campaignId) : all
   const [open, setOpen] = useState<string | null>(null)
-
-  if (open) return <NoteEditor id={open} onBack={() => setOpen(null)} backLabel="← โน้ตทั้งหมด" />
-  return (
-    <div className="space-y-2">
-      <Button variant="primary" className="w-full text-sm" onClick={async () => setOpen((await saveNote(createNote(campaignId))).id)}>+ บันทึกใหม่</Button>
-      {notes.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีบันทึก{campaignId ? 'ในแคมเปญนี้' : ''}</p>}
-      <ul className="space-y-1">
-        {notes.map((n) => (
-          <li key={n.id}>
-            <button type="button" onClick={() => setOpen(n.id)} className="w-full rounded-lg bg-stone-900 p-2 text-left hover:bg-stone-700">
-              <div className="flex justify-between gap-2 text-sm">
-                <b>{noteTitle(n)}</b>
-                <span className="shrink-0 text-xs text-stone-400">{thaiDate(n.sessionDate)}</span>
-              </div>
-              {n.body && <p className="line-clamp-3 whitespace-pre-line text-xs text-stone-400">{n.body}</p>}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+  if (open) return <NotebookPage key={open} id={open} onBack={() => setOpen(null)} onOpen={setOpen} backLabel="← สมุดแคมเปญ" />
+  return <NotebookList campaignId={campaignId} onOpen={setOpen} />
 }
