@@ -26,4 +26,4 @@ The DM runs it on a laptop or tablet. Players use phones for their own character
 - After changing anything in `src/rules/`, run the `rules-reviewer` agent.
 
 ## Roadmap
-See [docs/ROADMAP.md](docs/ROADMAP.md).
+See [docs/ROADMAP.md](docs/ROADMAP.md). Latest state and next steps: [docs/HANDOFF.md](docs/HANDOFF.md).
