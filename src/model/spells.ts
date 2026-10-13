@@ -30,6 +30,8 @@ export interface SpellFilter {
   level: number | null
   /** e.g. "Wizard"; null = any class */
   className: string | null
+  /** Thai names by spell id (when the Thai file is there), so Thai search words work too. */
+  thaiNames?: Record<string, string>
 }
 
 /** Search by name, school or text words; by level and class. Lower level first, then by name. */
@@ -39,7 +41,8 @@ export function searchSpells(list: SrdSpell[], f: SpellFilter): SrdSpell[] {
     .filter((s) => (f.level === null || s.level === f.level) && (!f.className || s.classes.includes(f.className)))
     .filter((s) => {
       const name = s.name.toLowerCase()
-      return words.every((w) => name.includes(w) || s.school.toLowerCase() === w)
+      const thai = f.thaiNames?.[s.id] ?? ''
+      return words.every((w) => name.includes(w) || thai.includes(w) || s.school.toLowerCase() === w)
     })
     .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
 }

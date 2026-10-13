@@ -2,11 +2,14 @@
 import { useState } from 'react'
 import { currentDevice, setDeviceName } from '../db/device'
 import { resetDevice } from '../db/reset'
+import { SPELLS_TH_CREDIT } from '../model/spellsTh'
 import { Button, Section, TextInput } from '../ui/kit'
+import { useSpellsTh } from './useSrdData'
 
 export default function About() {
   const [name, setName] = useState(currentDevice()?.name ?? '')
   const [saved, setSaved] = useState(false)
+  const thaiSpells = useSpellsTh()
 
   return (
     <div className="space-y-4">
@@ -42,6 +45,18 @@ export default function About() {
           {' '}(ตัดเหลือเฉพาะค่าที่ใช้ในแอป) · คำอธิบายภาษาไทยเขียนขึ้นเอง ไม่ได้แปลจากต้นฉบับ
         </p>
       </Section>
+
+      {Object.keys(thaiSpells).length > 0 && (
+        <Section title="คำแปลคาถาภาษาไทย">
+          <p className="text-sm text-stone-300">
+            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา) โดย{' '}
+            <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name} (dnd-th.com)</a>
+            {' '}ใช้ภายใต้สัญญาอนุญาต{' '}
+            <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>.
+            {' '}แอปเลือกเฉพาะคาถาที่อยู่ใน SRD 5.2.1 และจัดรูปแบบข้อความใหม่ (ตัด HTML, จัดย่อหน้า) ข้อมูลส่วนนี้ใช้สัญญาอนุญาตเดียวกัน
+          </p>
+        </Section>
+      )}
 
       <Section title="เวอร์ชัน">
         <p className="text-sm text-stone-300">

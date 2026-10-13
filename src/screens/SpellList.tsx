@@ -13,6 +13,7 @@ import { spellLimits } from '../rules'
 import { useCharacterAct } from './useCharacterAct'
 import { findSpellByName, loadSrdSpells, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import { Button, Section, TextInput } from '../ui/kit'
+import { useSpellsTh } from './useSrdData'
 
 const CASTER_CLASSES = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard']
 const levelTitle = (level: number) => (level === 0 ? 'Cantrips' : `Level ${level}`)
@@ -20,6 +21,7 @@ const levelTitle = (level: number) => (level === 0 ? 'Cantrips' : `Level ${level
 export default function SpellList({ c }: { c: Character }) {
   const lobby = useLobby()
   const [srd, setSrd] = useState<SrdSpell[] | null>(null)
+  const thai = useSpellsTh()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(false)
   /** The spell whose cast panel is open. */
@@ -101,6 +103,7 @@ export default function SpellList({ c }: { c: Character }) {
                     )}
                     <span className="min-w-0 flex-1">
                       {info ? <a href={`#/lookup/spell/${info.id}`} className="font-bold underline decoration-stone-600">{s.name}</a> : <b>{s.name}</b>}
+                      {info && thai[info.id] && <span className="ml-1 text-xs text-stone-400">{thai[info.id].name}</span>}
                       {info?.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
                       {info?.ritual && <span className="ml-1 rounded bg-sky-900 px-1 text-xs">R</span>}
                       <span className="block text-xs text-stone-400">
@@ -144,9 +147,11 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
   const [all, setAll] = useState(!ownClass)
   const [customName, setCustomName] = useState('')
   const [customLevel, setCustomLevel] = useState(0)
+  const thai = useSpellsTh()
   if (!srd) return <p className="mb-3 text-sm text-stone-400">กำลังโหลดคาถา…</p>
 
-  const found = searchSpells(srd, { query, level: null, className: all ? null : ownClass })
+  const thaiNames = Object.fromEntries(Object.entries(thai).map(([id, t]) => [id, t.name]))
+  const found = searchSpells(srd, { query, level: null, className: all ? null : ownClass, thaiNames })
     .filter((s) => all || s.level <= maxLevel)
   const has = (name: string) => c.spells.some((s) => s.name.toLowerCase() === name.toLowerCase())
 
@@ -164,6 +169,7 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
           <li key={s.id} className="flex items-center justify-between gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
             <span className="min-w-0">
               <a href={`#/lookup/spell/${s.id}`} className="font-bold">{s.name}</a>
+              {thai[s.id] && <span className="ml-1 text-xs text-stone-400">{thai[s.id].name}</span>}
               {s.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
               <span className="block text-xs text-stone-400">{spellLevelLine(s)}</span>
             </span>

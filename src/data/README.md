@@ -106,3 +106,11 @@ level, recharge, dice) are not in this file: they are in `src/rules/srd/limitedF
 - **Made by:** `scripts/srd/features.mjs`. Text clean-up: the PDF's line-break hyphens ("ex- pended") are joined
   when the joined word is a real word (the texts' own words plus the system word list); a few dashes the source
   lost ("Strength-with" → "Strength—with") are put back by a short fix list in the script.
+
+## srd-spells-th.json (optional, not in git yet)
+
+Thai name, description and higher-level text for SRD 5.2.1 spells, by spell id. Translation by
+**DND-TH** (https://dnd-th.com/), licensed **CC BY-NC-SA 4.0**; only spells in SRD 5.2.1 are kept,
+reformatted (HTML removed, paragraphs kept). Built by `node scripts/srd/spells-th.ts <csv>` from a CSV the
+owner collects (how: `docs/THAI-SPELLS.md`). Git-ignored until DND-TH agrees; the app loads it through
+`import.meta.glob`, so builds without it simply show English.

@@ -12,3 +12,7 @@ docs/DM Scripts/
 
 # Generated progress page (npm run roadmap)
 docs/roadmap.html
+
+# Thai spell text from DND-TH (dnd-th.com, CC BY-NC-SA 4.0): local only until DND-TH agrees.
+# Built by scripts/srd/spells-th.ts; see docs/THAI-SPELLS.md. Remove this line once permission is given.
+src/data/srd-spells-th.json

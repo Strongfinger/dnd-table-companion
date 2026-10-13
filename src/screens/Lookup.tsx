@@ -13,7 +13,8 @@ import { formatCR, monsterInput, searchMonsters } from '../model/monsters'
 import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch } from './LookupMore'
-import { useMonsters, useSpells } from './useSrdData'
+import { SPELLS_TH_CREDIT } from '../model/spellsTh'
+import { useMonsters, useSpellLang, useSpells, useSpellsTh } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
 export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'features'
@@ -104,6 +105,7 @@ const CLASS_OPTIONS = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer
 
 export function SpellSearch({ onOpen }: { onOpen?: OpenResult }) {
   const spells = useSpells()
+  const thai = useSpellsTh()
   // A player in a room starts with their own character's class.
   const myCharacterId = useLobby().session?.characterId ?? null
   const myClass = useLiveQuery(async () => (myCharacterId ? (await getCharacter(myCharacterId))?.className ?? null : null), [myCharacterId])
@@ -112,7 +114,7 @@ export function SpellSearch({ onOpen }: { onOpen?: OpenResult }) {
   const [className, setClassName] = useState<string | null | undefined>(undefined)
   const cls = className === undefined ? (myClass && CLASS_OPTIONS.includes(myClass) ? myClass : null) : className
   if (!spells) return <p className="text-stone-400">กำลังโหลดข้อมูลคาถา…</p>
-  const found = searchSpells(spells, { query, level, className: cls })
+  const found = searchSpells(spells, { query, level, className: cls, thaiNames: Object.fromEntries(Object.entries(thai).map(([id, t]) => [id, t.name])) })
   const select = 'rounded-lg border border-stone-600 bg-stone-900 px-2 py-2 text-base'
   return (
     <div className="space-y-3">
@@ -135,6 +137,7 @@ export function SpellSearch({ onOpen }: { onOpen?: OpenResult }) {
             <ResultLink href={`#/lookup/spell/${sp.id}`} onOpen={onOpen && (() => onOpen({ kind: 'spell', id: sp.id }))} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
               <span>
                 <b>{sp.name}</b>
+                {thai[sp.id] && <span className="ml-1 text-xs text-stone-400">{thai[sp.id].name}</span>}
                 {sp.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
                 {sp.ritual && <span className="ml-1 rounded bg-sky-900 px-1 text-xs">R</span>}
                 <span className="block text-xs text-stone-400">{spellLevelLine(sp)}</span>
@@ -166,11 +169,29 @@ export function SpellView({ id }: { id: string }) {
 
 /** One spell, 2024 style. */
 export function SpellCard({ sp }: { sp: SrdSpell }) {
+  const th = useSpellsTh()[sp.id]
+  const [lang, setLang] = useSpellLang()
+  const showThai = !!th && lang === 'th'
+  const higherLabel = sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'
+  const englishHigher = sp.higher?.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')
   return (
     <article className="space-y-3 rounded-xl border border-violet-900/60 bg-stone-900 p-4 text-sm leading-relaxed">
-      <header>
-        <h2 className="text-2xl font-bold text-amber-400">{sp.name}</h2>
-        <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
+      <header className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-bold text-amber-400">{sp.name}</h2>
+          {th && <p className="text-amber-200">{th.name}</p>}
+          <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
+        </div>
+        {th && (
+          <div className="flex shrink-0 overflow-hidden rounded-lg border border-stone-600 text-xs font-bold" role="group" aria-label="ภาษาของคำอธิบาย">
+            {(['th', 'en'] as const).map((l) => (
+              <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}
+                className={`px-2.5 py-1.5 ${lang === l ? 'bg-amber-500 text-stone-900' : 'bg-stone-800 text-stone-300'}`}>
+                {l === 'th' ? 'ไทย' : 'EN'}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
       <div className="space-y-0.5">
         <Row label="Casting Time">{castingTimeLine(sp)}</Row>
@@ -178,9 +199,24 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
         <Row label="Components">{componentsLine(sp)}</Row>
         <Row label="Duration">{sp.concentration && !sp.duration.startsWith('Concentration') ? `Concentration, ${sp.duration}` : sp.duration}</Row>
       </div>
-      <div className="whitespace-pre-line">{sp.text.replace(/\n\s+/g, '\n')}</div>
-      {sp.higher && <p><b><i>{sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'}</i></b> {sp.higher.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')}</p>}
-      <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
+      {showThai ? (
+        <>
+          <div className="whitespace-pre-line">{th.text}</div>
+          {th.higher && <p className="whitespace-pre-line"><b><i>{higherLabel}</i></b> {th.higher}</p>}
+          <p className="text-xs text-stone-500">
+            คำแปลภาษาไทย:{' '}
+            <a className="underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name}</a>
+            {' '}(<a className="underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>)
+            {' '}· ต้นฉบับ SRD 5.2.1 (CC-BY-4.0)
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="whitespace-pre-line">{sp.text.replace(/\n\s+/g, '\n')}</div>
+          {englishHigher && <p><b><i>{higherLabel}</i></b> {englishHigher}</p>}
+          <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0)</p>
+        </>
+      )}
     </article>
   )
 }

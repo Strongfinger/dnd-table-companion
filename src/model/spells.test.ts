@@ -14,6 +14,7 @@ describe('SRD spells', () => {
     const wizard3 = searchSpells(all, { query: '', level: 3, className: 'Wizard' })
     expect(wizard3.every((s) => s.level === 3 && s.classes.includes('Wizard'))).toBe(true)
     expect(wizard3.map((s) => s.name)).toContain('Counterspell')
+    expect(searchSpells(all, { query: 'ลูกไฟ', level: null, className: null, thaiNames: { fireball: 'ลูกไฟโลกันต์' } }).map((s) => s.name)).toEqual(['Fireball'])
     expect(searchSpells(all, { query: 'necromancy', level: 0, className: null }).every((s) => s.school === 'Necromancy')).toBe(true)
   })
 

@@ -3,8 +3,34 @@ import { useEffect, useState } from 'react'
 import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
 import type { LootItem } from '../model/generators'
 import { loadSrdSpells, type SrdSpell } from '../model/spells'
+import type { SpellsThFile, SpellTh } from '../model/spellsTh'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
 import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
+
+// The Thai spell file is optional: until it's built (scripts/srd/spells-th.ts) this finds nothing and
+// spells stay English. (A glob, unlike a plain import, doesn't fail the build when the file is missing.)
+const thaiSpellFile = import.meta.glob<SpellsThFile>('../data/srd-spells-th.json', { import: 'default' })
+
+/** Thai spell text by spell id, or {} when there is none. */
+export function useSpellsTh(): Record<string, SpellTh> {
+  const [map, setMap] = useState<Record<string, SpellTh>>({})
+  useEffect(() => {
+    const load = Object.values(thaiSpellFile)[0]
+    load?.().then((f) => setMap(f.spells ?? {}))
+  }, [])
+  return map
+}
+
+/** Thai or English spell text: the reader's choice, remembered on this device (Thai first). */
+export function useSpellLang(): ['th' | 'en', (lang: 'th' | 'en') => void] {
+  const [lang, setLang] = useState<'th' | 'en'>(() => {
+    try { return localStorage.getItem('spellLang') === 'en' ? 'en' : 'th' } catch { return 'th' }
+  })
+  return [lang, (l) => {
+    setLang(l)
+    try { localStorage.setItem('spellLang', l) } catch { /* private mode: just this visit */ }
+  }]
+}
 
 export function useMonsters(): FullMonster[] | null {
   const [list, setList] = useState<FullMonster[] | null>(null)
