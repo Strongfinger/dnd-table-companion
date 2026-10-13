@@ -20,8 +20,10 @@ export interface Character extends SheetInput {
   /** Sync bookkeeping (see model/sync.ts): bumps on every save, last device to change it. */
   rev: number
   updatedBy: string
-  /** Feat names, e.g. the background's Origin feat and Human Versatile's extra feat. */
+  /** Feat names, e.g. the background's Origin feat and Human Versatile's extra feat (rebuilt from featPicks). */
   feats: string[]
+  /** Which feat fills which slot and the ability increase it applied (model/feats.ts). Missing on older sheets. */
+  featPicks?: FeatPick[]
 
   /** current is kept between 0 and max; temp HP is separate and lost first. */
   hp: { max: number; current: number; temp: number }
@@ -76,6 +78,14 @@ export interface Character extends SheetInput {
 }
 
 export type Attack = AttackInput
+
+export interface FeatPick {
+  /** Slot id from featSlots(): "background", "species", "fighting-style-1", "asi-4", "epic-19", or "extra-N". */
+  slot: string
+  feat: string
+  /** Ability increase this pick applied to `scores` (Ability Score Improvement, Grappler, Epic Boons, typed feats). */
+  increase?: Partial<Record<Ability, number>>
+}
 
 export interface InventoryItem {
   id: string

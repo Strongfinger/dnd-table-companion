@@ -75,6 +75,8 @@ export function buildCharacter(c: CreationChoices): Character {
     species: c.species,
     background: c.background,
     feats,
+    // Slot of each feat: the background's, then Human Versatile's.
+    featPicks: feats.map((feat, i) => ({ slot: i === 0 ? 'background' : 'species', feat })),
     scores,
     saveProficiencies: classSavesAtLevel(c.className, 1),
     skills,

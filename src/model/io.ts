@@ -109,6 +109,7 @@ export function parseCharacterImport(text: string): ImportResult {
     rev: field('rev', int(0, 1_000_000_000), 0, 'รุ่นข้อมูล'),
     updatedBy: field('updatedBy', (v) => (v === '' ? '' : safeId(v)), '', 'แก้ไขล่าสุดโดย'),
     feats: field('feats', arrayOf(str(100), 20), [], 'Feats'),
+    ...(raw.featPicks === undefined ? {} : { featPicks: field('featPicks', arrayOf(featPick, 30), [], 'Feat slots') }),
     saveProficiencies: field('saveProficiencies', subsetOf(ABILITIES), [], 'Saving Throws'),
     skills: field('skills', skillsMap, {}, 'Skills'),
     initiativeProficient: field('initiativeProficient', bool, false, 'Alert'),
@@ -241,6 +242,23 @@ function item(v: unknown): Character['inventory'][number] | undefined {
   const out: Character['inventory'][number] = { id: itemId(v.id), name, qty: v.qty }
   if (typeof v.srdId === 'string' && /^[a-z0-9-]{1,64}$/.test(v.srdId)) out.srdId = v.srdId
   if (v.equipped === true) out.equipped = true
+  return out
+}
+
+function featPick(v: unknown): NonNullable<Character['featPicks']>[number] | undefined {
+  if (!isObject(v) || typeof v.slot !== 'string' || !/^[a-z0-9-]{1,30}$/.test(v.slot)) return undefined
+  const feat = text(v.feat, 100)
+  if (!feat) return undefined
+  const out: NonNullable<Character['featPicks']>[number] = { slot: v.slot, feat }
+  if (v.increase !== undefined) {
+    if (!isObject(v.increase)) return undefined
+    const inc: Partial<Record<Ability, number>> = {}
+    for (const [k, n] of Object.entries(v.increase)) {
+      if (!ABILITIES.includes(k as Ability) || !isInt(n, 1, 4)) return undefined
+      inc[k as Ability] = n
+    }
+    out.increase = inc
+  }
   return out
 }
 
