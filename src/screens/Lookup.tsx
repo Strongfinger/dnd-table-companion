@@ -16,6 +16,7 @@ import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch, MagicItemSearch } from './LookupMore'
 import { LangSwitch, ThaiCredit } from '../ui/ThaiText'
 import { useTextLang } from '../ui/useTextLang'
+import { useGlossaryTh } from '../ui/useGlossaryTh'
 import { useMonsters, useSpells, useSpellsTh } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
@@ -210,20 +211,40 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
   )
 }
 
+/**
+ * Rules & Conditions: our short Thai summaries first, each with DND-TH's full Thai rules text a tap away, then
+ * the rest of the SRD Rules Glossary (DND-TH's Thai text only).
+ */
 export function RulesSearch() {
+  const glossary = useGlossaryTh()
   const [query, setQuery] = useState('')
+  const [open, setOpen] = useState<string | null>(null)
   const q = query.trim().toLowerCase()
-  const entries = GLOSSARY_TERMS.map((t) => ({ term: t, entry: lookupTerm(t)! }))
-    .filter(({ term, entry }) => !q || term.toLowerCase().includes(q) || entry.title.toLowerCase().includes(q) || entry.text.toLowerCase().includes(q))
+  const ours = GLOSSARY_TERMS.map((t) => lookupTerm(t)!)
+  const linked = new Set(ours.map((e) => e.srd))
+  const rows = [
+    ...ours.map((e) => ({ id: e.title, title: e.title, summary: e.text, th: e.srd ? glossary.get(e.srd) : undefined })),
+    ...[...glossary.values()].filter((g) => !linked.has(g.en))
+      .map((g) => ({ id: g.en, title: g.tag ? `${g.en} (${g.tag})` : g.en, summary: '', th: g })),
+  ]
+  const found = rows.filter((r) => !q || [r.title, r.summary, r.th?.th ?? ''].some((x) => x.toLowerCase().includes(q)))
   return (
     <div className="space-y-3">
-      <TextInput value={query} placeholder="ค้นหา เช่น Prone, Grappled, Dash, Advantage, ล้มลง" onChange={setQuery} />
-      <p className="text-xs text-stone-500">คำอธิบายย่อภาษาไทย (เขียนเอง ไม่ใช่ข้อความกติกาเต็ม) · {entries.length} คำ</p>
+      <TextInput value={query} placeholder="ค้นหา เช่น Prone, Grappled, Dash, Cover, ล้ม" onChange={setQuery} />
+      <p className="text-xs text-stone-500">คำอธิบายย่อเขียนเอง · กติกาเต็มภาษาไทยจาก Rules Glossary ของ SRD 5.2.1 แปลโดย DND-TH · {found.length} คำ</p>
       <ul className="space-y-2">
-        {entries.map(({ term, entry }) => (
-          <li key={term} className="rounded-lg bg-stone-800 p-3 text-sm">
-            <b className="text-amber-200">{entry.title}</b>
-            <p className="mt-1 text-stone-300">{entry.text}</p>
+        {found.map((r) => (
+          <li key={r.id} className="rounded-lg bg-stone-800 p-3 text-sm">
+            <b className="text-amber-200">{r.title}</b>{r.th && <span className="text-stone-400"> · {r.th.th}</span>}
+            {r.summary && <p className="mt-1 text-stone-300">{r.summary}</p>}
+            {r.th && (open === r.id ? (
+              <div className="mt-2 space-y-2 border-t border-stone-700 pt-2 text-stone-300">
+                <MiniMarkdown text={r.th.text} />
+                <ThaiCredit />
+              </div>
+            ) : (
+              <button type="button" className="mt-2 block text-xs text-amber-300 underline" onClick={() => setOpen(r.id)}>📖 กติกาเต็ม (ภาษาไทย)</button>
+            ))}
           </li>
         ))}
       </ul>

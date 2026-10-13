@@ -53,3 +53,14 @@ describe('2024 details the help must get right', () => {
     expect(lookupTerm('toString')).toBeNull()
   })
 })
+
+describe('links to the SRD Rules Glossary (Thai full text)', () => {
+  it('every linked term exists in the Thai glossary file', async () => {
+    const files = import.meta.glob<{ entries: { en: string }[] }>('../data/srd-glossary-th.json', { import: 'default' })
+    const load = Object.values(files)[0]
+    if (!load) return // the Thai file is optional
+    const names = new Set((await load()).entries.map((e) => e.en))
+    const missing = GLOSSARY_TERMS.map((t) => lookupTerm(t)!.srd).filter((n) => n && !names.has(n))
+    expect(missing).toEqual([])
+  })
+})

@@ -193,3 +193,20 @@ the longer Dragonlance artifact, not the SRD item).
 - **Typos found:** none.
 - **English data errors seen while comparing:** Potion of Gaseous Form's English `desc` was wrong and Potion of
   Healing's table garbled (5e-bits). The Thai text is right; the English texts now come from the PDF (see above).
+
+## srd-glossary-th.json
+
+DND-TH's Thai translation of the **SRD 5.2.1 Rules Glossary**: all **154 entries** (English name, Thai name, tag,
+text), in glossary order. **CC BY-NC-SA 4.0**; the owner confirmed DND-TH's permission covers using it in the app
+(2026-10-13). Every entry name was checked against the glossary in the official SRD 5.2.1 PDF (all present; the
+SRD calls "D20 Tests" "D20 Test").
+
+- **Source:** DND-TH's Thai Free Rules page `rules-glossary.md` (the owner's private copy in `docs/DND-TH/`,
+  git-ignored; 202,956 bytes, SHA-256 `ef3cee76e02624178ddebc35566d5323e747495ae0dca5a0c34c66896ab5d00a`).
+- **Made by:** `node scripts/srd/glossary-th.ts docs/DND-TH/free-rules/rules-glossary.md` (`src/model/glossaryTh.ts`).
+  Dividers and sidebars dropped, links made plain.
+- **Used by:** the 📖 rules tab (full text under our own short summaries, plus the other glossary entries) and the
+  help sheet on phones ("📖 อ่านกติกาเต็ม"). Our terms link to entries via `srd` in `src/model/glossary.ts`; a test
+  checks every link exists. Spell Save DC, Spell Slots and Massive Damage have no glossary entry.
+- **Typos found:** Dash "ถ้้า"; High Jump "ฟุุต"; Malnutrition "อาาร" (อาหาร) and "ปอนด์s" (×3); Temporary Hit
+  Points "คุุณ".

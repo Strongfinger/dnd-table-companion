@@ -7,7 +7,18 @@ import { isSrdSpecies, SPECIES_INFO } from '../rules/srd/species'
 export interface GlossaryEntry {
   title: string
   text: string
+  /** The SRD Rules Glossary entry this term is (English name), for the full Thai rules text. */
+  srd?: string
 }
+
+/** Our names that the SRD Rules Glossary words differently. */
+const SRD_NAMES: Record<string, string> = {
+  'Temp HP': 'Temporary Hit Points', 'Death Save': 'Death Saving Throw', 'Hit Dice': 'Hit Point Dice',
+  AC: 'Armor Class', 'Opportunity Attack': 'Opportunity Attacks',
+}
+/** Ours with no glossary entry of their own (they live in the spell and damage chapters). */
+const NOT_IN_SRD_GLOSSARY = new Set(['Spell Save DC', 'Spell Slots', 'Massive Damage'])
+const srdName = (k: string) => (NOT_IN_SRD_GLOSSARY.has(k) ? {} : { srd: SRD_NAMES[k] ?? k })
 
 const CONDITIONS: Record<string, string> = {
   Blinded: 'มองไม่เห็น: Ability Check ที่ต้องใช้สายตาล้มเหลวทันที · การโจมตีใส่ตัวนี้มี Advantage · การโจมตีของตัวนี้มี Disadvantage',
@@ -73,9 +84,9 @@ const TERMS: Record<string, string> = {
 }
 
 const ALL: Record<string, GlossaryEntry> = {
-  ...Object.fromEntries(Object.entries(CONDITIONS).map(([k, text]) => [k, { title: `${k} (Condition)`, text }])),
-  ...Object.fromEntries(Object.entries(ACTIONS).map(([k, text]) => [k, { title: `${k} (Action)`, text }])),
-  ...Object.fromEntries(Object.entries(TERMS).map(([k, text]) => [k, { title: k, text }])),
+  ...Object.fromEntries(Object.entries(CONDITIONS).map(([k, text]) => [k, { title: `${k} (Condition)`, text, ...srdName(k) }])),
+  ...Object.fromEntries(Object.entries(ACTIONS).map(([k, text]) => [k, { title: `${k} (Action)`, text, ...srdName(k) }])),
+  ...Object.fromEntries(Object.entries(TERMS).map(([k, text]) => [k, { title: k, text, ...srdName(k) }])),
 }
 
 /**

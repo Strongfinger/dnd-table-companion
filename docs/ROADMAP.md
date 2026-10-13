@@ -81,7 +81,8 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
   - [x] Feats: all 17 SRD feats (`src/data/srd-features-th.json`, 2026-10-13; Lookup 🧬 tab and the sheet)
   - [x] Magic items: 259 of 263 (`src/data/srd-magic-items-th.json`, 2026-10-13; new Lookup tab 🪄 ไอเทมเวท, loot generator)
   - [x] Class features (231/232) and species traits (all base traits) from DND-TH's markdown pages (2026-10-13; sheet + Lookup 🧬)
-  - [ ] Monster names/stat blocks · equipment (DND-TH JSON) · conditions/rules glossary
+  - [x] Rules Glossary incl. conditions: all 154 SRD entries (2026-10-13; 📖 rules tab + help sheet on phones)
+  - [ ] Monster names/stat blocks · equipment (DND-TH JSON)
 - [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
 ## Later
