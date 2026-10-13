@@ -9,9 +9,11 @@ import { mergeDraft } from '../model/sync'
 import { applyAutoAC, characterArmorClass } from '../model/inventory'
 import { addNewlyAvailable, refreshCatalogFeatures } from '../model/featureCatalog'
 import { useEquipment } from './useSrdData'
+import { FeatSlotsEditor } from './FeatSlots'
+import { setFeatPick } from '../model/feats'
 import {
-  ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, FEAT_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
-  deriveSheet, formatModifier, isSrdBackground, MAX_FEATURE_USES, isSrdSpecies, maxExpertise, ORIGIN_FEATS, SKILL_ABILITY, skillSources,
+  ABILITIES, BACKGROUND_INFO, BACKGROUNDS, CLASS_INFO, CLASS_SPELLCASTING, CLASSES, checkCharacter, classSavesAtLevel,
+  deriveSheet, formatModifier, isSrdBackground, MAX_FEATURE_USES, isSrdSpecies, maxExpertise, SKILL_ABILITY, skillSources,
   SKILLS, SPECIES, SPECIES_INFO, spellSlotsFor, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
 } from '../rules'
 import { Button, Checkbox, ChoiceField, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
@@ -100,24 +102,12 @@ export default function CharacterEdit({ id }: { id: string }) {
    */
   function changeBackground(background: string) {
     const skills = { ...c.skills }
-    let feats = [...c.feats]
-    if (isSrdBackground(c.background)) {
-      const i = feats.indexOf(BACKGROUND_INFO[c.background].feat)
-      if (i >= 0) feats.splice(i, 1)
-    }
     if (isSrdBackground(background)) {
-      const next = BACKGROUND_INFO[background]
-      for (const k of next.skills) skills[k] = skills[k] === 'expertise' ? 'expertise' : 'proficient'
-      const duplicate = feats.includes(next.feat) && !FEAT_INFO[next.feat].repeatable
-      if (!duplicate) feats = [...feats, next.feat]
+      for (const k of BACKGROUND_INFO[background].skills) skills[k] = skills[k] === 'expertise' ? 'expertise' : 'proficient'
     }
-    const hasAlert = feats.includes('Alert')
-    setDraft({ ...c, background, skills, feats, initiativeProficient: hasAlert || (c.initiativeProficient && !c.feats.includes('Alert')) })
-  }
-
-  function toggleFeat(feat: string, on: boolean) {
-    const feats = on ? [...c.feats, feat] : c.feats.filter((f, i) => f !== feat || i !== c.feats.indexOf(feat))
-    setDraft({ ...c, feats, initiativeProficient: feat === 'Alert' ? on : c.initiativeProficient })
+    // The background's Origin feat goes in the background slot (a non-SRD background keeps the current pick).
+    const next = { ...c, background, skills }
+    setDraft(isSrdBackground(background) ? setFeatPick(next, 'background', BACKGROUND_INFO[background].feat) : next)
   }
 
   /** Tap cycles ○ → ● → ★ (only if Expertise is allowed) → ○. */
@@ -205,23 +195,8 @@ export default function CharacterEdit({ id }: { id: string }) {
       </Section>
 
       <Section title="Feats">
-        <div className="flex flex-wrap gap-x-4">
-          {ORIGIN_FEATS.map((f) => (
-            <Checkbox key={f} checked={c.feats.includes(f)} onChange={(on) => toggleFeat(f, on)} label={f} />
-          ))}
-        </div>
-        <Label text="Feat อื่นๆ (คั่นด้วย ,)" className="mt-2">
-          <TextInput
-            value={c.feats.filter((f) => !(ORIGIN_FEATS as readonly string[]).includes(f)).join(', ')}
-            onChange={(v) => set('feats', [
-              ...c.feats.filter((f) => (ORIGIN_FEATS as readonly string[]).includes(f)),
-              ...v.split(',').map((x) => x.trim()).filter(Boolean),
-            ])}
-          />
-        </Label>
-        {isSrdSpecies(c.species) && SPECIES_INFO[c.species].extraOriginFeat && (
-          <p className="mt-1 text-xs text-stone-500">Human ได้ Origin Feat เพิ่ม 1 อัน (Versatile) นอกจาก Feat ของ Background</p>
-        )}
+        <p className="mb-2 text-xs text-stone-500">ช่อง Feat ตาม Class และ Level (กติกา 2024) · Feat ที่เพิ่ม Ability จะบวกค่าให้ และคืนค่าเมื่อเปลี่ยน/ลบ</p>
+        <FeatSlotsEditor c={c} onChange={setDraft} />
       </Section>
 
       <Section title="Ability Scores · Saving Throws">
