@@ -1,4 +1,9 @@
-# Handoff — state on 2026-10-13
+# Handoff — state on 2026-10-13 (evening)
+
+**Start here for Phase 5.** Since the morning: a **campaign pack import** (the owner's *Dragon of Icespire Peak*
+Session 1 is prepared in it), and **Thai spell text from DND-TH** (with their permission). See "Phase 5: where to
+start" below.
+
 
 **Phases 0–4 and 3 are done**, plus the content plan in [docs/RESEARCH.md](RESEARCH.md) (2026-10-13): SRD weapons,
 armor and gear in the inventory (equip on the sheet), attacks with separate attack/damage rolls, AC from armor,
@@ -10,7 +15,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (564 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (574 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -35,6 +40,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION 2, `stamp`, `newerOf`, `mergeDraft`), `src/model/campaign.ts`, `src/db/device.ts` |
 | SRD equipment | `src/model/equipment.ts` (types, loader, table-style lines), data `src/data/srd-equipment.json` (`scripts/srd/equipment.mjs`); sheet: `src/screens/Inventory.tsx` (SRD picker, packs unpack, ถือ/สวม toggle) and `Attacks.tsx` (🎯 attack / 💥 damage open the floating roller via `src/ui/rollerBus.ts`, rolls carry a `label`); rules `src/rules/weapons.ts` + `armor.ts` (AC, training, drawbacks), model `src/model/inventory.ts` (`applyAutoAC`: with `acAuto` the stored `ac` is worked out from equipped armor, so tracker/party views need nothing new) |
 | SRD lookup | `src/screens/Lookup.tsx` (`#/lookup/...`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `spells.ts`, data hooks `src/screens/useSrdData.ts` |
+| Thai text (DND-TH) | Spells: `src/model/spellsTh.ts` (build: match 2024 DND-TH entries to SRD ids, split higher-level/material, typo finder), `scripts/srd/spells-th.ts` → `src/data/srd-spells-th.json`; hooks `useSpellsTh` (via `import.meta.glob`, optional file) + `useSpellLang` (TH/EN, localStorage) in `useSrdData.ts`; `SpellCard` in `Lookup.tsx`; Thai names in search + sheet. Markdown: `src/model/miniMarkdown.ts` + `src/ui/MiniMarkdown.tsx` (bold/italic/lists/tables/headings, never raw HTML). Credits on the card and the About page |
 | Notebook + planner | `src/screens/Notebook.tsx` (`#/dm/note/<id>`), `SessionPlan.tsx`, `src/ui/LinkedText.tsx`; `src/model/note.ts` (kinds, fields, `[[links]]`, backlinks), `sessionPlan.ts` |
 | Campaign pack import | `src/model/campaignPack.ts` (pure parse, stable ids `<campaign>-<id>`), `src/db/campaignPack.ts`, `src/screens/ImportPack.tsx` (`#/dm/import`). The owner's Icespire Peak pack + generator `make_pack.py` live in `docs/DM Scripts/` (private, git-ignored) |
 | Generators | `src/model/generators/` (`index.ts` pure with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` |
@@ -74,6 +80,8 @@ Built by scripts from 5e-bits/5e-database **2024** files (download to a scratch 
 `srd-spells.json` (`spells.mjs`), `srd-equipment.json` (`equipment.mjs`, checked line by line against the official SRD 5.2.1 PDF), `srd-magic-items.json` (`magic-items.mjs`; healing potion and spell scroll
 tiers rules-reviewed). Monster Initiative and Legendary Action uses come from the official SRD 5.2.1 PDF
 (`scripts/srd/monster-initiative.mjs`). Known gap: some spell notes like "(level 5 version)".
+**Thai:** `srd-spells-th.json` from DND-TH's `spells.json` (`node scripts/srd/spells-th.ts <file>`); source, checksum
+and the 7 untranslated spells in `src/data/README.md`.
 
 ## Firebase
 - Project `dnd-table-companion`, Realtime Database **asia-southeast1**, **anonymous** sign-in; rules in
@@ -102,6 +110,28 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
   (`turn.spellSlot`, Reactions excepted). The old 2014 "Bonus Action spell → cantrip" rule no longer exists.
 - Generators' loot amounts and encounter XP budget are a homebrew guide (labelled in the UI).
 
+## Phase 5: where to start
+
+1. **First real session (owner's next game night):** the owner is a first-time DM running *Dragon of Icespire
+   Peak* with 4 friends on phones (level 1: Fighter, Paladin, Rogue, Cleric; they build characters in the wizard at
+   the table). Prep is done:
+   - Private files in `docs/DM Scripts/` (git-ignored): `icespire-campaign-pack.json` (52 notebook pages, a
+     13-scene Session 1 plan, 6 prepared fights; regenerate with `make_pack.py`), `Session 1 - DM Prep.md`
+     (checklist, danger notes, how to run it in the app), and the owner's original Thai script PDFs.
+   - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
+   - After the session: collect what broke or felt clunky (docs/QA.md) and fix. Check the Firebase cleanup live.
+2. **Thai translation (Phase 5 item, ROADMAP):** spells are done. DND-TH gave permission to use all their data
+   ("ใช้ได้เต็มที่ครับ ไม่ติดอะไรเลย", email 2026-10-13; screenshot `docs/DM Scripts/dnd-th-permission-2026-10-13.webp`).
+   - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
+     `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
+   - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
+     (`2024-classes.zip`, `2024-races.zip`; not in git).
+   - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
+     Suggested order: feats → magic items → class features/species → monsters/equipment.
+   - DND-TH asked to hear about typos; the spell build lists them (5 sent to the owner to forward).
+3. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
+   Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
+
 ## Next steps (suggested)
 0. **QA findings:** see [docs/QA.md](QA.md) (bugs fixed, open findings for the implementor; top one: attacks/weapons
    and class features on the sheet).
@@ -116,5 +146,6 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
 - Every dice roll: in-app roll **or** typed result from real dice.
 - Guided rules with a DM override (warn, don't block); Point Buy in the wizard.
 - No AI in the app (decided 2026-10-12); battle map = outside tool (e.g. Owlbear Rodeo).
+- Adventure text (Icespire Peak) stays private in `docs/DM Scripts/` — the repo is public.
 - Before building something with real design choices, ask a few questions first (the owner likes that).
 - Small runnable steps; say how to see each step; commit and push each step.
