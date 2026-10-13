@@ -1,5 +1,5 @@
 // The rules text of one SRD feature (class feature, species trait or feat) when its card is opened: DND-TH's
-// Thai text with a ไทย/EN switch when there is one (feats so far), else the English SRD text. The list row
+// Thai text with a ไทย/EN switch when there is one, else the English SRD text. The list row
 // shows the Thai name.
 import type { FeatureTh } from '../model/featuresTh'
 import { WithThai } from '../ui/ThaiText'

@@ -15,7 +15,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (583 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (588 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -120,7 +120,9 @@ and the 7 untranslated spells in `src/data/README.md`.
      (checklist, danger notes, how to run it in the app), and the owner's original Thai script PDFs.
    - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
    - After the session: collect what broke or felt clunky (docs/QA.md) and fix. Check the Firebase cleanup live.
-2. **Thai translation (Phase 5 item, ROADMAP):** spells, feats and magic items are done. Shared helpers in
+2. **Thai translation (Phase 5 item, ROADMAP):** spells, feats, magic items, class features and species traits
+   are done (class/species parsed from DND-TH's markdown pages: `classSections`/`traitSections` in
+   `featuresTh.ts`; one script builds all of `srd-features-th.json`, see `src/data/README.md`). Shared helpers in
    `src/model/dndTh.ts` (credit, `cleanMarkdown`, `findTypos`, **`stripNonSrdNames`** + `nonSrdName`: DND-TH
    translates the full books, so names the SRD drops, e.g. Tasha, Bigby, Heward, Kwalish, Dragonlance, are taken
    out or the text stays English). One builder + script + `src/data/srd-*-th.json` per kind:
@@ -128,15 +130,17 @@ and the 7 untranslated spells in `src/data/README.md`.
    **same file** and show up via `FeatureText.tsx`), `magicItemsTh.ts` (aliases for renamed/tiered items).
    UI: `src/ui/ThaiText.tsx` (`LangSwitch`, `ThaiCredit`, `WithThai`), `src/ui/useTextLang.ts` (one ไทย/EN choice
    for every card). Magic items: Lookup tab 🪄 ไอเทมเวท (`MagicItemSearch` in `LookupMore.tsx`) and the loot
-   generator. `miniMarkdown` now reads `*italic*` and `***bold italic***`. Next: class features and species.
+   generator. `miniMarkdown` now reads `*italic*` and `***bold italic***`. Next: monsters, then equipment and
+   the conditions/rules glossary. The other session put DND-TH's Thai Free Rules in `docs/DND-TH/` (git-ignored):
+   `free-rules/rules-glossary.md` could feed the conditions/glossary step.
    - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
      `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
    - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
      (`2024-classes.zip`, `2024-races.zip`; not in git).
    - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
-     Suggested order: ~~feats~~ → ~~magic items~~ → class features/species → monsters/equipment.
+     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → monsters/equipment → glossary.
    - DND-TH asked to hear about typos; the build scripts list them (spells: 5 sent to the owner to forward;
-     feats: 1, Grappler "น้้น" → "นั้น").
+     feats/classes: Grappler "น้้น" → "นั้น", Barbarian Weapon Mastery "เปลีี่ยน" → "เปลี่ยน").
 3. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
    Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
 

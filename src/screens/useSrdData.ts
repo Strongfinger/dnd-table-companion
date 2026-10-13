@@ -25,7 +25,7 @@ export function useSpellsTh(): Record<string, SpellTh> {
   return map
 }
 
-/** Thai feature text (feats so far) by SRD feature id, or {} when there is none. */
+/** Thai feature text (feats, class features, species traits) by SRD feature id, or {} when there is none. */
 export function useFeaturesTh(): Record<string, FeatureTh> {
   const [map, setMap] = useState<Record<string, FeatureTh>>({})
   useEffect(() => {

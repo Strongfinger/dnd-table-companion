@@ -1,4 +1,4 @@
-// Every SRD 5.2.1 feature the character has, with its English rules text: class features up to their level,
+// Every SRD 5.2.1 feature the character has, with its rules text (Thai from DND-TH or English): class features up to their level,
 // their subclass's features, species traits and feats. Tap a name to read it. (Limited-use ones are also
 // in the play panel, where they can be used.)
 import { useState } from 'react'
@@ -17,7 +17,7 @@ export default function ClassFeatures({ c }: { c: Character }) {
   if (entries.length === 0) return null
   return (
     <Section title="ความสามารถจาก Class · Species · Feat">
-      <p className="mb-2 text-xs text-stone-400">จาก SRD 5.2.1 (ภาษาอังกฤษ, Feat มีภาษาไทย) · แตะชื่อเพื่ออ่าน{c.subclass ? '' : ' · ใส่ Subclass ในหน้าแก้ไขเพื่อดูความสามารถของ Subclass'}</p>
+      <p className="mb-2 text-xs text-stone-400">จาก SRD 5.2.1 · แตะชื่อเพื่ออ่าน (ภาษาไทยจาก DND-TH){c.subclass ? '' : ' · ใส่ Subclass ในหน้าแก้ไขเพื่อดูความสามารถของ Subclass'}</p>
       <ul className="divide-y divide-stone-800">
         {entries.map((e) => (
           <li key={e.id} className="py-1.5">
