@@ -83,8 +83,8 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
   0/O/1/I/L (the rules reject them).
 - **Cleanup (2026-10-13):** the rules let a room member delete messages older than 1 hour; the DM's device
   deletes its rooms' messages older than 2 hours (current + last 5 hosted, `lobby-hosted-rooms` setting) on
-  opening and every 15 min (`cleanupOldMessages`). **Needs the new `database.rules.json` published in the
-  console**; until then the delete is refused quietly. Old abandoned rooms the DM device was never in stay.
+  opening and every 15 min (`cleanupOldMessages`). Rules published by the owner 2026-10-13. Old abandoned
+  rooms the DM device was never in stay.
 
 ## Testing tips
 - Two tabs of one browser share IndexedDB **and** the Firebase sign-in, so they can't test sync. Use the
@@ -108,7 +108,6 @@ tiers rules-reviewed). Monster Initiative and Legendary Action uses come from th
    owner decisions, limited-use feature catalog (F1–F2), steps E1–E7 (weapons/attacks, equipped armor AC, class features,
    starting gear, monster Initiative). Order: E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7.
 1. **Phase 5:** a real session with friends on several phones; collect what broke or felt clunky; fix.
-2. Publish the new `database.rules.json` in the Firebase console (room message cleanup).
 3. "Later" list in `docs/ROADMAP.md`: SRD weapons/armor help and data, class-feature actions, QR export.
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)

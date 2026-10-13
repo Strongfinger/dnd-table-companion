@@ -18,12 +18,12 @@ and features tabs, overflow scan of 24 routes at 375 px, lazy chunks all in the 
 | No warning for unprepared Ritual casting (non-Wizard) | Warning, per SRD 5.2.1 (Wizard Ritual Adept excepted) |
 | "Bonus Action spell" rule (HANDOFF) | That's 2014; SRD 5.2.1 has **One Spell with a Spell Slot per Turn**: warned (not blocked), Reactions excepted (rules-reviewer) |
 | Fight row's HP copy of a character went stale (Pass 1 #4) | Deleting a character saves its last HP/AC into linked fight rows (the only time the copy is shown) |
-| Firebase messages piled up | Rules allow deleting messages > 1 h old; the DM's device cleans its rooms. **Owner: publish `database.rules.json` in the Firebase console** |
+| Firebase messages piled up | Rules allow deleting messages > 1 h old; the DM's device cleans its rooms. Rules published by the owner 2026-10-13 |
 
 **Open (low):**
 - The edit screen's rule check says ✓ at level 3+ with no Subclass, and at level 4 with no ASI/feat. A warning would help.
 - The roller's big "last result" shows the last roll from any sheet (e.g. Nyx's Dagger while on Boom's sheet).
-- **Not verified live:** the Firebase cleanup (needs the published rules), and everything in "Next QA pass" below
+- **Not verified live yet:** the Firebase cleanup (rules now published; check during the next real session), and everything in "Next QA pass" below
   that needs real phones.
 
 ## Next QA pass should also cover (new 2026-10-13)
