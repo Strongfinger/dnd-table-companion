@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildSpellsTh, cleanMarkdown, findTypos, splitDescription } from './spellsTh'
+import { buildSpellsTh, splitDescription } from './spellsTh'
+import { cleanMarkdown, findTypos } from './dndTh'
 
 const srd = [{ id: 'fireball', name: 'Fireball' }, { id: 'floating-disk', name: 'Floating Disk' }, { id: 'shield', name: 'Shield' }]
 const spell = (name: string, title: string, description: string, version = '2024') => ({ version, name, title, description })

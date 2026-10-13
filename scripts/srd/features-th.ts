@@ -7,7 +7,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import { buildFeatsTh, type FeaturesThFile } from '../../src/model/featuresTh.ts'
-import { SPELLS_TH_CREDIT as CREDIT } from '../../src/model/spellsTh.ts'
+import { DND_TH_CREDIT as CREDIT } from '../../src/model/dndTh.ts'
 
 const source = process.argv[2]
 if (!source) throw new Error('usage: node scripts/srd/features-th.ts <dnd-th feats.json>')

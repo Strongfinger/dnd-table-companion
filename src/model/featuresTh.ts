@@ -2,8 +2,8 @@
 // 5.2.1 features, kept apart from the English text in src/data/srd-features-th.json and keyed by the same ids as
 // src/data/srd-features.json. Feats come first; class features and species traits can join the same file later.
 // The file is built by scripts/srd/features-th.ts from DND-TH's published feats.json using buildFeatsTh() below.
-// Like spellsTh.ts, nothing here is imported at runtime except spellsTh.ts, so Node can run the build script.
-import { cleanMarkdown, findTypos } from './spellsTh.ts'
+// Nothing here is imported at runtime except dndTh.ts, so Node can run the build script.
+import { cleanMarkdown, findTypos } from './dndTh.ts'
 
 export interface FeatureTh {
   /** Thai name (the English name stays the main one). */

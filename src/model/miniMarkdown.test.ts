@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { parseInline, parseMarkdown } from './miniMarkdown'
 
 describe('parseInline', () => {
+  it('reads *italic* and ***bold italic*** as DND-TH writes them, but not a lone star', () => {
+    expect(parseInline('***คาถา (Spells).*** ใช้ *ถุงวิเศษ* ได้')).toEqual([
+      { text: 'คาถา (Spells).', bold: true, italic: true }, { text: ' ใช้ ' }, { text: 'ถุงวิเศษ', italic: true }, { text: ' ได้' },
+    ])
+    expect(parseInline('5 * 3 = 15')).toEqual([{ text: '5 * 3 = 15' }])
+  })
+
   it('reads bold, italic, both, and escapes', () => {
     expect(parseInline('ก **ข** _ค_ **_ง_** \\* จ')).toEqual([
       { text: 'ก ' }, { text: 'ข', bold: true }, { text: ' ' }, { text: 'ค', italic: true }, { text: ' ' },

@@ -5,6 +5,7 @@ import type { LootItem } from '../model/generators'
 import { loadSrdSpells, type SrdSpell } from '../model/spells'
 import type { SpellsThFile, SpellTh } from '../model/spellsTh'
 import type { FeaturesThFile, FeatureTh } from '../model/featuresTh'
+import type { MagicItemsThFile, MagicItemTh } from '../model/magicItemsTh'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
 import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
 
@@ -12,6 +13,7 @@ import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
 // spells stay English. (A glob, unlike a plain import, doesn't fail the build when the file is missing.)
 const thaiSpellFile = import.meta.glob<SpellsThFile>('../data/srd-spells-th.json', { import: 'default' })
 const thaiFeatureFile = import.meta.glob<FeaturesThFile>('../data/srd-features-th.json', { import: 'default' })
+const thaiItemFile = import.meta.glob<MagicItemsThFile>('../data/srd-magic-items-th.json', { import: 'default' })
 
 /** Thai spell text by spell id, or {} when there is none. */
 export function useSpellsTh(): Record<string, SpellTh> {
@@ -33,18 +35,14 @@ export function useFeaturesTh(): Record<string, FeatureTh> {
   return map
 }
 
-/**
- * Thai or English rules text (spells, feats…): the reader's choice, remembered on this device (Thai first).
- * One choice for every card. (The storage key is still "spellLang": spells had the switch first.)
- */
-export function useTextLang(): ['th' | 'en', (lang: 'th' | 'en') => void] {
-  const [lang, setLang] = useState<'th' | 'en'>(() => {
-    try { return localStorage.getItem('spellLang') === 'en' ? 'en' : 'th' } catch { return 'th' }
-  })
-  return [lang, (l) => {
-    setLang(l)
-    try { localStorage.setItem('spellLang', l) } catch { /* private mode: just this visit */ }
-  }]
+/** Thai magic item text by SRD item id, or {} when there is none. */
+export function useMagicItemsTh(): Record<string, MagicItemTh> {
+  const [map, setMap] = useState<Record<string, MagicItemTh>>({})
+  useEffect(() => {
+    const load = Object.values(thaiItemFile)[0]
+    load?.().then((f) => setMap(f.items ?? {}))
+  }, [])
+  return map
 }
 
 export function useMonsters(): FullMonster[] | null {

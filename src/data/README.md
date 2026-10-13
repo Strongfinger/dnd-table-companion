@@ -124,6 +124,9 @@ Instant Summons) stay English.
   higher-level paragraph and the material note are split off; the rest stays simple markdown, shown by
   `src/ui/MiniMarkdown.tsx` (never as HTML).
 - **Typos:** the script lists likely typos; DND-TH asked to be told about them.
+- **Non-SRD names (2026-10-13):** DND-TH's Thai names keep the wizards the SRD drops ("…ของทาชา", "มือของบิกบี้").
+  `stripNonSrdNames()` in `src/model/dndTh.ts` takes them out (10 names changed; Arcane Hand/Sword get
+  "มือเวทมนตร์"/"ดาบเวทมนตร์"); texts that still name a non-SRD world or person stay English.
 
 ## srd-features-th.json
 
@@ -137,3 +140,22 @@ feats**. Translation by **DND-TH** (https://dnd-th.com/), **CC BY-NC-SA 4.0**, u
   as a paragraph (prerequisites left out, as in the English text; the feat picker shows them).
 - **Made by:** `node scripts/srd/features-th.ts <feats.json>` (`src/model/featuresTh.ts`). Links become plain text.
 - **Typos found (2026-10-13):** Grappler, Fast Wrestler: "น้้น" (should be "นั้น").
+
+## srd-magic-items-th.json
+
+Thai name and text for **259 of the 263** SRD 5.2.1 magic items, by the ids in `srd-magic-items.json`.
+Translation by **DND-TH**, **CC BY-NC-SA 4.0**, used with permission (2026-10-13). Stay English: Amulet of the
+Planes, Mace of Terror, Weapon of Warning (no 2024 DND-TH entry) and Dragon Orb (DND-TH's "Orb of Dragonkind" is
+the longer Dragonlance artifact, not the SRD item).
+
+- **Source:** https://dnd-th.com/data/magic-items.json (downloaded 2026-10-13, 904,478 bytes,
+  SHA-256 `54c91a344c33bfc2fb9de2bcca51eef084b6e84427f4bab0152d62ca97aedadb`), 2014 + 2024 items; only 2024 SRD
+  items kept. Matched by English name, plus `ALIASES` in `src/model/magicItemsTh.ts`: items the SRD renames
+  (Handy Haversack = Heward's…, Apparatus of the Crab = Apparatus of Kwalish, Mysterious Deck = Deck of Many
+  Things…) and DND-TH entries that cover several SRD items (+1/+2/+3, the four Potions of Healing, Spell Scroll
+  levels, Horns of Valhalla, Crystal Balls; each gets the shared text and its own Thai name).
+- **Made by:** `node scripts/srd/magic-items-th.ts <magic-items.json>`. People's names the SRD leaves out are
+  removed from names and texts (`stripNonSrdNames`); an item whose text still names a non-SRD world is skipped.
+- **Typos found:** none.
+- **English data errors seen while comparing:** Potion of Gaseous Form's English `desc` is wrong (it holds a
+  Potion of Healing fragment) and Potion of Healing's table is garbled (5e-bits). The Thai text is right.

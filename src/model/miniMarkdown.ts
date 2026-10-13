@@ -1,5 +1,5 @@
 // A very small markdown reader for translated rules text (DND-TH's Thai spells): paragraphs, line breaks,
-// #-headings, "- " / "* " lists, | tables |, **bold** and _italic_. Everything else stays plain text.
+// #-headings, "- " / "* " lists, | tables |, **bold**, _italic_ and *italic*. Everything else stays plain text.
 // It returns plain data; src/ui/MiniMarkdown.tsx turns it into React elements (never raw HTML).
 
 export interface Span {
@@ -15,11 +15,15 @@ export type Block =
   | { kind: 'ul'; items: Line[] }
   | { kind: 'table'; head: Line[]; rows: Line[][] }
 
-/** "**bold** and _italic_, \*" → spans. Unclosed marks just end with the line. */
+/**
+ * "**bold**, _italic_, *italic*, \*" → spans. Unclosed marks just end with the line. A single "*" starts italic
+ * only when a word follows and another "*" comes later ("***Name.***" = bold italic); a lone "* " is just text.
+ */
 export function parseInline(text: string): Line {
   const spans: Span[] = []
   let bold = false
   let italic = false
+  let star = false // italic was started by "*" (so the next "*" ends it)
   let buf = ''
   const flush = () => {
     if (buf) spans.push({ text: buf, ...(bold ? { bold: true as const } : {}), ...(italic ? { italic: true as const } : {}) })
@@ -29,6 +33,7 @@ export function parseInline(text: string): Line {
     if (text[i] === '\\' && i + 1 < text.length && '*_\\|#-'.includes(text[i + 1])) { buf += text[++i]; continue }
     if (text.startsWith('**', i)) { flush(); bold = !bold; i++; continue }
     if (text[i] === '_') { flush(); italic = !italic; continue }
+    if (text[i] === '*' && (star || (/\S/.test(text[i + 1] ?? ' ') && text.indexOf('*', i + 2) > 0))) { flush(); italic = !italic; star = !star; continue }
     buf += text[i]
   }
   flush()

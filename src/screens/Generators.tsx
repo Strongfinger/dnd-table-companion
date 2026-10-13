@@ -16,7 +16,8 @@ import { formatCR, monsterInput } from '../model/monsters'
 import { createNote, KIND_FIELDS, QUEST_STATUS } from '../model/note'
 import { sortByInitiative } from '../rules'
 import { Button } from '../ui/kit'
-import { useMagicItems, useMonsters } from './useSrdData'
+import { useMagicItems, useMagicItemsTh, useMonsters } from './useSrdData'
+import { MagicItemText } from './LookupMore'
 
 type GenTab = 'npc' | 'tavern' | 'hook' | 'loot' | 'encounter' | 'weather'
 const TABS: { id: GenTab; label: string }[] = [
@@ -148,6 +149,7 @@ function HookGen({ campaignId }: { campaignId: string | null }) {
 
 function LootGen({ campaignId }: { campaignId: string | null }) {
   const items = useMagicItems()
+  const thai = useMagicItemsTh()
   const [band, setBand] = useState(0)
   const [hoard, setHoard] = useState(true)
   const [loot, setLoot] = useState<GenLoot | null>(null)
@@ -187,9 +189,9 @@ function LootGen({ campaignId }: { campaignId: string | null }) {
           {loot.items.map((it, i) => (
             <div key={i}>
               <button type="button" className="text-left" onClick={() => setOpen(open === `${i}` ? null : `${i}`)}>
-                ✨ <b>{it.name}</b> <span className="text-xs text-stone-400">{it.rarity} · {it.category}{it.attunement ? ' · ต้อง Attune' : ''}</span>
+                ✨ <b>{it.name}</b>{thai[it.id] && <span className="text-stone-400"> · {thai[it.id].name}</span>} <span className="text-xs text-stone-400">{it.rarity} · {it.category}{it.attunement ? ' · ต้อง Attune' : ''}</span>
               </button>
-              {open === `${i}` && <p className="mt-1 whitespace-pre-line rounded bg-stone-800 p-2 text-xs text-stone-300">{it.desc}</p>}
+              {open === `${i}` && <div className="mt-1 rounded bg-stone-800 p-2"><MagicItemText item={it} th={thai[it.id]?.text} /></div>}
             </div>
           ))}
           {loot.items.length > 0 && (saved ? <p className="text-emerald-300">{saved}</p> : <Button className="mt-2 w-full text-sm" onClick={saveItems}>📒 บันทึกไอเทมเวทลงสมุด</Button>)}

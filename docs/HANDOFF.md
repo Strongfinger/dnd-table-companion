@@ -15,7 +15,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (576 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (583 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -39,8 +39,8 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 | Sync protocol (pure) | `src/sync/` — `envelope.ts` (kinds, Deduper, RateLimiter), `sheets.ts`, `outbox.ts`, `fights.ts` (fight list, log diffs), `lobby.ts`; transports `firebaseTransport.ts`, `localTransport.ts` |
 | Sync bookkeeping | `src/model/sync.ts` (DATA_VERSION 2, `stamp`, `newerOf`, `mergeDraft`), `src/model/campaign.ts`, `src/db/device.ts` |
 | SRD equipment | `src/model/equipment.ts` (types, loader, table-style lines), data `src/data/srd-equipment.json` (`scripts/srd/equipment.mjs`); sheet: `src/screens/Inventory.tsx` (SRD picker, packs unpack, ถือ/สวม toggle) and `Attacks.tsx` (🎯 attack / 💥 damage open the floating roller via `src/ui/rollerBus.ts`, rolls carry a `label`); rules `src/rules/weapons.ts` + `armor.ts` (AC, training, drawbacks), model `src/model/inventory.ts` (`applyAutoAC`: with `acAuto` the stored `ac` is worked out from equipped armor, so tracker/party views need nothing new) |
-| SRD lookup | `src/screens/Lookup.tsx` (`#/lookup/...`), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `spells.ts`, data hooks `src/screens/useSrdData.ts` |
-| Thai text (DND-TH) | Feats (and later class features/species): `src/model/featuresTh.ts`, `scripts/srd/features-th.ts` → `src/data/srd-features-th.json`, hook `useFeaturesTh`, `src/screens/FeatureText.tsx`. Spells: `src/model/spellsTh.ts` (build: match 2024 DND-TH entries to SRD ids, split higher-level/material, typo finder), `scripts/srd/spells-th.ts` → `src/data/srd-spells-th.json`; hooks `useSpellsTh` (via `import.meta.glob`, optional file) + `useTextLang` (TH/EN for every card, localStorage) in `useSrdData.ts`; `SpellCard` in `Lookup.tsx`; Thai names in search + sheet. Markdown: `src/model/miniMarkdown.ts` + `src/ui/MiniMarkdown.tsx` (bold/italic/lists/tables/headings, never raw HTML). Credits on the card and the About page |
+| SRD lookup | `src/screens/Lookup.tsx` (`#/lookup/...`; tabs monsters, spells, rules, equipment, items, features), `src/ui/MonsterStatBlock.tsx`, `src/model/monsterDetails.ts`, `spells.ts`, data hooks `src/screens/useSrdData.ts` |
+| Thai text (DND-TH) | Shared: `src/model/dndTh.ts`, `src/ui/ThaiText.tsx`, `src/ui/useTextLang.ts`. Magic items: `magicItemsTh.ts`, `scripts/srd/magic-items-th.ts`, `useMagicItemsTh`. Feats (and later class features/species): `src/model/featuresTh.ts`, `scripts/srd/features-th.ts` → `src/data/srd-features-th.json`, hook `useFeaturesTh`, `src/screens/FeatureText.tsx`. Spells: `src/model/spellsTh.ts` (build: match 2024 DND-TH entries to SRD ids, split higher-level/material, typo finder), `scripts/srd/spells-th.ts` → `src/data/srd-spells-th.json`; hooks `useSpellsTh` (via `import.meta.glob`, optional file) + `useTextLang` (`src/ui/useTextLang.ts`, TH/EN for every card) in `useSrdData.ts`; `SpellCard` in `Lookup.tsx`; Thai names in search + sheet. Markdown: `src/model/miniMarkdown.ts` + `src/ui/MiniMarkdown.tsx` (bold/italic/lists/tables/headings, never raw HTML). Credits on the card and the About page |
 | Notebook + planner | `src/screens/Notebook.tsx` (`#/dm/note/<id>`), `SessionPlan.tsx`, `src/ui/LinkedText.tsx`; `src/model/note.ts` (kinds, fields, `[[links]]`, backlinks), `sessionPlan.ts` |
 | Campaign pack import | `src/model/campaignPack.ts` (pure parse, stable ids `<campaign>-<id>`), `src/db/campaignPack.ts`, `src/screens/ImportPack.tsx` (`#/dm/import`). The owner's Icespire Peak pack + generator `make_pack.py` live in `docs/DM Scripts/` (private, git-ignored) |
 | Generators | `src/model/generators/` (`index.ts` pure with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` |
@@ -120,18 +120,21 @@ and the 7 untranslated spells in `src/data/README.md`.
      (checklist, danger notes, how to run it in the app), and the owner's original Thai script PDFs.
    - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
    - After the session: collect what broke or felt clunky (docs/QA.md) and fix. Check the Firebase cleanup live.
-2. **Thai translation (Phase 5 item, ROADMAP):** spells and feats are done. Feats: `src/model/featuresTh.ts`,
-   `scripts/srd/features-th.ts` → `src/data/srd-features-th.json` (keyed by the `srd-features.json` ids, so class
-   features and species traits go into the **same file** and show up automatically via `FeatureText.tsx` in the
-   Lookup 🧬 tab and the sheet). One ไทย/EN choice for all cards (`useTextLang`; `src/ui/ThaiText.tsx` has the
-   switch and credit). Next: magic items. DND-TH gave permission to use all their data
-   ("ใช้ได้เต็มที่ครับ ไม่ติดอะไรเลย", email 2026-10-13; screenshot `docs/DM Scripts/dnd-th-permission-2026-10-13.webp`).
+2. **Thai translation (Phase 5 item, ROADMAP):** spells, feats and magic items are done. Shared helpers in
+   `src/model/dndTh.ts` (credit, `cleanMarkdown`, `findTypos`, **`stripNonSrdNames`** + `nonSrdName`: DND-TH
+   translates the full books, so names the SRD drops, e.g. Tasha, Bigby, Heward, Kwalish, Dragonlance, are taken
+   out or the text stays English). One builder + script + `src/data/srd-*-th.json` per kind:
+   `spellsTh.ts`, `featuresTh.ts` (keyed by `srd-features.json` ids: class features and species traits go into the
+   **same file** and show up via `FeatureText.tsx`), `magicItemsTh.ts` (aliases for renamed/tiered items).
+   UI: `src/ui/ThaiText.tsx` (`LangSwitch`, `ThaiCredit`, `WithThai`), `src/ui/useTextLang.ts` (one ไทย/EN choice
+   for every card). Magic items: Lookup tab 🪄 ไอเทมเวท (`MagicItemSearch` in `LookupMore.tsx`) and the loot
+   generator. `miniMarkdown` now reads `*italic*` and `***bold italic***`. Next: class features and species.
    - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
      `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
    - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
      (`2024-classes.zip`, `2024-races.zip`; not in git).
    - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
-     Suggested order: ~~feats~~ → magic items → class features/species → monsters/equipment.
+     Suggested order: ~~feats~~ → ~~magic items~~ → class features/species → monsters/equipment.
    - DND-TH asked to hear about typos; the build scripts list them (spells: 5 sent to the owner to forward;
      feats: 1, Grappler "น้้น" → "นั้น").
 3. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,

@@ -1,10 +1,13 @@
 // More SRD lookup tabs (everyone, players too): equipment with the weapon property and Weapon Mastery
-// texts, and features (class and subclass features, species traits, feats), all English SRD text.
+// texts, magic items, and features (class and subclass features, species traits, feats). English SRD text,
+// with DND-TH's Thai where there is one (feats, magic items).
 import { useState } from 'react'
 import { CLASSES } from '../rules'
+import type { LootItem } from '../model/generators'
 import { costLine, KIND_FILTERS, searchItems } from '../model/equipment'
 import { ItemDetails } from './Inventory'
-import { useEquipment, useFeaturesTh, useFeatureTexts } from './useSrdData'
+import { useEquipment, useFeaturesTh, useFeatureTexts, useMagicItems, useMagicItemsTh } from './useSrdData'
+import { WithThai } from '../ui/ThaiText'
 import FeatureText from './FeatureText'
 import { TextInput } from '../ui/kit'
 
@@ -52,6 +55,52 @@ export function EquipmentSearch() {
         </ul>
       )}
       <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0) · ราคาและน้ำหนักตามตารางใน SRD</p>
+    </div>
+  )
+}
+
+const RARITIES = ['ทั้งหมด', 'Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary'] as const
+
+export function MagicItemSearch() {
+  const items = useMagicItems()
+  const thai = useMagicItemsTh()
+  const [query, setQuery] = useState('')
+  const [rarity, setRarity] = useState<(typeof RARITIES)[number]>('ทั้งหมด')
+  const [open, setOpen] = useState<string | null>(null)
+  if (!items) return <p className="text-stone-400">กำลังโหลด…</p>
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const found = items
+    .filter((i) => rarity === 'ทั้งหมด' || i.rarity === rarity)
+    .filter((i) => words.every((w) => i.name.toLowerCase().includes(w) || !!thai[i.id]?.name.includes(w)))
+  return (
+    <div className="space-y-3">
+      <TextInput value={query} placeholder="ค้นหา เช่น bag, potion, +1, ถุง" onChange={setQuery} />
+      <div className="flex flex-wrap gap-1.5">
+        {RARITIES.map((r) => <button key={r} type="button" className={chip(r === rarity)} onClick={() => setRarity(r)}>{r}</button>)}
+      </div>
+      <ul className="space-y-1">
+        {found.slice(0, 150).map((i) => (
+          <li key={i.id} className="rounded-lg bg-stone-800 px-3 py-2">
+            <button type="button" className="flex w-full items-baseline justify-between gap-2 text-left" onClick={() => setOpen(open === i.id ? null : i.id)} aria-expanded={open === i.id}>
+              <span><b>{i.name}</b>{thai[i.id] && <span className="text-sm text-stone-400"> · {thai[i.id].name}</span>}</span>
+              <span className="shrink-0 text-xs text-stone-400">{i.rarity}{i.attunement ? ' · Attune' : ''}</span>
+            </button>
+            {open === i.id && <MagicItemText item={i} th={thai[i.id]?.text} />}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-stone-500">{found.length} รายการ · SRD 5.2.1 (CC-BY-4.0) · คำแปลไทยจาก DND-TH</p>
+    </div>
+  )
+}
+
+/** One magic item's text: type line, then Thai (with the switch) or the English SRD text. */
+export function MagicItemText({ item, th }: { item: LootItem; th?: string }) {
+  const [typeLine, ...rest] = item.desc.split(/ {2}\n\s*/)
+  return (
+    <div className="mt-1 space-y-1 text-sm">
+      <p className="italic text-stone-400">{typeLine}, {item.rarity}{item.attunement ? ' (ต้อง Attune)' : ''}</p>
+      <WithThai th={th}><p className="whitespace-pre-line text-stone-300">{rest.join('\n')}</p></WithThai>
     </div>
   )
 }

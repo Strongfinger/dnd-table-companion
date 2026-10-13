@@ -2,8 +2,9 @@
 // SRD 5.2.1 spells, kept apart from the English data in src/data/srd-spells-th.json. The file is built by
 // scripts/srd/spells-th.ts from DND-TH's published spells.json using buildSpellsTh() below; the app shows it
 // on spell cards with a TH/EN switch.
-// This module has no runtime imports, so Node can run the build script on it directly.
+// Nothing here is imported at runtime except dndTh.ts, so Node can run the build script on it directly.
 import type { SrdSpell } from './spells'
+import { cleanMarkdown, findTypos, nonSrdName, stripNonSrdNames } from './dndTh.ts'
 
 export interface SpellTh {
   /** Thai spell name (the English name stays the main one). */
@@ -24,8 +25,6 @@ export interface SpellsThFile {
   spells: Record<string, SpellTh>
 }
 
-export const SPELLS_TH_CREDIT = { name: 'DND-TH', url: 'https://dnd-th.com/', license: 'CC BY-NC-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/' }
-
 /** One spell as DND-TH publishes it (only the fields we use). */
 interface DndThSpell {
   version: string
@@ -39,19 +38,11 @@ const norm = (name: string) => name.toLowerCase().replace(/[’‘`]/g, "'").rep
 const withoutOwner = (name: string) => norm(name).replace(/^[a-z]+'s /, '')
 /** SRD names that the 2024 books give another name (not just a wizard's name in front). */
 const SRD_ALIASES: Record<string, string> = { 'arcane hand': "bigby's hand", 'arcane sword': "mordenkainen's sword" }
+/** Thai names for those two: without the wizard, DND-TH's would be just "มือ" and "ดาบ". */
+const ALIAS_NAMES_TH: Record<string, string> = { 'arcane-hand': 'มือเวทมนตร์', 'arcane-sword': 'ดาบเวทมนตร์' }
 
 const HIGHER = /^(?:\*\*_?|_\*\*)\s*(เมื่อใช้(?:กับ)?สล็อตคาถา(?:ที่)?เลเวลสูงขึ้น|เพิ่ม(?:ระ+ดับ|อำนาจ)แคนทริป)\s*\.?\s*(?:\*\*_|_?\*\*)\s*/
 const MATERIAL = /^\\\*\s*\((.+)\)\s*$/
-
-/** DND-TH's markdown → ours: site links become plain text, escaped "\*" a plain "*", tidy blank lines. */
-export function cleanMarkdown(md: string): string {
-  return md
-    .replace(/\r\n?/g, '\n')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .split('\n').map((l) => l.replace(/[ \t]+$/g, '')).join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
 
 /** Split one description into text, higher-level paragraph and material note. */
 export function splitDescription(md: string): Pick<SpellTh, 'text' | 'higher' | 'material'> {
@@ -77,21 +68,8 @@ export interface SpellsThReport {
   missing: string[]
   /** Likely typos to tell DND-TH about (they asked for reports). */
   typos: string[]
-}
-
-/**
- * Spots slips worth a human look, each with a little text around it: a vowel or tone mark typed twice,
- * a word typed twice in a row, and Latin letters stuck to a Thai word. Thai has no spaces between words, so
- * a repeat only counts when it starts a word and ends before a non-Thai character; "ที่ที่" is normal Thai.
- */
-export function findTypos(text: string): string[] {
-  const hits: { at: number; len: number }[] = []
-  for (const m of text.matchAll(/([ะาิีึืุู่้๊๋็์])\1/g)) hits.push({ at: m.index, len: 2 })
-  for (const m of text.matchAll(/(?<![ก-๛])([ก-ฮเแโใไ][ก-๛]{2,})\1(?![ก-๛])/g)) {
-    if (m[1] !== 'ที่') hits.push({ at: m.index, len: m[0].length })
-  }
-  for (const m of text.matchAll(/[ก-๛][a-z]+\b/g)) hits.push({ at: m.index, len: m[0].length })
-  return hits.map(({ at, len }) => `…${text.slice(Math.max(0, at - 15), at + len + 15).replace(/\s+/g, ' ')}…`)
+  /** Left English because the Thai text names a non-SRD world or person. */
+  nonSrd: string[]
 }
 
 /** Pick DND-TH's 2024 spells that are SRD 5.2.1 spells, matched by English name. */
@@ -103,7 +81,7 @@ export function buildSpellsTh(data: unknown, srd: Pick<SrdSpell, 'id' | 'name'>[
   const exact = new Map(rows.map((r) => [norm(r.name), r]))
   const loose = new Map(rows.map((r) => [withoutOwner(r.name), r]))
   const spells: Record<string, SpellTh> = {}
-  const report: SpellsThReport = { translated2024: rows.length, matched: 0, matchedWithoutOwner: [], missing: [], typos: [] }
+  const report: SpellsThReport = { translated2024: rows.length, matched: 0, matchedWithoutOwner: [], missing: [], typos: [], nonSrd: [] }
   for (const s of srd) {
     let row = exact.get(norm(s.name)) ?? exact.get(SRD_ALIASES[norm(s.name)] ?? '')
     if (!row) {
@@ -111,8 +89,10 @@ export function buildSpellsTh(data: unknown, srd: Pick<SrdSpell, 'id' | 'name'>[
       if (row) report.matchedWithoutOwner.push(`${s.name} = ${row.name}`)
     }
     if (!row || !row.title.trim() || !row.description.trim()) { report.missing.push(s.name); continue }
-    const parts = splitDescription(row.description.slice(0, 20000))
-    spells[s.id] = { name: row.title.trim().slice(0, 100), ...parts }
+    const parts = splitDescription(stripNonSrdNames(row.description.slice(0, 20000)))
+    const bad = nonSrdName(Object.values(parts).join('\n'))
+    if (bad) { report.nonSrd.push(`${s.name} (${bad})`); continue }
+    spells[s.id] = { name: ALIAS_NAMES_TH[s.id] ?? stripNonSrdNames(row.title).trim().slice(0, 100), ...parts }
     report.matched++
     for (const t of findTypos(`${row.title}\n${row.description}`)) report.typos.push(`${s.name}: ${t}`)
   }

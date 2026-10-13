@@ -1,0 +1,38 @@
+// Builds src/data/srd-magic-items-th.json (Thai magic item text) from DND-TH's published magic-items.json
+// (used with DND-TH's permission, 2026-10-13). Only 2024 items that are SRD 5.2.1 items are kept.
+// The source is read as plain data and checked; nothing in it is run.
+//
+//   curl -L -o /tmp/dndth/magic-items.json https://dnd-th.com/data/magic-items.json
+//   node scripts/srd/magic-items-th.ts /tmp/dndth/magic-items.json
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import { buildMagicItemsTh, type MagicItemsThFile } from '../../src/model/magicItemsTh.ts'
+import { DND_TH_CREDIT as CREDIT } from '../../src/model/dndTh.ts'
+
+const source = process.argv[2]
+if (!source) throw new Error('usage: node scripts/srd/magic-items-th.ts <dnd-th magic-items.json>')
+const raw = fs.readFileSync(source)
+if (raw.length > 20_000_000) throw new Error('magic-items.json is over 20 MB: is it the right file?')
+
+const srd = JSON.parse(fs.readFileSync('src/data/srd-magic-items.json', 'utf8'))
+const result = buildMagicItemsTh(JSON.parse(raw.toString('utf8')), srd)
+if ('error' in result) throw new Error(result.error)
+const { items, report } = result
+
+const file: MagicItemsThFile = {
+  source: `Thai translation by ${CREDIT.name} (${CREDIT.url}data/magic-items.json), SRD 5.2.1 magic items only; used with permission`,
+  license: `${CREDIT.license} (${CREDIT.licenseUrl})`,
+  builtAt: new Date().toISOString(),
+  items,
+}
+const out = JSON.stringify(file) + '\n'
+fs.writeFileSync('src/data/srd-magic-items-th.json', out)
+
+const list = (title: string, names: string[]) => names.length && console.log(`\n${title} (${names.length}):\n  ${names.join('\n  ')}`)
+console.log(`Source: ${raw.length} bytes, SHA-256 ${crypto.createHash('sha256').update(raw).digest('hex')}`)
+console.log(`DND-TH 2024 items: ${report.translated2024} · SRD items with Thai: ${report.matched} / ${srd.length}`)
+list('SRD items with no Thai (they stay English)', report.missing)
+list('Left English: the Thai names a non-SRD world or person', report.nonSrd)
+// Items sharing one DND-TH entry (potions, scrolls…) repeat its typos: list each once.
+list('Possible typos to tell DND-TH about', [...new Set(report.typos.map((t) => t.replace(/^[^:]+: /, '')))])
+console.log(`\nWrote src/data/srd-magic-items-th.json (${out.length} characters)`)

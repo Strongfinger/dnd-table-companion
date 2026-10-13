@@ -1,5 +1,9 @@
-// Pieces shared by every card that has DND-TH's Thai text: the ไทย/EN switch and the credit line.
-import { SPELLS_TH_CREDIT as CREDIT } from '../model/spellsTh'
+// Pieces shared by every card that has DND-TH's Thai text: the ไทย/EN switch, the credit
+// line, and WithThai (Thai text or the English one).
+import type { ReactNode } from 'react'
+import { DND_TH_CREDIT as CREDIT } from '../model/dndTh'
+import MiniMarkdown from './MiniMarkdown'
+import { useTextLang } from './useTextLang'
 
 export function LangSwitch({ lang, onChange }: { lang: 'th' | 'en'; onChange: (lang: 'th' | 'en') => void }) {
   return (
@@ -22,5 +26,17 @@ export function ThaiCredit() {
       {' '}(<a className="underline" href={CREDIT.licenseUrl} target="_blank" rel="noreferrer">{CREDIT.license}</a>)
       {' '}ใช้โดยได้รับอนุญาต · ต้นฉบับ SRD 5.2.1 (CC-BY-4.0)
     </p>
+  )
+}
+
+/** Thai markdown with the switch and credit when there is a translation, else just the English `children`. */
+export function WithThai({ th, children }: { th?: string; children: ReactNode }) {
+  const [lang, setLang] = useTextLang()
+  if (!th) return <>{children}</>
+  return (
+    <div className="mt-1 space-y-2 text-sm text-stone-300">
+      <div className="flex justify-end"><LangSwitch lang={lang} onChange={setLang} /></div>
+      {lang === 'th' ? <><MiniMarkdown text={th} /><ThaiCredit /></> : children}
+    </div>
   )
 }

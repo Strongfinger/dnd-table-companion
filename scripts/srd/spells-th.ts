@@ -6,7 +6,8 @@
 //   node scripts/srd/spells-th.ts /tmp/dndth/spells.json
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { buildSpellsTh, SPELLS_TH_CREDIT, type SpellsThFile } from '../../src/model/spellsTh.ts'
+import { buildSpellsTh, type SpellsThFile } from '../../src/model/spellsTh.ts'
+import { DND_TH_CREDIT as SPELLS_TH_CREDIT } from '../../src/model/dndTh.ts'
 
 const source = process.argv[2]
 if (!source) throw new Error('usage: node scripts/srd/spells-th.ts <dnd-th spells.json>')
@@ -33,4 +34,5 @@ console.log(`DND-TH 2024 spells: ${report.translated2024} · SRD spells with Tha
 list('Matched without the wizard\'s name', report.matchedWithoutOwner)
 list('SRD spells with no Thai (they stay English)', report.missing)
 list('Possible typos to tell DND-TH about', report.typos)
+list('Left English: the Thai names a non-SRD world or person', report.nonSrd)
 console.log(`\nWrote src/data/srd-spells-th.json (${out.length} characters)`)
