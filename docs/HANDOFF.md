@@ -10,7 +10,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (545 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (564 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -22,6 +22,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 | Rules engine | `src/rules/` (sheet, play, turns, diceExpr, spellslots, preparedSpells, classes, srd/, checks, creation, challenge) |
 | Characters | `src/model/character.ts`, `characterActions.ts` (one reducer for every play change + `parseCharacterAction`), `actions.ts`, `io.ts` (import/export, also checks network sheets) |
 | Play changes + permissions | `src/db/play.ts` `playAction(id, action, 'player'\|'dm'\|'system', ctx)` — every play change goes through it; rules in `src/model/permissions.ts`; sheet UI uses `src/screens/useCharacterAct.ts` |
+| Feats + Level Up | Rules `src/rules/srd/featSlots.ts` (17 SRD feats, slots per class/level), model `src/model/feats.ts` (`featPicks` with recorded ability increases, older sheets placed into slots), `src/model/levelUp.ts` (draft, HP gain incl. retroactive CON, finish); UI `src/screens/FeatSlots.tsx` (edit page + level up), `LevelUp.tsx` (⬆️ on the sheet) |
 | Upgrade older sheets | `src/model/upgrade.ts` (match names → SRD items, link/add features, wear armor), `src/screens/UpgradePanel.tsx` (banner until `srdLinked`) |
 | Starting equipment | `src/rules/srd/startingEquipment.ts` (class A/B(/C) + background A/B, from the PDF), `src/model/startingGear.ts`; wizard step "อุปกรณ์" in `CreateWizard.tsx` |
 | Feature catalog | Numbers in `src/rules/srd/limitedFeatures.ts` (uses/recharge/activation/dice per SRD feature id), English text in `src/data/srd-features.json` (`scripts/srd/features.mjs`, `src/model/featureTexts.ts`); `src/model/featureCatalog.ts` (add, refresh on edit save, add newly available on level-up, use plan; Action Surge = `actionSurge` play action); UI `src/screens/FeatureCatalog.tsx` (picker + card in the play panel), `ClassFeatures.tsx` (every feature's text on the sheet) |

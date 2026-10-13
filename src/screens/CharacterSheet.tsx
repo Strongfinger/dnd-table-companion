@@ -9,6 +9,7 @@ import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
 import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
+import LevelUp from './LevelUp'
 import UpgradePanel from './UpgradePanel'
 import { characterArmorClass } from '../model/inventory'
 import { useEquipment } from './useSrdData'
@@ -23,6 +24,7 @@ export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
   const c = useLiveQuery(() => getCharacter(id).then((found) => found ?? null), [id])
   const [exporting, setExporting] = useState(false)
+  const [levelingUp, setLevelingUp] = useState(false)
   const equipment = useEquipment()
 
   if (c === undefined) return null
@@ -52,6 +54,7 @@ export default function CharacterSheet({ id }: { id: string }) {
           )}
         </div>
         <div className="flex shrink-0 gap-2">
+          {!c.monster && c.level < 20 && <Button aria-label="Level Up" onClick={() => setLevelingUp(!levelingUp)}>⬆️</Button>}
           <Button onClick={() => setExporting(!exporting)}>📤</Button>
           <Button onClick={() => go(`/c/${c.id}/edit`)}>แก้ไข</Button>
         </div>
@@ -60,6 +63,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       <LiveBadge characterId={c.id} />
       <UpgradePanel c={c} />
       {exporting && <ExportPanel c={c} />}
+      {levelingUp && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
 
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={c.ac} />

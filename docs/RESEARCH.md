@@ -168,7 +168,14 @@ Order: **E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7**. Before Ph
 6. **Faster start:** ✅ DM screens lazy-loaded; main JS 754 → 426 KB.
 7. Weapon Mastery choices stay untracked (owner decision).
 
-## 7. Licensing notes
+## 7. Feats and level-up (owner decisions 2026-10-13)
+- Guided **⬆️ Level Up** button; **ASI choices recorded** (undo-able); **non-SRD feats** may be typed into any slot.
+- Slots (SRD 5.2.1 PDF): background Origin feat (+ Human Versatile), Fighting Style (Fighter 1, Paladin 2, Ranger 2,
+  Champion 7), Ability Score Improvement at 4/8/12/16 (+ Fighter 6/14, Rogue 10), Epic Boon at 19.
+- Not modelled: Paladin Blessed Warrior / Ranger Druidic Warrior instead of a Fighting Style (type it), Warlock
+  "Lessons of the First Ones" Origin feat, Skilled's choices (pick skills on the edit page).
+
+## 8. Licensing notes
 - Keep the existing CC-BY attribution (About page + `src/data/README.md`); add Open5e as the source of the
   Initiative numbers (the numbers are SRD 5.2.1 content, CC-BY-4.0).
 - Never import Open5e documents other than `srd-2024`, and nothing from the PHB 2024 beyond the SRD
