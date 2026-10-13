@@ -87,7 +87,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
 ## Later
-- [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content
+- [x] Content enhancement: SRD weapons/armor, class features and limited-use features, starting gear, magic items, spells, feats, poisons, Lookup tabs: done as the content plan E1–E7, F1, F2 in [RESEARCH.md](RESEARCH.md) (2026-10-13)
 - [ ] ~~Minimap / battle map~~ → use an outside tool (e.g. Owlbear Rodeo) next to the app (decided 2026-10-12)
 - [ ] ~~Claude API DM helper~~ → no AI (decided 2026-10-12)
 - [ ] QR code export/import of a character (optional)

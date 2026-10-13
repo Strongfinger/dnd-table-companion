@@ -41,9 +41,9 @@ function parseRoadmap(md) {
       continue
     }
     if (!cur) continue
-    const item = line.match(/^- \[( |x)\]\s+(.*)/i)
+    const item = line.match(/^(\s*)- \[( |x)\]\s+(.*)/i) // indented = sub-item
     if (item) {
-      last = { done: item[1].toLowerCase() === 'x', text: item[2].trim() }
+      last = { done: item[2].toLowerCase() === 'x', text: item[3].trim(), sub: item[1].length > 0 }
       // Struck-out or "moved to Later" items don't count as open work in this phase
       last.dropped = last.text.startsWith('~~') || /moved to /i.test(last.text)
       cur.items.push(last)
@@ -116,7 +116,7 @@ function sectionCard(s) {
   const items = s.items
     .map(
       (i) =>
-        `<li class="${i.dropped ? 'dropped' : i.done ? 'ok' : 'open'}"><span class="mark" aria-hidden="true">${
+        `<li class="${i.dropped ? 'dropped' : i.done ? 'ok' : 'open'}${i.sub ? ' sub' : ''}"><span class="mark" aria-hidden="true">${
           i.dropped ? '–' : i.done ? '✓' : ''
         }</span><span>${inline(i.text)}</span></li>`,
     )
@@ -179,6 +179,7 @@ summary .bar{flex-basis:100%}
 .count{color:var(--muted);font-size:13px}
 .check{list-style:none;margin:12px 0 0;padding:0}
 .check li{display:flex;gap:8px;padding:4px 0;border-top:1px solid var(--line);font-size:14px}
+.check li.sub{padding-left:26px;font-size:13px}
 .mark{flex:0 0 18px;height:18px;border-radius:5px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;margin-top:2px}
 .ok .mark{background:var(--done-bg);border-color:var(--done);color:var(--done)}
 .ok>span:last-child{color:var(--muted)}
