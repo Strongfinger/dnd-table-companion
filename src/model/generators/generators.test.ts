@@ -52,6 +52,22 @@ describe('SRD magic item data', () => {
     expect(['Weapon +1', 'Armor +1', 'Shield +3'].map(rarity)).toEqual(['Uncommon', 'Rare', 'Very Rare'])
     expect(rarity('Weapon')).toBeUndefined() // "+1/+2/+3" parents are left out
   })
+
+  it('has the SRD 5.2.1 PDF texts, with tables one row per line', () => {
+    const desc = (id: string) => (items as LootItem[]).find((i) => i.id === id)?.desc ?? ''
+    // 5e-bits had a Potion of Healing fragment here, and the Gaseous Form text under Potion of Heroism.
+    expect(desc('potion-of-gaseous-form')).toContain('the Gaseous Form spell for 1 hour (no Concentration required)')
+    expect(desc('potion-of-heroism')).toContain('10 Temporary Hit Points')
+    expect(desc('potions-of-healing-common')).toContain('\nPotion of Healing (supreme) | 10d4 + 20 | Very Rare')
+    expect(desc('amulet-of-the-planes')).toContain('\n71–80 | Random location on an Outer Plane')
+    expect(desc('ammunition-of-slaying').split('\n').filter((row) => /^\d\d–\d\d \| /.test(row))).toHaveLength(14)
+    // Every item starts with its type line, and no words are run together ("whereyou").
+    for (const item of items as LootItem[]) {
+      expect(item.desc).toMatch(/^(Armor|Weapon|Wondrous Item|Potion|Ring|Rod|Scroll|Staff|Wand)\b[^\n]* {2}\n /)
+      expect(item.desc).not.toMatch(/\b(whereyou|yourlast|toa|insideit)\b/)
+      expect(item.desc).not.toMatch(/\b(tak-ing|dis-appears|cancel-ing|suc-cessful|non-magical)\b/) // line-break hyphens
+    }
+  })
 })
 
 describe('loot', () => {

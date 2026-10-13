@@ -59,15 +59,38 @@ description and the higher-level / cantrip-upgrade text.
 SRD 5.2.1 magic items for the loot generator (263 entries): name, rarity, category, attunement and
 description. Loaded only when the loot generator opens.
 
-- **Source:** 5e-bits/5e-database `src/2024/en/5e-SRD-Magic-Items.json` (downloaded 2026-10-12,
-  288,137 bytes, SHA-256 `c97abb7d570656f9329007f17d5bb4fddbe0d65d62abd141f66c1ff3b9c39d2f`).
-- **Made by:** `scripts/srd/magic-items.mjs`. Every entry gets one rarity:
+- **Source:** item list, rarity, category and attunement from 5e-bits/5e-database
+  `src/2024/en/5e-SRD-Magic-Items.json` (downloaded 2026-10-12, again 2026-10-13 unchanged, 288,137 bytes, SHA-256
+  `c97abb7d570656f9329007f17d5bb4fddbe0d65d62abd141f66c1ff3b9c39d2f`). **Descriptions from the official SRD 5.2.1
+  PDF** (`SRD_CC_v5.2.1.pdf` from D&D Beyond, 6,031,375 bytes, SHA-256 `8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87`;
+  "Magic Items A–Z", pp. 209–253), text taken out with
+  `scripts/srd/pdf-text.py` (pypdf).
+- **Made by:** `scripts/srd/magic-items.mjs <items.json> <srd.txt>`. Every entry gets one rarity:
   "+1/+2/+3" parents (Weapon, Armor, Shield, Ammunition, Wand of the War Mage, Horn of Valhalla) are left
-  out because each version has its own entry; Potions of Healing and Spell Scroll are split into their
-  2024 tiers (Healing Common → Supreme Very Rare; scrolls Cantrip/1 Common, 2–3 Uncommon, 4–5 Rare,
-  6–8 Very Rare, 9 Legendary); other "Rarity Varies" items are kept as "Varies" and not rolled as loot.
-- **Note:** the source flattens tables inside descriptions (e.g. the potion and scroll tables), so the
-  split tiers share their parent's description.
+  out because each version has its own entry (with the parent's text); Potions of Healing and Spell Scroll are split
+  into their 2024 tiers (Healing Common → Supreme Very Rare; scrolls Cantrip/1 Common, 2–3 Uncommon, 4–5 Rare,
+  6–8 Very Rare, 9 Legendary); other "Rarity Varies" items are kept as "Varies" and not rolled as loot. The script
+  checks each item's attunement and rarity against the PDF's type line.
+- **Why the PDF texts:** every 5e-bits description was compared with the PDF (2026-10-13) and 186 of 263 differed.
+  Wrong text: Potion of Gaseous Form held a Potion of Healing fragment; Potion of Heroism held the Gaseous Form text;
+  Potion of Giant Strength held the Heroism text and Potion of Flying the Giant Strength table; Potion of Healing's
+  table lost its Supreme row; Staff of Fire and Staff of Frost held pieces of other items and Staff of Power lost a
+  sentence and its table; rows missing
+  from the tables of Amulet of the Planes, Bag of Beans, Deck of Illusions, Mysterious Deck, Efreeti Bottle, Robe of
+  Useful Items, Wand of Wonder, Sphere of Annihilation, Necklace of Prayer Beads, Ring of Resistance and others;
+  130 run-together words ("whereyou", "yourlast"); missing paragraph breaks; every table flattened. Patching that
+  would have meant rewriting most texts, so the script takes the text from the PDF instead.
+- **Text format:** `"<type>  \n <paragraph>  \n <paragraph>…"`. Tables are written out by hand in
+  `scripts/srd/magic-item-tables.mjs`, one row per line with cells split by `" | "` (the PDF's text jumbles table
+  cells); the script checks each table uses the same words as the PDF lines it replaces. Also there: the stat blocks
+  of the Giant Fly (Figurine of Wondrous Power) and the Avatar of Death (Mysterious Deck). Words broken over two
+  lines ("be- comes") are joined when the joined word is a real word or the second part a suffix ("-ing"); compounds
+  ("bright-pink", "50-foot-long") keep the hyphen. Checked: the prose matches the PDF word for
+  word.
+- **Not in the app yet:** 15 SRD 5.2.1 items that 5e-bits doesn't have: Bead of Nourishment, Cloak of Invisibility,
+  Elixir of Health, Energy Bow, Gloves of Thievery, Hat of Many Spells, Potions of Invulnerability, Longevity and
+  Vitality, Quarterstaff of the Acrobat, Rod of Resurrection, Sending Stones, Sentinel Shield, Shield of the Cavalier,
+  Thunderous Greatclub.
 
 ## srd-equipment.json
 
@@ -157,5 +180,5 @@ the longer Dragonlance artifact, not the SRD item).
 - **Made by:** `node scripts/srd/magic-items-th.ts <magic-items.json>`. People's names the SRD leaves out are
   removed from names and texts (`stripNonSrdNames`); an item whose text still names a non-SRD world is skipped.
 - **Typos found:** none.
-- **English data errors seen while comparing:** Potion of Gaseous Form's English `desc` is wrong (it holds a
-  Potion of Healing fragment) and Potion of Healing's table is garbled (5e-bits). The Thai text is right.
+- **English data errors seen while comparing:** Potion of Gaseous Form's English `desc` was wrong and Potion of
+  Healing's table garbled (5e-bits). The Thai text is right; the English texts now come from the PDF (see above).
