@@ -10,6 +10,8 @@ describe('SRD feats and feat slots (2024)', () => {
     for (const f of SRD_FEATS) expect(features.feats.some((x) => x.name.replace('-', ' ') === f.name.replace('-', ' ')), f.name).toBe(true)
     expect(findSrdFeat('two weapon fighting')?.name).toBe('Two-Weapon Fighting')
     expect(findSrdFeat('Ability Score Improvement')).toMatchObject({ repeatable: true, increase: { points: 2, max: 20, split: true } })
+    expect(findSrdFeat('Boon of Irresistible Offense')?.increase?.abilities).toEqual(['str', 'dex'])
+    expect(findSrdFeat('Boon of Spell Recall')?.increase?.abilities).toEqual(['int', 'wis', 'cha'])
   })
 
   it('Ability Score Improvement levels by class', () => {
@@ -33,6 +35,10 @@ describe('SRD feats and feat slots (2024)', () => {
     expect(names('asi', 'Wizard', 4)).toEqual(['Alert', 'Magic Initiate', 'Savage Attacker', 'Skilled', 'Ability Score Improvement', 'Grappler'])
     expect(names('asi', 'Fighter', 4)).toContain('Archery')
     expect(names('epicBoon', 'Rogue', 19)).toContain('Boon of Fate')
+    // An Epic Boon fits an ASI slot only once the character is level 19+; Fighting Style feats only with the feature.
+    expect(names('asi', 'Rogue', 18)).not.toContain('Boon of Fate')
+    expect(names('asi', 'Rogue', 19)).toContain('Boon of Fate')
+    expect(names('asi', 'Barbarian', 8)).not.toContain('Archery')
     expect(names('fightingStyle', 'Ranger', 2)).toEqual(['Archery', 'Defense', 'Great Weapon Fighting', 'Two-Weapon Fighting'])
   })
 })

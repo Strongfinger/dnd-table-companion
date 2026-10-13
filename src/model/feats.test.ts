@@ -60,4 +60,18 @@ describe('feat slots on a character', () => {
     const back = parseCharacterImport(exportCharacter(c))
     expect(back.ok && back.character.featPicks).toEqual(c.featPicks)
   })
+
+  it('adds only what fits under the maximum and takes back exactly that', () => {
+    const c = fighter({ feats: [], scores: { str: 19, dex: 12, con: 14, int: 10, wis: 10, cha: 8 } })
+    const up = setFeatPick(c, 'asi-4', 'Ability Score Improvement', { str: 2 })
+    expect(up.scores.str).toBe(20)
+    expect(up.featPicks?.[0].increase).toEqual({ str: 1 })
+    expect(setFeatPick(up, 'asi-4', null).scores.str).toBe(19)
+  })
+
+  it('warns about prerequisites: Fighting Style feature, Grappler STR/DEX 13', () => {
+    const barb = createCharacter({ name: 'B', className: 'Barbarian', level: 4, scores: { str: 12, dex: 12, con: 14, int: 10, wis: 10, cha: 8 } })
+    expect(featWarnings(setFeatPick(barb, 'asi-4', 'Archery'))).toContain('Archery: ต้องมี Fighting Style ของ Class')
+    expect(featWarnings(setFeatPick(barb, 'asi-4', 'Grappler', { str: 1 }))).toContain('Grappler: ต้องมี STR หรือ DEX 13+')
+  })
 })

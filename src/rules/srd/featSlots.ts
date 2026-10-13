@@ -22,8 +22,8 @@ export interface SrdFeat {
 }
 
 const ANY: readonly Ability[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
-const boon = (name: string, prerequisite?: string): SrdFeat => ({
-  name, category: 'Epic Boon', repeatable: false, increase: { points: 1, abilities: ANY, max: 30, split: false }, ...(prerequisite ? { prerequisite } : {}),
+const boon = (name: string, abilities: readonly Ability[] = ANY, prerequisite?: string): SrdFeat => ({
+  name, category: 'Epic Boon', repeatable: false, increase: { points: 1, abilities, max: 30, split: false }, ...(prerequisite ? { prerequisite } : {}),
 })
 
 export const SRD_FEATS: SrdFeat[] = [
@@ -40,8 +40,8 @@ export const SRD_FEATS: SrdFeat[] = [
   boon('Boon of Combat Prowess'),
   boon('Boon of Dimensional Travel'),
   boon('Boon of Fate'),
-  boon('Boon of Irresistible Offense'),
-  boon('Boon of Spell Recall', 'Spellcasting feature'),
+  boon('Boon of Irresistible Offense', ['str', 'dex']),
+  boon('Boon of Spell Recall', ['int', 'wis', 'cha'], 'Spellcasting feature'),
   boon('Boon of the Night Spirit'),
   boon('Boon of Truesight'),
 ]
@@ -83,6 +83,11 @@ export function featSlots(c: { className: ClassName; subclass: string; level: nu
   for (const l of ASI_LEVELS[c.className]) if (c.level >= l) slots.push({ id: `asi-${l}`, kind: 'asi', level: l, label: `Ability Score Improvement (Level ${l})` })
   if (c.level >= 19) slots.push({ id: 'epic-19', kind: 'epicBoon', level: 19, label: 'Epic Boon (Level 19)' })
   return slots.sort((a, b) => a.level - b.level)
+}
+
+/** Does this class have the Fighting Style feature (needed for Fighting Style feats)? */
+export function hasFightingStyleFeature(className: ClassName): boolean {
+  return FIGHTING_STYLE_LEVEL[className] !== undefined
 }
 
 /** The slots that open exactly at this level (for the Level Up screen). */
