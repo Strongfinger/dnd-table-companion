@@ -72,6 +72,11 @@ export interface Character extends SheetInput {
    * player): shown as "Monster · CR x" instead of a class; PB and Hit Dice come from here.
    */
   monster?: { cr: number; pb: number; hitDie: number; source: string }
+  /**
+   * Set by the DM's device once the character has played in a live room: from then on it levels up only when
+   * the DM allows it (`granted` level-ups left, 0 or 1). See model/levelLock.ts.
+   */
+  levelLock?: { granted: number }
 
   createdAt: number
   updatedAt: number

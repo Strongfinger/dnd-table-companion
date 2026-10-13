@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { useLobby } from '../app/useLobby'
+import { useRunsCampaign } from '../app/useRunsCampaign'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
@@ -38,6 +39,9 @@ export default function CharacterEdit({ id }: { id: string }) {
   // DM override: unlocks fields the rules would normally fix (saves, subclass level, Expertise).
   const [freeEdit, setFreeEdit] = useState(false)
   const equipment = useEquipment()
+  // Played in a room: the level changes only through ⬆️ with the DM's permission (model/levelLock.ts).
+  const runsCampaign = useRunsCampaign(draft?.campaignId)
+  const levelLocked = !!draft?.levelLock && !runsCampaign
   const campaigns = useLiveQuery(listCampaigns) ?? []
   const lobby = useLobby()
 
@@ -170,7 +174,11 @@ export default function CharacterEdit({ id }: { id: string }) {
         <div className="grid grid-cols-2 gap-3">
           <Label text="ชื่อตัวละคร *" className="col-span-2"><TextInput value={c.name} onChange={(v) => set('name', v)} /></Label>
           <Label text="Class"><Select value={c.className} options={CLASS_OPTIONS} onChange={changeClass} /></Label>
-          <Label text="Level"><NumberInput value={c.level} min={1} max={20} onChange={changeLevel} /></Label>
+          <Label text={levelLocked ? 'Level 🔒' : 'Level'}>
+            {levelLocked
+              ? <p className="py-2 text-sm text-stone-300">{c.level} <span className="text-xs text-stone-500">· เลเวลอัปเมื่อ DM อนุญาต (ปุ่ม ⬆️)</span></p>
+              : <NumberInput value={c.level} min={1} max={20} onChange={changeLevel} />}
+          </Label>
           <Label text={subclassLocked ? `Subclass (Level ${SUBCLASS_LEVEL}+)` : 'Subclass'} className="col-span-2">
             <ChoiceField key={c.className} value={c.subclass} options={[CLASS_INFO[c.className].subclass]} disabled={subclassLocked} onChange={(v) => set('subclass', v)} />
           </Label>

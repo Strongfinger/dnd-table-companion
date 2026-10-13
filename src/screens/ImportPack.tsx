@@ -4,12 +4,13 @@ import { go } from '../app/router'
 import { applyPack, planPackImport, type PackPlan } from '../db/campaignPack'
 import { MAX_PACK_BYTES, parseCampaignPack, type CampaignPack } from '../model/campaignPack'
 import { KIND_LABEL, NOTE_KINDS } from '../model/note'
-import { Button, Section } from '../ui/kit'
+import { Button, Checkbox, Section } from '../ui/kit'
 
 export default function ImportPack() {
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<{ pack: CampaignPack; warnings: string[]; plan: PackPlan } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [resetStarted, setResetStarted] = useState(false)
 
   async function pickFile(file: File | undefined) {
     setPreview(null)
@@ -24,13 +25,13 @@ export default function ImportPack() {
   async function save(mode: 'replace' | 'addOnly') {
     if (!preview) return
     setBusy(true)
-    await applyPack(preview.pack, mode)
+    await applyPack(preview.pack, mode, mode === 'replace' && resetStarted)
     go('/dm')
   }
 
   const p = preview?.pack
   const plan = preview?.plan
-  const exists = plan && plan.existingNotes + plan.existingFights > 0
+  const exists = plan && plan.existingNotes + plan.existingFights + plan.startedFights > 0
 
   return (
     <div className="space-y-4">
@@ -73,10 +74,22 @@ export default function ImportPack() {
               <>
                 <p className="text-sm">
                   มีอยู่แล้ว {plan.existingNotes} หน้า · {plan.existingFights} การต่อสู้ — ใหม่ {plan.newNotes} หน้า · {plan.newFights} การต่อสู้
-                  {plan.startedFights > 0 && ` · การต่อสู้ที่เริ่มแล้ว ${plan.startedFights} อันจะไม่ถูกแทนที่`}
+                  {plan.startedFights > 0 && ` · การต่อสู้ที่เริ่มหรือจบแล้ว ${plan.startedFights} อัน`}
                 </p>
                 <Button variant="primary" className="w-full" onClick={() => !busy && save('addOnly')}>➕ เพิ่มเฉพาะที่ยังไม่มี (เก็บที่แก้ไว้)</Button>
-                <Button className="w-full" onClick={() => !busy && save('replace')}>🔄 แทนที่ด้วยไฟล์นี้ (ติ๊กในแผนเริ่มใหม่)</Button>
+                <Button className="w-full" onClick={() => !busy && save('replace')}>
+                  🔄 แทนที่ด้วยไฟล์นี้ (ติ๊กในแผนเริ่มใหม่{resetStarted && plan.startedFights > 0 ? ', รีเซ็ตการต่อสู้ที่เลือก' : ''})
+                </Button>
+                {plan.startedFights > 0 && (
+                  <div className="rounded-lg bg-stone-900 p-3 text-sm">
+                    <Checkbox checked={resetStarted} onChange={setResetStarted}
+                      label={`ตอนแทนที่ ให้รีเซ็ตการต่อสู้ที่เริ่มหรือจบแล้วด้วย (${plan.startedFights} อัน)`} />
+                    <p className="mt-1 text-xs text-stone-400">
+                      {plan.startedFightNames.join(' · ')} — กลับเป็นแบบที่เตรียมไว้ในไฟล์: Initiative, HP มอนสเตอร์ และบันทึกการต่อสู้เริ่มใหม่
+                      (สภาวะที่ติดอยู่บนใบตัวละครผู้เล่นไม่ถูกล้าง) · ถ้าไม่ติ๊ก การต่อสู้เหล่านี้จะไม่ถูกแทนที่
+                    </p>
+                  </div>
+                )}
               </>
             ) : (
               <Button variant="primary" className="w-full" onClick={() => !busy && save('replace')}>📥 นำเข้า</Button>

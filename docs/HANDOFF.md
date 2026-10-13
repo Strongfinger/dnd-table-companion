@@ -15,7 +15,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (593 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (600 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -69,6 +69,9 @@ sender taken from the connection (never the body), size limit; the DM device rat
 - **Campaign:** players adopt the DM's campaign id; the DM can switch the room's campaign any time
   (`setCampaign` → `campaign` message). Rename/delete only on the device that created it (`canManageCampaign`).
 - **Party view (players):** `party` message = read-only cards of every played character (`src/sync/party.ts`).
+- **Level-up permission (2026-10-13):** `levelLock` on the sheet (DM-owned; `src/model/levelLock.ts`). The DM's device
+  locks a player's character when it arrives, refuses sheets above the allowed level (edit and plain `hello`), and the
+  room screen has "⬆️ ให้เลเวลอัป" per player. Locked everywhere once played; the campaign's own device can always level.
 - **Handed-over characters:** the tracker's "🧑 เป็นตัวละคร" turns a monster/NPC into a sheet
   (`src/model/monsterCharacter.ts`, `monster` field: PB/Hit Die from the stat block). The DM can give it to a
   player (🎮 on its row): `session.grants` + `control` message; `mayChange`/`playedCharacterIds` include grants.

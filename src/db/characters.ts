@@ -58,12 +58,15 @@ export async function saveReceivedCharacter(
   incoming: Character,
   accept: (stored: Character | undefined) => boolean,
   campaignIdIfNew: string | null = null,
+  /** Last check on what gets saved (e.g. the DM's level lock); null refuses it. */
+  adjust: (incoming: Character, stored: Character | undefined) => Character | null = (x) => x,
 ): Promise<{ saved: boolean; stored: Character }> {
   return db.transaction('rw', db.characters, async () => {
     const raw = await db.characters.get(incoming.id)
     const stored = raw && withDefaults(raw)
-    if (!accept(stored)) return { saved: false, stored: stored! }
-    const c = { ...incoming, campaignId: stored ? stored.campaignId : campaignIdIfNew }
+    const adjusted = accept(stored) ? adjust(incoming, stored) : null
+    if (!adjusted) return { saved: false, stored: stored! }
+    const c = { ...adjusted, campaignId: stored ? stored.campaignId : campaignIdIfNew }
     await db.characters.put(c)
     return { saved: true, stored: c }
   })

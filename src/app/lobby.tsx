@@ -20,6 +20,7 @@ import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs
 import { logShortRestStart, playAction, restParty } from '../db/play'
 import { advanceTurn } from '../db/turns'
 import type { Character } from '../model/character'
+import { checkIncomingLevel, lockLevel } from '../model/levelLock'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
@@ -380,16 +381,22 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       const c = parseSheetBody(e.body)
       if (!c || !(await allowed(e.from, c.id))) return
       if (markApplied(e.id, s)) {
-        if (await getCharacter(c.id)) await updateCharacter(c.id, (dm) => ({ character: mergeEdit(dm, c), text: '' }))
-        else await saveReceivedCharacter(c, () => true, s.campaignId)
+        const dm = await getCharacter(c.id)
+        // Above the level the DM allowed (see model/levelLock.ts): refused, the phone gets our copy back.
+        const checked = checkIncomingLevel(dm, c)
+        if (!checked) sendState(dm!)
+        else if (dm) await updateCharacter(c.id, (latest) => ({ character: mergeEdit(latest, checkIncomingLevel(latest, c) ?? latest), text: '' }))
+        else await saveReceivedCharacter(checked, () => true, s.campaignId)
       }
       send('ack', { ids: [e.id] })
     } else if (s.role === 'dm' && e.kind === 'hello') {
       const c = parseSheetBody(e.body)
       if (!c || !(await allowed(e.from, c.id))) return
-      const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId)
-      // Taken: the watcher below sends it to the room. Kept ours: send it so the player catches up.
-      if (!r.saved) sendState(r.stored)
+      const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId, (x, stored) => checkIncomingLevel(stored, x))
+      // Taken: the watcher below sends it to the room. Kept ours: send it so the player catches up,
+      // with the level lock on it if it had none yet (a character from before the lock, now played in a room).
+      if (!r.saved && !r.stored.levelLock) await updateCharacter(c.id, (dm) => ({ character: lockLevel(dm), text: '' }))
+      else if (!r.saved) sendState(r.stored)
     } else if (s.role === 'dm' && e.kind === 'action') {
       const a = parseActionBody(e.body)
       if (!a || !(await allowed(e.from, a.characterId))) return

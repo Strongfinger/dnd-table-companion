@@ -146,3 +146,14 @@ describe('cleans up bad optional fields', () => {
     expect(r.warnings).toEqual([])
   })
 })
+
+describe('level lock in files and network sheets', () => {
+  it('keeps a lock; a damaged lock stays a lock without a grant', () => {
+    const c = { ...createCharacter(), name: 'Nyx', levelLock: { granted: 1 } }
+    expect(importOk(exportCharacter(c)).character.levelLock).toEqual({ granted: 1 })
+    const damaged = JSON.parse(exportCharacter(c))
+    damaged.character.levelLock = { granted: 9 }
+    expect(importOk(JSON.stringify(damaged)).character.levelLock).toEqual({ granted: 0 })
+    expect(importOk(exportCharacter({ ...c, levelLock: undefined })).character.levelLock).toBeUndefined()
+  })
+})

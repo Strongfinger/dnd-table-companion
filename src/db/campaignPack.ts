@@ -12,8 +12,9 @@ export interface PackPlan {
   existingNotes: number
   newFights: number
   existingFights: number
-  /** Fights already started or finished: never replaced. */
+  /** Fights already started or finished: replaced only when asked (`resetStarted`). */
   startedFights: number
+  startedFightNames: string[]
 }
 
 export async function planPackImport(pack: CampaignPack): Promise<PackPlan> {
@@ -26,17 +27,19 @@ export async function planPackImport(pack: CampaignPack): Promise<PackPlan> {
     newFights: fights.filter((f) => !f).length,
     existingFights: fights.filter((f) => f && f.status === 'setup').length,
     startedFights: fights.filter((f) => f && f.status !== 'setup').length,
+    startedFightNames: fights.flatMap((f) => (f && f.status !== 'setup' ? [f.name] : [])),
   }
 }
 
 /**
  * `replace`: pages and not-yet-started fights that already exist are overwritten with the file's version
- * (ticks in session plans start over). `addOnly`: only records not on this device yet are added.
- * The pack's campaign becomes the selected campaign.
+ * (ticks in session plans start over); with `resetStarted`, fights already started or finished too (back to
+ * the prepared fight, their fight log cleared, as when a fight is deleted). `addOnly`: only records not on
+ * this device yet are added. The pack's campaign becomes the selected campaign.
  */
-export async function applyPack(pack: CampaignPack, mode: 'replace' | 'addOnly'): Promise<void> {
+export async function applyPack(pack: CampaignPack, mode: 'replace' | 'addOnly', resetStarted = false): Promise<void> {
   const me = deviceId()
-  await db.transaction('rw', [db.campaigns, db.notes, db.encounters], async () => {
+  await db.transaction('rw', [db.campaigns, db.notes, db.encounters, db.log], async () => {
     if (!(await db.campaigns.get(pack.campaign.id))) {
       await db.campaigns.put({ ...createCampaign(pack.campaign.name, me), id: pack.campaign.id })
     }
@@ -48,7 +51,9 @@ export async function applyPack(pack: CampaignPack, mode: 'replace' | 'addOnly')
     }
     for (const e of pack.encounters) {
       const old = await db.encounters.get(e.id)
-      if (old && (mode === 'addOnly' || old.status !== 'setup')) continue
+      if (old && (mode === 'addOnly' || (old.status !== 'setup' && !resetStarted))) continue
+      // The fight's own log goes (PC sheet logs keep their copies), so the fresh fight starts empty.
+      if (old && old.status !== 'setup') await db.log.where('encounterId').equals(e.id).filter((l) => l.characterId === '').delete()
       await db.encounters.put(stamp({ ...e, rev: old?.rev ?? 0 }, me))
     }
   })

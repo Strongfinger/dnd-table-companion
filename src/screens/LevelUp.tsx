@@ -8,6 +8,7 @@ import type { Character, FeatPick } from '../model/character'
 import { setFeatPick } from '../model/feats'
 import { applyAutoAC } from '../model/inventory'
 import { finishLevelUp, hpGain, levelUpDraft, levelUpInfo } from '../model/levelUp'
+import { spendGrant } from '../model/levelLock'
 import { CLASS_INFO } from '../rules'
 import { Button, DiceRoll, Section, TextInput } from '../ui/kit'
 import { FeatSlotsEditor } from './FeatSlots'
@@ -38,7 +39,8 @@ export default function LevelUp({ c, onClose }: { c: Character; onClose: () => v
     if (!die) return
     let text = ''
     await updateCharacter(c.id, (latest) => {
-      let next = finishLevelUp(latest, draftFor(latest, choices), die.value)
+      // The level gained uses the DM's permission (model/levelLock.ts).
+      let next = spendGrant(latest, finishLevelUp(latest, draftFor(latest, choices), die.value))
       if (equipment) next = applyAutoAC(next, equipment)
       text = `⬆️ ${latest.name} ขึ้น Level ${next.level} (HP +${next.hp.max - latest.hp.max}, ${die.how})`
       return { character: next, text }

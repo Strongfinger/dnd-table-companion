@@ -142,6 +142,8 @@ export function parseCharacterImport(text: string): ImportResult {
     featuresText: field('featuresText', str(20000), '', 'Features & Traits'),
     notes: field('notes', str(20000), '', 'โน้ต'),
     ...(raw.monster === undefined ? {} : { monster: field('monster', monsterMeta, undefined, 'Monster') }),
+    // A lock stays a lock: a damaged one keeps no grant.
+    ...(raw.levelLock === undefined ? {} : { levelLock: { granted: isObject(raw.levelLock) && isInt(raw.levelLock.granted, 0, 1) ? raw.levelLock.granted as number : 0 } }),
     createdAt: field('createdAt', int(0, 8.64e15), d.createdAt, 'วันที่สร้าง'),
     updatedAt: d.updatedAt,
   }

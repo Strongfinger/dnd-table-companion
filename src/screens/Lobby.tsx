@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react'
 import { renderSVG } from 'uqr'
 import { useLobby } from '../app/useLobby'
 import { listCampaigns } from '../db/campaigns'
-import { listCharacters } from '../db/characters'
+import { listCharacters, updateCharacter } from '../db/characters'
+import { grantLevelUp, revokeLevelUp } from '../model/levelLock'
 import { listEncounters } from '../db/encounters'
 import { restParty } from '../db/play'
 import { liveFight } from '../model/playerView'
@@ -218,6 +219,22 @@ function InRoom() {
                         : `เล่นเป็น ${m.characterName}`}
                   </span>
                 )}
+                {/* DM: allow this player's character one level up (model/levelLock.ts). */}
+                {s.role === 'dm' && m.role === 'player' && (() => {
+                  const pc = characters.find((c) => c.id === m.characterId)
+                  if (!pc || pc.monster || pc.level >= 20) return null
+                  return pc.levelLock?.granted ? (
+                    <span className="block text-xs text-amber-300">
+                      ⬆️ อนุญาตเลเวลอัปแล้ว (Level {pc.level} → {pc.level + 1})
+                      <button type="button" className="ml-2 underline" onClick={() => void updateCharacter(pc.id, (c) => ({ character: revokeLevelUp(c), text: '' }))}>ยกเลิก</button>
+                    </span>
+                  ) : (
+                    <button type="button" className="mt-1 block rounded border border-amber-700 px-2 py-0.5 text-xs text-amber-300"
+                      onClick={() => void updateCharacter(pc.id, (c) => ({ character: grantLevelUp(c), text: `⬆️ DM อนุญาตให้ ${c.name} ขึ้น Level ${c.level + 1}` }))}>
+                      ⬆️ ให้เลเวลอัป
+                    </button>
+                  )
+                })()}
                 {/* DM: extra characters handed to this player (set on the character's row in a fight). */}
                 {s.role === 'dm' && s.grants.filter((g) => g.deviceId === m.deviceId).map((g) => (
                   <span key={g.characterId} className="block text-xs text-sky-300">

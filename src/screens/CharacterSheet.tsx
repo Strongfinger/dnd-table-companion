@@ -2,6 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { go } from '../app/router'
 import { useLobby } from '../app/useLobby'
+import { useRunsCampaign } from '../app/useRunsCampaign'
+import { mayLevelUp } from '../model/levelLock'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
@@ -26,6 +28,7 @@ export default function CharacterSheet({ id }: { id: string }) {
   const [exporting, setExporting] = useState(false)
   const [levelingUp, setLevelingUp] = useState(false)
   const equipment = useEquipment()
+  const runsCampaign = useRunsCampaign(c?.campaignId)
 
   if (c === undefined) return null
   if (c === null) return <NotFound />
@@ -54,7 +57,10 @@ export default function CharacterSheet({ id }: { id: string }) {
           )}
         </div>
         <div className="flex shrink-0 gap-2">
-          {!c.monster && c.level < 20 && <Button aria-label="Level Up" onClick={() => setLevelingUp(!levelingUp)}>⬆️</Button>}
+          {/* Played in a room: only with the DM's permission (model/levelLock.ts); hidden until then. */}
+          {!c.monster && c.level < 20 && mayLevelUp(c, runsCampaign) && (
+            <Button aria-label="Level Up" className={c.levelLock?.granted ? 'ring-2 ring-amber-400' : ''} onClick={() => setLevelingUp(!levelingUp)}>⬆️</Button>
+          )}
           <Button onClick={() => setExporting(!exporting)}>📤</Button>
           <Button onClick={() => go(`/c/${c.id}/edit`)}>แก้ไข</Button>
         </div>
@@ -63,7 +69,8 @@ export default function CharacterSheet({ id }: { id: string }) {
       <LiveBadge characterId={c.id} />
       <UpgradePanel c={c} />
       {exporting && <ExportPanel c={c} />}
-      {levelingUp && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
+      {!!c.levelLock?.granted && !levelingUp && <p className="rounded-lg bg-amber-950 p-2 text-sm text-amber-200">⬆️ DM อนุญาตให้เลเวลอัปแล้ว · กดปุ่ม ⬆️ ด้านบน</p>}
+      {levelingUp && mayLevelUp(c, runsCampaign) && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
 
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={c.ac} />

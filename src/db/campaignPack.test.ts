@@ -4,6 +4,7 @@ import { PACK_FORMAT, parseCampaignPack } from '../model/campaignPack'
 import { applyPack, planPackImport } from './campaignPack'
 import { db } from './db'
 import { getSetting } from './device'
+import { addLog } from './log'
 
 const file = JSON.stringify({
   format: PACK_FORMAT,
@@ -18,7 +19,7 @@ const parsed = () => {
 }
 
 beforeEach(async () => {
-  await Promise.all([db.campaigns.clear(), db.notes.clear(), db.encounters.clear()])
+  await Promise.all([db.campaigns.clear(), db.notes.clear(), db.encounters.clear(), db.log.clear()])
 })
 
 describe('applyPack', () => {
@@ -50,5 +51,19 @@ describe('applyPack', () => {
     await applyPack(parsed(), 'replace')
     expect((await db.encounters.get('doip-f'))?.round).toBe(3)
     expect((await planPackImport(parsed())).startedFights).toBe(1)
+  })
+
+  it('resets started or finished fights when asked: back to the prepared fight, its fight log cleared', async () => {
+    await applyPack(parsed(), 'replace')
+    await db.encounters.update('doip-f', { status: 'ended', round: 4 })
+    await addLog('', 'Orc ล้ม', { encounterId: 'doip-f', round: 4 })
+    await addLog('pc-1', 'Nyx โดน 5', { encounterId: 'doip-f', round: 4 }) // the PC sheet's own copy stays
+    expect((await planPackImport(parsed())).startedFightNames).toEqual(['Orcs'])
+    await applyPack(parsed(), 'addOnly', true) // addOnly never resets
+    expect((await db.encounters.get('doip-f'))?.status).toBe('ended')
+    await applyPack(parsed(), 'replace', true)
+    const fight = await db.encounters.get('doip-f')
+    expect([fight?.status, fight?.round]).toEqual(['setup', 0])
+    expect((await db.log.where('encounterId').equals('doip-f').toArray()).map((l) => l.characterId)).toEqual(['pc-1'])
   })
 })

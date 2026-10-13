@@ -3,6 +3,21 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 6 — owner's test session, 2026-10-13
+| Found | Fix |
+|---|---|
+| Players could level up on their own (⬆️ or the Level field) | **Level-up permission** (`src/model/levelLock.ts`, owner's choices): once played in a room a character is locked on every device (even offline); the DM presses "⬆️ ให้เลเวลอัป" on that player's card in the room screen (one level, can be cancelled); ⬆️ is hidden until then and the edit page's Level is locked; the DM's device refuses a sheet above the allowed level. The device that runs the campaign can always level. |
+| Re-importing the campaign pack with "replace" didn't reset a fight already played | New checkbox on the import screen: reset started/finished fights too (back to the prepared fight, fight log cleared; PC sheet conditions stay). Before this: delete the fight in the tracker, then import with "add only". |
+
+**Open (low, owner: after the Firebase usage reset):**
+- **A removed (kicked) player still shows in the other players' room list.** Likely cause: the removed list lives only in
+  the DM's session (`session.kicked`); players filter with their own empty list (`visibleMembers` in `src/sync/lobby.ts`),
+  and the removed player's member record stays in Firebase. Fix idea: the DM sends the removed list to the room (or
+  players record the `kick` messages they see), or the DM deletes the member record.
+- **Not verified live:** the level-up permission over Firebase (the room refused to open, `PERMISSION_DENIED`, likely
+  the free plan's usage); fake player for it: `node scripts/lobby-test/levelup-player.cjs ROOMCODE`. Checked locally:
+  locked → ⬆️ hidden + Level 🔒; granted → ⬆️ + notice; level up → Level 3, grant used.
+
 ## Pass 5 — 2026-10-13 (new content features)
 **Tested** (dev, phone 375 px): older characters on new code (Nyx, Boom), inventory add/wear/hold → AC
 (Leather 11 + DEX = 14) and attack card (Dagger +5, 1d4+3, off-hand, Nick), attack roll via roller, the upgrade
