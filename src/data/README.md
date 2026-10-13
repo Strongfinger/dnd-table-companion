@@ -210,3 +210,20 @@ SRD calls "D20 Tests" "D20 Test").
   checks every link exists. Spell Save DC, Spell Slots and Massive Damage have no glossary entry.
 - **Typos found:** Dash "ถ้้า"; High Jump "ฟุุต"; Malnutrition "อาาร" (อาหาร) and "ปอนด์s" (×3); Temporary Hit
   Points "คุุณ".
+
+## srd-equipment-th.json
+
+Thai names (and text where the SRD has text) for **180 of the 196** SRD 5.2.1 equipment items, by the ids in
+`srd-equipment.json`, plus Thai text for all **10 weapon properties** and **8 masteries** (by English name).
+Translation by **DND-TH**, **CC BY-NC-SA 4.0**, used with permission (2026-10-13). Stay English: the 14 poisons
+and the 2 Spell Scroll lines (not in DND-TH's equipment file).
+
+- **Source:** https://dnd-th.com/data/equipments.json (downloaded 2026-10-13, 340,972 bytes,
+  SHA-256 `9e81287402e75cf090ae12849eb7c642936c8f928f86dc827288900574500538`; 2024 equipment, no version field).
+  Matched by name in any word order ("Crossbow, Hand" = Hand Crossbow), also without "Armor" or spaces
+  ("Leather" = Leather Armor, "Great Club" = Greatclub).
+- **Only SRD text:** DND-TH translates the 2024 Player's Handbook, whose armor and weapons have flavour text the
+  SRD doesn't, so an item gets a Thai description only when our English item has text. Tools get their Thai
+  "Utilize" line.
+- **Made by:** `node scripts/srd/equipment-th.ts <equipments.json>` (`src/model/equipmentTh.ts`).
+- **Typos found:** none.

@@ -6,7 +6,7 @@ import { CLASSES } from '../rules'
 import type { LootItem } from '../model/generators'
 import { costLine, KIND_FILTERS, searchItems } from '../model/equipment'
 import { ItemDetails } from './Inventory'
-import { useEquipment, useFeaturesTh, useFeatureTexts, useMagicItems, useMagicItemsTh } from './useSrdData'
+import { useEquipment, useEquipmentTh, useFeaturesTh, useFeatureTexts, useMagicItems, useMagicItemsTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import FeatureText from './FeatureText'
 import { TextInput } from '../ui/kit'
@@ -15,18 +15,19 @@ const chip = (on: boolean) => `rounded-full border px-3 py-1 text-sm ${on ? 'bor
 
 export function EquipmentSearch() {
   const data = useEquipment()
+  const thai = useEquipmentTh()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState(0)
   const [open, setOpen] = useState<string | null>(null)
   if (!data) return <p className="text-stone-400">กำลังโหลด…</p>
   const rules = filter === KIND_FILTERS.length
-  const found = rules ? [] : searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds)
+  const found = rules ? [] : searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai.items)
   const q = query.trim().toLowerCase()
-  const texts = [...data.masteries.map((m) => ({ ...m, tag: 'Mastery' })), ...data.properties.map((p) => ({ ...p, tag: 'Property' }))]
-    .filter((t) => !q || t.name.toLowerCase().includes(q))
+  const texts = [...data.masteries.map((m) => ({ ...m, tag: 'Mastery', th: thai.masteries[m.name] })), ...data.properties.map((p) => ({ ...p, tag: 'Property', th: thai.properties[p.name] }))]
+    .filter((t) => !q || t.name.toLowerCase().includes(q) || !!t.th?.name.includes(q))
   return (
     <div className="space-y-3">
-      <TextInput value={query} placeholder="ค้นหา เช่น longsword, chain, rope, vex" onChange={setQuery} />
+      <TextInput value={query} placeholder="ค้นหา เช่น longsword, chain, rope, vex, ดาบ" onChange={setQuery} />
       <div className="flex flex-wrap gap-1.5">
         {KIND_FILTERS.map((f, i) => <button key={f.label} type="button" className={chip(i === filter)} onClick={() => setFilter(i)}>{f.label}</button>)}
         <button type="button" className={chip(rules)} onClick={() => setFilter(KIND_FILTERS.length)}>Mastery & Properties</button>
@@ -36,10 +37,10 @@ export function EquipmentSearch() {
           {found.map((i) => (
             <li key={i.id} className="rounded-lg bg-stone-800 px-3 py-2">
               <button type="button" className="flex w-full items-baseline justify-between gap-2 text-left" onClick={() => setOpen(open === i.id ? null : i.id)} aria-expanded={open === i.id}>
-                <span className="font-bold">{i.name}</span>
+                <span><b>{i.name}</b>{thai.items[i.id] && <span className="text-sm text-stone-400"> · {thai.items[i.id].name}</span>}</span>
                 <span className="shrink-0 text-xs text-stone-400">{i.weapon ? `${i.weapon.dice} ${i.weapon.damageType}` : i.armor ? `AC ${i.armor.category === 'Shield' ? '+' : ''}${i.armor.base}` : costLine(i.cost)}</span>
               </button>
-              {open === i.id && <ItemDetails srd={i} />}
+              {open === i.id && <ItemDetails srd={i} rowHasThaiName />}
             </li>
           ))}
         </ul>
@@ -48,13 +49,13 @@ export function EquipmentSearch() {
         <ul className="space-y-2">
           {texts.map((t) => (
             <li key={t.tag + t.name} className="rounded-lg bg-stone-800 p-3 text-sm">
-              <b className="text-amber-200">{t.name}</b> <span className="text-xs text-stone-500">{t.tag === 'Mastery' ? 'Weapon Mastery' : 'Weapon Property'}</span>
-              <p className="mt-1 text-stone-300">{t.text}</p>
+              <b className="text-amber-200">{t.name}</b>{t.th && <span className="text-stone-400"> · {t.th.name}</span>} <span className="text-xs text-stone-500">{t.tag === 'Mastery' ? 'Weapon Mastery' : 'Weapon Property'}</span>
+              <WithThai th={t.th?.text}><p className="mt-1 text-stone-300">{t.text}</p></WithThai>
             </li>
           ))}
         </ul>
       )}
-      <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0) · ราคาและน้ำหนักตามตารางใน SRD</p>
+      <p className="text-xs text-stone-500">SRD 5.2.1 (CC-BY-4.0) · ราคาและน้ำหนักตามตารางใน SRD · ชื่อและคำอธิบายภาษาไทยจาก DND-TH</p>
     </div>
   )
 }

@@ -15,7 +15,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (590 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (593 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -133,13 +133,15 @@ and the 7 untranslated spells in `src/data/README.md`.
    generator. `miniMarkdown` now reads `*italic*` and `***bold italic***`. **Rules Glossary** (all 154 SRD
    entries, from the private `docs/DND-TH/free-rules/rules-glossary.md`, owner confirmed DND-TH's OK for the app):
    `glossaryTh.ts`, `src/ui/useGlossaryTh.ts`; 📖 rules tab and the phone help sheet ("📖 อ่านกติกาเต็ม").
-   Other `docs/DND-TH/` text (adventures, non-SRD) stays out of the app. Next: monsters, then equipment.
+   Other `docs/DND-TH/` text (adventures, non-SRD) stays out of the app. **Equipment** (`equipmentTh.ts`,
+   `useEquipmentTh`): Thai names everywhere items are listed or searched, Thai text only where the SRD English has
+   text, tool uses, property/mastery text. **Next: monsters** (owner planned it for next week, 2026-10-13).
    - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
      `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
    - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
      (`2024-classes.zip`, `2024-races.zip`; not in git).
    - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
-     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → ~~glossary~~ → monsters → equipment.
+     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → ~~glossary~~ → ~~equipment~~ → monsters (next week).
    - DND-TH asked to hear about typos; the build scripts list them (spells: 5 sent to the owner to forward;
      feats/classes: Grappler "น้้น" → "นั้น", Barbarian Weapon Mastery "เปลีี่ยน" → "เปลี่ยน"; glossary: 7, listed
      in `src/data/README.md`).

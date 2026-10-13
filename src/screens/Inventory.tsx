@@ -9,7 +9,8 @@ import type { Character, InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
 import { addSrdItem, isEquippable, toggleEquipped } from '../model/inventory'
 import { Button, Section, TextInput } from '../ui/kit'
-import { useEquipment } from './useSrdData'
+import { useEquipment, useEquipmentTh } from './useSrdData'
+import { WithThai } from '../ui/ThaiText'
 
 
 export default function Inventory({ c }: { c: Character }) {
@@ -70,10 +71,19 @@ function ItemRow({ item, srd, onToggle }: { item: InventoryItem; srd: SrdItem | 
   )
 }
 
-export function ItemDetails({ srd }: { srd: SrdItem }) {
+/**
+ * An SRD item's stats and text; the text (and a tool's uses) in Thai with the ไทย/EN switch when DND-TH has it.
+ * The Thai name shows here unless the list row above already has it (`rowHasThaiName`).
+ */
+export function ItemDetails({ srd, rowHasThaiName = false }: { srd: SrdItem; rowHasThaiName?: boolean }) {
+  const thai = useEquipmentTh()
+  const th = thai.items[srd.id]
+  const thText = [th?.utilize && `**ใช้งาน:** ${th.utilize}`, th?.text].filter(Boolean).join('\n\n')
+  const mastery = srd.weapon && thai.masteries[srd.weapon.mastery]
   return (
     <div className="mt-1 space-y-1 rounded-lg bg-stone-900 p-2 text-sm text-stone-300">
-      {srd.weapon && <p>{srd.weapon.category} {srd.weapon.type} · {srd.weapon.dice} {srd.weapon.damageType}{srd.weapon.properties.length > 0 && ` · ${weaponPropertiesLine(srd.weapon)}`} · Mastery: {srd.weapon.mastery}</p>}
+      {th && !rowHasThaiName && <p className="text-amber-200">{th.name}</p>}
+      {srd.weapon && <p>{srd.weapon.category} {srd.weapon.type} · {srd.weapon.dice} {srd.weapon.damageType}{srd.weapon.properties.length > 0 && ` · ${weaponPropertiesLine(srd.weapon)}`} · Mastery: {srd.weapon.mastery}{mastery && ` (${mastery.name})`}</p>}
       {srd.armor && (
         <p>
           {srd.armor.category === 'Shield' ? 'Shield' : `${srd.armor.category} Armor`} · AC {armorClassLine(srd.armor)}
@@ -81,23 +91,26 @@ export function ItemDetails({ srd }: { srd: SrdItem }) {
           {srd.armor.stealthDisadvantage && ' · Stealth Disadvantage'}
         </p>
       )}
-      {srd.utilize && <p>Ability: {srd.ability?.toUpperCase()} · {srd.utilize.join(', ')}</p>}
-      {srd.text && <p className="whitespace-pre-wrap">{srd.text}</p>}
+      <WithThai th={thText || undefined}>
+        {srd.utilize && <p>Ability: {srd.ability?.toUpperCase()} · {srd.utilize.join(', ')}</p>}
+        {srd.text && <p className="whitespace-pre-wrap">{srd.text}</p>}
+      </WithThai>
       <p className="text-xs text-stone-500">{costLine(srd.cost)}{srd.weight ? ` · ${srd.weight} lb.` : ''}</p>
     </div>
   )
 }
 
 function ItemPicker({ data, onAdd }: { data: SrdEquipment | null; onAdd: (item: SrdItem) => void }) {
+  const thai = useEquipmentTh().items
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState(0)
   const [added, setAdded] = useState<string | null>(null)
   if (!data) return <p className="mb-3 text-sm text-stone-400">กำลังโหลดอุปกรณ์…</p>
-  const found = searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds)
+  const found = searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai)
 
   return (
     <div className="mb-3 space-y-2 rounded-lg bg-stone-900 p-3">
-      <TextInput value={query} placeholder="ค้นหา เช่น sword, rope, leather" onChange={setQuery} />
+      <TextInput value={query} placeholder="ค้นหา เช่น sword, rope, leather, เชือก" onChange={setQuery} />
       {!query && (
         <div className="flex flex-wrap gap-1.5 text-sm">
           {KIND_FILTERS.map((f, i) => (
@@ -112,7 +125,7 @@ function ItemPicker({ data, onAdd }: { data: SrdEquipment | null; onAdd: (item: 
         {found.map((i) => (
           <li key={i.id} className="flex items-center justify-between gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
             <span className="min-w-0">
-              <span className="font-bold">{i.name}</span>{i.qty && i.qty > 1 && <span className="text-stone-400"> ×{i.qty}</span>}
+              <span className="font-bold">{i.name}</span>{i.qty && i.qty > 1 && <span className="text-stone-400"> ×{i.qty}</span>}{thai[i.id] && <span className="text-stone-400"> · {thai[i.id].name}</span>}
               <span className="block text-xs text-stone-400">{pickerLine(i)}</span>
             </span>
             {added === i.id

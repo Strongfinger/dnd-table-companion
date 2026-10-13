@@ -4,7 +4,7 @@ import { currentDevice, setDeviceName } from '../db/device'
 import { resetDevice } from '../db/reset'
 import { DND_TH_CREDIT } from '../model/dndTh'
 import { Button, Section, TextInput } from '../ui/kit'
-import { useFeaturesTh, useMagicItemsTh, useSpellsTh } from './useSrdData'
+import { useEquipmentTh, useFeaturesTh, useMagicItemsTh, useSpellsTh } from './useSrdData'
 
 export default function About() {
   const [name, setName] = useState(currentDevice()?.name ?? '')
@@ -12,6 +12,7 @@ export default function About() {
   const thaiSpells = useSpellsTh()
   const thaiFeats = Object.keys(useFeaturesTh()).length
   const thaiItems = Object.keys(useMagicItemsTh()).length
+  const thaiGear = Object.keys(useEquipmentTh().items).length
 
   return (
     <div className="space-y-4">
@@ -51,7 +52,7 @@ export default function About() {
       {Object.keys(thaiSpells).length > 0 && (
         <Section title="คำแปลภาษาไทย">
           <p className="text-sm text-stone-300">
-            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา){thaiFeats > 0 && `, Feat และความสามารถของ Class/Species (${thaiFeats})`}{thaiItems > 0 && `, ไอเทมเวท (${thaiItems} ชิ้น)`} โดย{' '}
+            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา){thaiFeats > 0 && `, Feat และความสามารถของ Class/Species (${thaiFeats})`}{thaiItems > 0 && `, ไอเทมเวท (${thaiItems} ชิ้น)`}{thaiGear > 0 && `, อุปกรณ์ (${thaiGear} ชิ้น)`}, Rules Glossary โดย{' '}
             <a className="text-amber-400 underline" href={DND_TH_CREDIT.url} target="_blank" rel="noreferrer">{DND_TH_CREDIT.name} (dnd-th.com)</a>
             {' '}ใช้ภายใต้สัญญาอนุญาต{' '}
             <a className="text-amber-400 underline" href={DND_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{DND_TH_CREDIT.license}</a>.

@@ -70,9 +70,11 @@ export function findItem(data: SrdEquipment, id: string): SrdItem | undefined {
 }
 
 /** Search by name words, optionally only some kinds. Sorted by name. */
-export function searchItems(data: SrdEquipment, query: string, kinds?: EquipmentKind[]): SrdItem[] {
+/** Items whose English name (or Thai name, from `thaiNames` by id) has every word of the query. */
+export function searchItems(data: SrdEquipment, query: string, kinds?: EquipmentKind[], thaiNames?: Record<string, { name: string }>): SrdItem[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
-  return data.items.filter((i) => (!kinds || kinds.includes(i.kind)) && words.every((w) => i.name.toLowerCase().includes(w)))
+  return data.items.filter((i) => (!kinds || kinds.includes(i.kind)) &&
+    words.every((w) => i.name.toLowerCase().includes(w) || !!thaiNames?.[i.id]?.name.includes(w)))
 }
 
 const feet = (r: { normal: number; long?: number }) => (r.long ? `${r.normal}/${r.long}` : `${r.normal}`)

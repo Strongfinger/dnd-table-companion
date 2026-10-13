@@ -60,5 +60,6 @@ describe('SRD equipment', () => {
     const data = await loadSrdEquipment()
     expect(searchItems(data, 'cross', ['weapon']).map((i) => i.name)).toEqual(['Hand Crossbow', 'Heavy Crossbow', 'Light Crossbow'])
     expect(searchItems(data, 'chain').map((i) => i.name)).toEqual(['Chain', 'Chain Mail', 'Chain Shirt'])
+    expect(searchItems(data, 'เชือก', undefined, { rope: { name: 'เชือก' } }).map((i) => i.name)).toEqual(['Rope'])
   })
 })
