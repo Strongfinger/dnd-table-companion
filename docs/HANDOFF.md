@@ -118,10 +118,18 @@ and the 7 untranslated spells in `src/data/README.md`.
 1. **First real session (owner's next game night):** the owner is a first-time DM running *Dragon of Icespire
    Peak* with 4 friends on phones (level 1: Fighter, Paladin, Rogue, Cleric; they build characters in the wizard at
    the table). Prep is done:
-   - Private files in `docs/DM Scripts/` (git-ignored): `icespire-campaign-pack.json` (52 notebook pages, a
-     13-scene Session 1 plan, 6 prepared fights; regenerate with `make_pack.py`), `Session 1 - DM Prep.md`
-     (checklist, danger notes, how to run it in the app), and the owner's original Thai script PDFs.
+   - Private files in `docs/DM Scripts/` (git-ignored): `icespire-campaign-pack.json` (**v2**, 2026-10-13: 56 notebook
+     pages, a 15-scene Session 1 plan, 7 prepared fights), `Session 1 - DM Prep.md` (v1→v2 changes, monster notes,
+     safety valves, DM tips, typos for DND-TH), and the owner's original Thai script PDFs.
+   - `python3 "docs/DM Scripts/make_pack.py"` rebuilds the pack: it reads read-aloud boxes, quest leaflets and tables
+     from the private DND-TH library (`docs/DND-TH/doip/`, skill `dnd-th-library`) at build time. Owner's choices:
+     DND-TH wording · 2024 SRD stat blocks where they exist (Orc, Rock Gnome Recluse from the book, in notes) · the
+     book's difficulty with safety valves · dragon d20 location rolls, Session 1 = scare only.
    - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
+   - **Never put test copies of the pack inside the repo** (e.g. `public/`): one was committed by another session in
+     `b5cd2a8` and pushed; removed from `main` in `621a541` (`public/zz-*` now ignored), but it is still in git history
+     and in that commit's Vercel deployment. The owner decided not to rewrite history (2026-10-13). Stage only your
+     own files (never `git add -A`).
    - After the session: collect what broke or felt clunky (docs/QA.md) and fix. Check the Firebase cleanup live.
 2. **Thai translation (Phase 5 item, ROADMAP):** spells, feats, magic items, class features and species traits
    are done (class/species parsed from DND-TH's markdown pages: `classSections`/`traitSections` in
