@@ -89,7 +89,7 @@ export function buildSpellsTh(data: unknown, srd: Pick<SrdSpell, 'id' | 'name'>[
       if (row) report.matchedWithoutOwner.push(`${s.name} = ${row.name}`)
     }
     if (!row || !row.title.trim() || !row.description.trim()) { report.missing.push(s.name); continue }
-    const parts = splitDescription(stripNonSrdNames(row.description.slice(0, 20000)))
+    const parts = Object.fromEntries(Object.entries(splitDescription(row.description.slice(0, 20000))).map(([k, v]) => [k, stripNonSrdNames(v)])) as ReturnType<typeof splitDescription>
     const bad = nonSrdName(Object.values(parts).join('\n'))
     if (bad) { report.nonSrd.push(`${s.name} (${bad})`); continue }
     spells[s.id] = { name: ALIAS_NAMES_TH[s.id] ?? stripNonSrdNames(row.title).trim().slice(0, 100), ...parts }

@@ -93,7 +93,7 @@ export function buildMagicItemsTh(data: unknown, srd: { id: string; name: string
     const [source, thaiName] = plus ? [`${plus[1]}, +1, +2, or +3`] : ALIASES[it.name] ?? [it.name]
     const row = byName.get(norm(source))
     if (!row || !row.name_th.trim() || !row.description.trim()) { report.missing.push(it.name); continue }
-    const text = cleanMarkdown(stripNonSrdNames(row.description.slice(0, 20000)))
+    const text = stripNonSrdNames(cleanMarkdown(row.description.slice(0, 20000)))
     const bad = nonSrdName(text)
     if (bad) { report.nonSrd.push(`${it.name} (${bad})`); continue }
     const name = thaiName ?? (plus

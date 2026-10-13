@@ -1,6 +1,6 @@
 // More SRD lookup tabs (everyone, players too): equipment with the weapon property and Weapon Mastery
 // texts, magic items, and features (class and subclass features, species traits, feats). English SRD text,
-// with DND-TH's Thai where there is one (feats, magic items).
+// with DND-TH's Thai where there is one.
 import { useState } from 'react'
 import { CLASSES } from '../rules'
 import type { LootItem } from '../model/generators'
@@ -140,7 +140,7 @@ export function FeatureSearch() {
           </li>
         ))}
       </ul>
-      <p className="text-xs text-stone-500">{found.length} รายการ · ข้อความกติกาเต็มจาก SRD 5.2.1 (CC-BY-4.0) · Feat มีคำแปลไทยจาก DND-TH</p>
+      <p className="text-xs text-stone-500">{found.length} รายการ · ข้อความกติกาเต็มจาก SRD 5.2.1 (CC-BY-4.0) · คำแปลไทยจาก DND-TH</p>
     </div>
   )
 }

@@ -6,13 +6,22 @@
 
 export const DND_TH_CREDIT = { name: 'DND-TH', url: 'https://dnd-th.com/', license: 'CC BY-NC-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/' }
 
-/** DND-TH's markdown → ours: site links (also empty anchors) become plain text, escaped "\*" a plain "*", tidy blank lines. */
+const SMALL_WORDS = new Set(['a', 'an', 'and', 'from', 'into', 'of', 'on', 'or', 'the', 'to', 'with', 'without'])
+/** DND-TH's spell reference "2618946-burning-hands" → "Burning Hands" (their site shows it as the spell's name). */
+function slugName(slug: string): string {
+  return slug.split('-').map((w, i) => (i > 0 && SMALL_WORDS.has(w) ? w : w[0].toUpperCase() + w.slice(1))).join(' ')
+}
+
+/** DND-TH's markdown → ours: images go, site links (also empty anchors) become plain text, spell ids names, tidy blank lines. */
 export function cleanMarkdown(md: string): string {
   return md
     .replace(/\r\n?/g, '\n')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[\]\([^)]*\)/g, '')
+    .replace(/\b\d{6,}-([a-z0-9-]+)/g, (_, slug: string) => slugName(slug))
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .split('\n').map((l) => l.replace(/[ \t]+$/g, '')).join('\n')
+    // Table rows lose their padding ("| 3      | Fireball      |" → "| 3 | Fireball |").
+    .split('\n').map((l) => (l.trimStart().startsWith('|') ? l.replace(/[ \t\u00a0]{2,}/g, ' ') : l).replace(/[ \t]+$/g, '')).join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -42,7 +51,8 @@ const RENAMED: [RegExp, string][] = [
   [/Quiver of Ehlonna/g, 'Efficient Quiver'], [/Iron Bands of Bilarro/g, 'Iron Bands'], [/Orb of Dragonkind/g, 'Dragon Orb'],
   [/สำรับไพ่สารพัดสิ่ง/g, 'สำรับไพ่ลึกลับ'],
 ]
-const OWNER_EN = new RegExp(`\\b(?:${OWNERS_EN.join('|')})['’]s\\s+`, 'g')
+// "Tasha's Hideous Laughter", also "Tashas Hideous Laughter" (from a spell id, which has no apostrophe).
+const OWNER_EN = new RegExp(`\\b(?:${OWNERS_EN.join('|')})['’]?s\\s+`, 'g')
 const OWNER_TH = new RegExp(`\\s?(?:ของ)?(?:${OWNERS_TH.join('|')})`, 'g')
 
 /** Take the non-SRD people's names out of a name or text ("เป้สารพัดนึกของฮิวเวิร์ด (Heward's Handy Haversack)" → "เป้สารพัดนึก (Handy Haversack)"). */

@@ -153,16 +153,27 @@ Instant Summons) stay English.
 
 ## srd-features-th.json
 
-Thai name and rules text for SRD 5.2.1 features, by the same ids as `srd-features.json`. So far: **all 17 SRD
-feats**. Translation by **DND-TH** (https://dnd-th.com/), **CC BY-NC-SA 4.0**, used with DND-TH's permission
-(2026-10-13), like the spells. Class features and species traits are planned for the same file.
+Thai name and rules text for SRD 5.2.1 features, by the same ids as `srd-features.json`: **all 17 feats**,
+**231 of 232 class and subclass features**, **37 of 67 species traits** (every base trait; the 30 left are
+variant entries such as "Giant Ancestry: Cloud's Jaunt" and lineage spells, whose base trait's Thai text covers
+them). Translation by **DND-TH** (https://dnd-th.com/), **CC BY-NC-SA 4.0**, used with permission (2026-10-13).
 
-- **Source:** https://dnd-th.com/data/feats.json (downloaded 2026-10-13, 122,204 bytes,
-  SHA-256 `da4869c9d7083a871d5643553b3c01d339e32bacf7ea506d370c464cfe447203`), 79 feats, all `version: "2024"`;
-  only SRD 5.2.1 feats are kept, matched by English name. The text is DND-TH's description, then each benefit
-  as a paragraph (prerequisites left out, as in the English text; the feat picker shows them).
-- **Made by:** `node scripts/srd/features-th.ts <feats.json>` (`src/model/featuresTh.ts`). Links become plain text.
-- **Typos found (2026-10-13):** Grappler, Fast Wrestler: "น้้น" (should be "นั้น").
+- **Sources:**
+  - https://dnd-th.com/data/feats.json (downloaded 2026-10-13, 122,204 bytes,
+    SHA-256 `da4869c9d7083a871d5643553b3c01d339e32bacf7ea506d370c464cfe447203`): description, then each benefit
+    as a paragraph (prerequisites left out, as in the English text).
+  - DND-TH's 2024 class and species pages (their Thai *Free Rules*), from the owner: `2024-classes.zip`
+    (176,676 bytes, SHA-256 `afbb2b9a24db28819b5f58b7eaefd72c671839aebdc2e01eefea9b527cd9a2b7`) and
+    `2024-races.zip` (22,455 bytes, SHA-256 `b0dabaec485384720a9fd1c5172fa4addbf478d0e31da80b220d70dc7adf2896`).
+    They also hold non-SRD subclasses and Aasimar; only sections matching an SRD feature are kept (by class,
+    subclass, English name and level; traits by species and name, "Darkvision (120 ft.)" by its range).
+- **Made by:** `node scripts/srd/features-th.ts <feats.json> <classes dir> <races dir>` (`src/model/featuresTh.ts`).
+  Sidebars ("> …" boxes) are left out; spell ids like "2618887-fireball" become "Fireball"; people's names the SRD
+  drops are removed.
+- **Known gaps:** Circle of the Land Spells stays English (its Thai heading has no English name). DND-TH's
+  Nature's Ward has no resistance table (the English one does).
+- **Typos found (2026-10-13):** Grappler (Fast Wrestler) "น้้น" → "นั้น"; Barbarian Weapon Mastery "เปลีี่ยน" →
+  "เปลี่ยน".
 
 ## srd-magic-items-th.json
 

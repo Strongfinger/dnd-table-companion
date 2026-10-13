@@ -51,7 +51,7 @@ export default function About() {
       {Object.keys(thaiSpells).length > 0 && (
         <Section title="คำแปลภาษาไทย">
           <p className="text-sm text-stone-300">
-            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา){thaiFeats > 0 && `, Feat (${thaiFeats})`}{thaiItems > 0 && `, ไอเทมเวท (${thaiItems} ชิ้น)`} โดย{' '}
+            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา){thaiFeats > 0 && `, Feat และความสามารถของ Class/Species (${thaiFeats})`}{thaiItems > 0 && `, ไอเทมเวท (${thaiItems} ชิ้น)`} โดย{' '}
             <a className="text-amber-400 underline" href={DND_TH_CREDIT.url} target="_blank" rel="noreferrer">{DND_TH_CREDIT.name} (dnd-th.com)</a>
             {' '}ใช้ภายใต้สัญญาอนุญาต{' '}
             <a className="text-amber-400 underline" href={DND_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{DND_TH_CREDIT.license}</a>.
