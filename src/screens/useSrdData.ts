@@ -4,12 +4,14 @@ import { loadFullMonsters, type FullMonster } from '../model/monsterDetails'
 import type { LootItem } from '../model/generators'
 import { loadSrdSpells, type SrdSpell } from '../model/spells'
 import type { SpellsThFile, SpellTh } from '../model/spellsTh'
+import type { FeaturesThFile, FeatureTh } from '../model/featuresTh'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
 import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
 
 // The Thai spell file is optional: until it's built (scripts/srd/spells-th.ts) this finds nothing and
 // spells stay English. (A glob, unlike a plain import, doesn't fail the build when the file is missing.)
 const thaiSpellFile = import.meta.glob<SpellsThFile>('../data/srd-spells-th.json', { import: 'default' })
+const thaiFeatureFile = import.meta.glob<FeaturesThFile>('../data/srd-features-th.json', { import: 'default' })
 
 /** Thai spell text by spell id, or {} when there is none. */
 export function useSpellsTh(): Record<string, SpellTh> {
@@ -21,8 +23,21 @@ export function useSpellsTh(): Record<string, SpellTh> {
   return map
 }
 
-/** Thai or English spell text: the reader's choice, remembered on this device (Thai first). */
-export function useSpellLang(): ['th' | 'en', (lang: 'th' | 'en') => void] {
+/** Thai feature text (feats so far) by SRD feature id, or {} when there is none. */
+export function useFeaturesTh(): Record<string, FeatureTh> {
+  const [map, setMap] = useState<Record<string, FeatureTh>>({})
+  useEffect(() => {
+    const load = Object.values(thaiFeatureFile)[0]
+    load?.().then((f) => setMap(f.features ?? {}))
+  }, [])
+  return map
+}
+
+/**
+ * Thai or English rules text (spells, feats…): the reader's choice, remembered on this device (Thai first).
+ * One choice for every card. (The storage key is still "spellLang": spells had the switch first.)
+ */
+export function useTextLang(): ['th' | 'en', (lang: 'th' | 'en') => void] {
   const [lang, setLang] = useState<'th' | 'en'>(() => {
     try { return localStorage.getItem('spellLang') === 'en' ? 'en' : 'th' } catch { return 'th' }
   })

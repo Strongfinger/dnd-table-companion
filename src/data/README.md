@@ -124,3 +124,16 @@ Instant Summons) stay English.
   higher-level paragraph and the material note are split off; the rest stays simple markdown, shown by
   `src/ui/MiniMarkdown.tsx` (never as HTML).
 - **Typos:** the script lists likely typos; DND-TH asked to be told about them.
+
+## srd-features-th.json
+
+Thai name and rules text for SRD 5.2.1 features, by the same ids as `srd-features.json`. So far: **all 17 SRD
+feats**. Translation by **DND-TH** (https://dnd-th.com/), **CC BY-NC-SA 4.0**, used with DND-TH's permission
+(2026-10-13), like the spells. Class features and species traits are planned for the same file.
+
+- **Source:** https://dnd-th.com/data/feats.json (downloaded 2026-10-13, 122,204 bytes,
+  SHA-256 `da4869c9d7083a871d5643553b3c01d339e32bacf7ea506d370c464cfe447203`), 79 feats, all `version: "2024"`;
+  only SRD 5.2.1 feats are kept, matched by English name. The text is DND-TH's description, then each benefit
+  as a paragraph (prerequisites left out, as in the English text; the feat picker shows them).
+- **Made by:** `node scripts/srd/features-th.ts <feats.json>` (`src/model/featuresTh.ts`). Links become plain text.
+- **Typos found (2026-10-13):** Grappler, Fast Wrestler: "น้้น" (should be "นั้น").

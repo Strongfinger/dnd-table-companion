@@ -4,12 +4,13 @@ import { currentDevice, setDeviceName } from '../db/device'
 import { resetDevice } from '../db/reset'
 import { SPELLS_TH_CREDIT } from '../model/spellsTh'
 import { Button, Section, TextInput } from '../ui/kit'
-import { useSpellsTh } from './useSrdData'
+import { useFeaturesTh, useSpellsTh } from './useSrdData'
 
 export default function About() {
   const [name, setName] = useState(currentDevice()?.name ?? '')
   const [saved, setSaved] = useState(false)
   const thaiSpells = useSpellsTh()
+  const thaiFeats = Object.keys(useFeaturesTh()).length
 
   return (
     <div className="space-y-4">
@@ -47,13 +48,13 @@ export default function About() {
       </Section>
 
       {Object.keys(thaiSpells).length > 0 && (
-        <Section title="คำแปลคาถาภาษาไทย">
+        <Section title="คำแปลภาษาไทย">
           <p className="text-sm text-stone-300">
-            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา) โดย{' '}
+            คำแปลภาษาไทยของคาถา SRD 5.2.1 ({Object.keys(thaiSpells).length} คาถา){thaiFeats > 0 && ` และ Feat (${thaiFeats})`} โดย{' '}
             <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name} (dnd-th.com)</a>
             {' '}ใช้ภายใต้สัญญาอนุญาต{' '}
             <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>.
-            {' '}ใช้โดยได้รับอนุญาตจาก DND-TH (13 ต.ค. 2569) แอปเลือกเฉพาะคาถา 2024 ที่อยู่ใน SRD 5.2.1 และจัดรูปแบบใหม่ (ตัดลิงก์, แยกย่อหน้า Higher Level) ข้อมูลส่วนนี้ใช้สัญญาอนุญาตเดียวกัน
+            {' '}ใช้โดยได้รับอนุญาตจาก DND-TH (13 ต.ค. 2569) แอปเลือกเฉพาะเนื้อหา 2024 ที่อยู่ใน SRD 5.2.1 และจัดรูปแบบใหม่ (ตัดลิงก์, แยกย่อหน้า Higher Level) ข้อมูลส่วนนี้ใช้สัญญาอนุญาตเดียวกัน
             {' '}พบคำผิดหรือคำแปลแปลกๆ แจ้ง DND-TH ได้ที่เว็บไซต์ของเขา
           </p>
         </Section>

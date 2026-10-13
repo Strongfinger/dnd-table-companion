@@ -14,8 +14,8 @@ import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type Srd
 import MiniMarkdown from '../ui/MiniMarkdown'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch } from './LookupMore'
-import { SPELLS_TH_CREDIT } from '../model/spellsTh'
-import { useMonsters, useSpellLang, useSpells, useSpellsTh } from './useSrdData'
+import { LangSwitch, ThaiCredit } from '../ui/ThaiText'
+import { useMonsters, useSpells, useTextLang, useSpellsTh } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
 export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'features'
@@ -171,7 +171,7 @@ export function SpellView({ id }: { id: string }) {
 /** One spell, 2024 style. */
 export function SpellCard({ sp }: { sp: SrdSpell }) {
   const th = useSpellsTh()[sp.id]
-  const [lang, setLang] = useSpellLang()
+  const [lang, setLang] = useTextLang()
   const showThai = !!th && lang === 'th'
   const higherLabel = sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'
   const englishHigher = sp.higher?.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')
@@ -183,16 +183,7 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
           {th && <p className="text-amber-200">{th.name}</p>}
           <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
         </div>
-        {th && (
-          <div className="flex shrink-0 overflow-hidden rounded-lg border border-stone-600 text-xs font-bold" role="group" aria-label="ภาษาของคำอธิบาย">
-            {(['th', 'en'] as const).map((l) => (
-              <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}
-                className={`px-2.5 py-1.5 ${lang === l ? 'bg-amber-500 text-stone-900' : 'bg-stone-800 text-stone-300'}`}>
-                {l === 'th' ? 'ไทย' : 'EN'}
-              </button>
-            ))}
-          </div>
-        )}
+        {th && <LangSwitch lang={lang} onChange={setLang} />}
       </header>
       <div className="space-y-0.5">
         <Row label="Casting Time">{castingTimeLine(sp)}</Row>
@@ -204,12 +195,7 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
         <>
           <MiniMarkdown text={th.text} />
           {th.higher && <MiniMarkdown text={`**_${higherLabel}_** ${th.higher}`} />}
-          <p className="text-xs text-stone-500">
-            คำแปลภาษาไทย:{' '}
-            <a className="underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name}</a>
-            {' '}(<a className="underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>)
-            {' '}ใช้โดยได้รับอนุญาต · ต้นฉบับ SRD 5.2.1 (CC-BY-4.0)
-          </p>
+          <ThaiCredit />
         </>
       ) : (
         <>

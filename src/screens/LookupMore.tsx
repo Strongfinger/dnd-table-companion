@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { CLASSES } from '../rules'
 import { costLine, KIND_FILTERS, searchItems } from '../model/equipment'
-import { FormattedText } from './FeatureCatalog'
 import { ItemDetails } from './Inventory'
-import { useEquipment, useFeatureTexts } from './useSrdData'
+import { useEquipment, useFeaturesTh, useFeatureTexts } from './useSrdData'
+import FeatureText from './FeatureText'
 import { TextInput } from '../ui/kit'
 
 const chip = (on: boolean) => `rounded-full border px-3 py-1 text-sm ${on ? 'border-amber-400 bg-amber-800 font-bold' : 'border-stone-600'}`
@@ -60,6 +60,7 @@ const SOURCES = ['ทั้งหมด', ...CLASSES, 'Species', 'Feats'] as con
 
 export function FeatureSearch() {
   const data = useFeatureTexts()
+  const thai = useFeaturesTh()
   const [query, setQuery] = useState('')
   const [source, setSource] = useState<(typeof SOURCES)[number]>('ทั้งหมด')
   const [open, setOpen] = useState<string | null>(null)
@@ -72,10 +73,10 @@ export function FeatureSearch() {
   ]
   const found = all
     .filter((e) => source === 'ทั้งหมด' || e.group === source)
-    .filter((e) => words.every((w) => e.name.toLowerCase().includes(w)))
+    .filter((e) => words.every((w) => e.name.toLowerCase().includes(w) || !!thai[e.id]?.name.includes(w)))
   return (
     <div className="space-y-3">
-      <TextInput value={query} placeholder="ค้นหาชื่อ เช่น rage, sneak, second wind, alert" onChange={setQuery} />
+      <TextInput value={query} placeholder="ค้นหาชื่อ เช่น rage, sneak, second wind, alert, ตื่นตัว" onChange={setQuery} />
       <select className="w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2" value={source} onChange={(e) => setSource(e.target.value as (typeof SOURCES)[number])} aria-label="จาก">
         {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
@@ -83,14 +84,14 @@ export function FeatureSearch() {
         {found.slice(0, 150).map((e) => (
           <li key={e.id} className="rounded-lg bg-stone-800 px-3 py-2">
             <button type="button" className="flex w-full items-baseline justify-between gap-2 text-left" onClick={() => setOpen(open === e.id ? null : e.id)} aria-expanded={open === e.id}>
-              <span className="font-bold">{e.name}</span>
+              <span><b>{e.name}</b>{thai[e.id] && <span className="text-sm text-stone-400"> · {thai[e.id].name}</span>}</span>
               <span className="shrink-0 text-xs text-stone-400">{e.tag}</span>
             </button>
-            {open === e.id && <div className="text-sm"><FormattedText text={e.text} /></div>}
+            {open === e.id && <FeatureText text={e.text} th={thai[e.id]} />}
           </li>
         ))}
       </ul>
-      <p className="text-xs text-stone-500">{found.length} รายการ · ข้อความกติกาเต็มจาก SRD 5.2.1 (ภาษาอังกฤษ, CC-BY-4.0)</p>
+      <p className="text-xs text-stone-500">{found.length} รายการ · ข้อความกติกาเต็มจาก SRD 5.2.1 (CC-BY-4.0) · Feat มีคำแปลไทยจาก DND-TH</p>
     </div>
   )
 }

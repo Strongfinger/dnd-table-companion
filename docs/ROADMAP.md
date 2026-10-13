@@ -78,7 +78,8 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
       Source: **DND-TH's translation, used with permission (2026-10-13)**; only SRD 5.2.1 (2024) entries, credit
       DND-TH. Our own translation only where DND-TH has none.
   - [x] Spells: 332 of 339 (`src/data/srd-spells-th.json`, 2026-10-13)
-  - [ ] Feats (17 SRD) · magic items · monster names/stat blocks · equipment (DND-TH JSON) · class features and
+  - [x] Feats: all 17 SRD feats (`src/data/srd-features-th.json`, 2026-10-13; Lookup 🧬 tab and the sheet)
+  - [ ] Magic items · monster names/stat blocks · equipment (DND-TH JSON) · class features and
         species traits (DND-TH markdown zips) · conditions/rules glossary
 - [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
