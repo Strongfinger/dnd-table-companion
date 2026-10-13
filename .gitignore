@@ -15,3 +15,6 @@ docs/roadmap.html
 
 # Private DND-TH library (downloaded with permission, never published)
 docs/DND-TH/
+
+# Temporary test copies (never commit: the campaign pack is private)
+public/zz-*
