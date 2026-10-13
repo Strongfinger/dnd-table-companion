@@ -152,13 +152,10 @@ and the 7 untranslated spells in `src/data/README.md`.
    Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
 
 ## Next steps (suggested)
-0. **QA findings:** see [docs/QA.md](QA.md) (bugs fixed, open findings for the implementor; top one: attacks/weapons
-   and class features on the sheet).
-0b. **Content plan:** [docs/RESEARCH.md](RESEARCH.md) (2026-10-13): SRD 5.2.1 sources checked, data errors to correct,
-   owner decisions, limited-use feature catalog (F1–F2), steps E1–E7 (weapons/attacks, equipped armor AC, class features,
-   starting gear, monster Initiative). Order: E1 → E2 → E3 → F1 → F2 → E4 → E6 → E5 → E7.
-1. **Phase 5:** a real session with friends on several phones; collect what broke or felt clunky; fix.
-3. "Later" list in `docs/ROADMAP.md`: SRD weapons/armor help and data, class-feature actions, QR export.
+0. **Done 2026-10-13:** content plan [docs/RESEARCH.md](RESEARCH.md) steps E1–E7, F1 and F2 (weapons/attacks, equipped
+   armor AC, class features, limited-use features, starting gear, monster Initiative). QA findings: [docs/QA.md](QA.md).
+1. **Phase 5 (next):** a real session with friends on several phones; collect what broke or felt clunky; fix.
+2. "Later" list in `docs/ROADMAP.md`: QR export and other items not yet built.
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
 - Reply in English; UI in Thai with English game terms; generated proper names in English.
