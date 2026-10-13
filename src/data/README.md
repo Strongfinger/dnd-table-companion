@@ -107,10 +107,20 @@ level, recharge, dice) are not in this file: they are in `src/rules/srd/limitedF
   when the joined word is a real word (the texts' own words plus the system word list); a few dashes the source
   lost ("Strength-with" → "Strength—with") are put back by a short fix list in the script.
 
-## srd-spells-th.json (optional, not in git yet)
+## srd-spells-th.json
 
-Thai name, description and higher-level text for SRD 5.2.1 spells, by spell id. Translation by
-**DND-TH** (https://dnd-th.com/), licensed **CC BY-NC-SA 4.0**; only spells in SRD 5.2.1 are kept,
-reformatted (HTML removed, paragraphs kept). Built by `node scripts/srd/spells-th.ts <csv>` from a CSV the
-owner collects (how: `docs/THAI-SPELLS.md`). Git-ignored until DND-TH agrees; the app loads it through
-`import.meta.glob`, so builds without it simply show English.
+Thai name, description, higher-level text and material component for **332 of the 339** SRD 5.2.1 spells,
+by spell id. Translation by **DND-TH** (https://dnd-th.com/), licensed **CC BY-NC-SA 4.0**, and used with
+DND-TH's permission (email to the owner, 2026-10-13: "use it freely"). The 7 spells DND-TH hasn't translated
+(Floating Disk, Arcanist's Magic Aura, Faithful Hound, Private Sanctum, Resilient Sphere, Secret Chest,
+Instant Summons) stay English.
+
+- **Source:** https://dnd-th.com/data/spells.json (downloaded 2026-10-13, 1,358,286 bytes,
+  SHA-256 `55370171c69f59dc3cf527e92b0d9540fa2f8c2f11a738835934cddfab2c7c02`). It holds 2014 and 2024
+  spells together; only `version: "2024"` entries that are SRD 5.2.1 spells are kept, matched by English
+  name (also without the wizard's name, e.g. "Tasha's Hideous Laughter" = Hideous Laughter, plus
+  Bigby's Hand = Arcane Hand and Mordenkainen's Sword = Arcane Sword).
+- **Made by:** `node scripts/srd/spells-th.ts <spells.json>`. Links to DND-TH pages become plain text; the
+  higher-level paragraph and the material note are split off; the rest stays simple markdown, shown by
+  `src/ui/MiniMarkdown.tsx` (never as HTML).
+- **Typos:** the script lists likely typos; DND-TH asked to be told about them.

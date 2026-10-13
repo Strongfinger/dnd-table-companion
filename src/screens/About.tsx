@@ -53,7 +53,8 @@ export default function About() {
             <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name} (dnd-th.com)</a>
             {' '}ใช้ภายใต้สัญญาอนุญาต{' '}
             <a className="text-amber-400 underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>.
-            {' '}แอปเลือกเฉพาะคาถาที่อยู่ใน SRD 5.2.1 และจัดรูปแบบข้อความใหม่ (ตัด HTML, จัดย่อหน้า) ข้อมูลส่วนนี้ใช้สัญญาอนุญาตเดียวกัน
+            {' '}ใช้โดยได้รับอนุญาตจาก DND-TH (13 ต.ค. 2569) แอปเลือกเฉพาะคาถา 2024 ที่อยู่ใน SRD 5.2.1 และจัดรูปแบบใหม่ (ตัดลิงก์, แยกย่อหน้า Higher Level) ข้อมูลส่วนนี้ใช้สัญญาอนุญาตเดียวกัน
+            {' '}พบคำผิดหรือคำแปลแปลกๆ แจ้ง DND-TH ได้ที่เว็บไซต์ของเขา
           </p>
         </Section>
       )}

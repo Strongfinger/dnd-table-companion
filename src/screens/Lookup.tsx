@@ -11,6 +11,7 @@ import { GLOSSARY_TERMS, lookupTerm } from '../model/glossary'
 import type { FullMonster } from '../model/monsterDetails'
 import { formatCR, monsterInput, searchMonsters } from '../model/monsters'
 import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
+import MiniMarkdown from '../ui/MiniMarkdown'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch } from './LookupMore'
 import { SPELLS_TH_CREDIT } from '../model/spellsTh'
@@ -196,18 +197,18 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
       <div className="space-y-0.5">
         <Row label="Casting Time">{castingTimeLine(sp)}</Row>
         <Row label="Range">{sp.range}</Row>
-        <Row label="Components">{componentsLine(sp)}</Row>
+        <Row label="Components">{componentsLine(showThai && th.material ? { ...sp, material: th.material } : sp)}</Row>
         <Row label="Duration">{sp.concentration && !sp.duration.startsWith('Concentration') ? `Concentration, ${sp.duration}` : sp.duration}</Row>
       </div>
       {showThai ? (
         <>
-          <div className="whitespace-pre-line">{th.text}</div>
-          {th.higher && <p className="whitespace-pre-line"><b><i>{higherLabel}</i></b> {th.higher}</p>}
+          <MiniMarkdown text={th.text} />
+          {th.higher && <MiniMarkdown text={`**_${higherLabel}_** ${th.higher}`} />}
           <p className="text-xs text-stone-500">
             คำแปลภาษาไทย:{' '}
             <a className="underline" href={SPELLS_TH_CREDIT.url} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.name}</a>
             {' '}(<a className="underline" href={SPELLS_TH_CREDIT.licenseUrl} target="_blank" rel="noreferrer">{SPELLS_TH_CREDIT.license}</a>)
-            {' '}· ต้นฉบับ SRD 5.2.1 (CC-BY-4.0)
+            {' '}ใช้โดยได้รับอนุญาต · ต้นฉบับ SRD 5.2.1 (CC-BY-4.0)
           </p>
         </>
       ) : (
