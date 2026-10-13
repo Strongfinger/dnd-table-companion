@@ -69,10 +69,9 @@ function parsePlan(md) {
   const body = md.slice(start).split(/\n## /)[0]
   const steps = []
   for (const line of body.split('\n')) {
-    const m = line.match(/^\|\s*\*\*(\w+)\*\*\s*(✅)?\s*\|(.*)\|(.*)\|(.*)\|\s*$/)
+    // A step row: "| **E2** ✅ | text | size | notes |" (bold and ✅ optional, e.g. "| Q | … |")
+    const m = line.match(/^\|\s*(?:\*\*)?([A-Z]\d*)(?:\*\*)?\s*(✅)?\s*\|(.*)\|(.*)\|(.*)\|\s*$/)
     if (m) steps.push({ id: m[1], done: !!m[2], text: m[3].trim(), size: m[4].trim(), notes: m[5].trim() })
-    const q = line.match(/^\|\s*Q\s*\|(.*)\|(.*)\|(.*)\|\s*$/)
-    if (q) steps.push({ id: 'Q', done: false, text: q[1].trim(), size: q[2].trim(), notes: q[3].trim() })
   }
   const orderLine = body.split('\n').find((l) => l.startsWith('Order:')) || ''
   const order = (orderLine.match(/\*\*(.+?)\*\*/)?.[1] || '').split('→').map((s) => s.trim()).filter(Boolean)
@@ -84,7 +83,12 @@ const sections = parseRoadmap(read('docs/ROADMAP.md'))
 const plan = parsePlan(read('docs/RESEARCH.md'))
 const byId = Object.fromEntries(plan.steps.map((s) => [s.id, s]))
 const orderedSteps = plan.order.map((id) => byId[id]).filter(Boolean)
-const nowStep = orderedSteps.find((s) => !s.done)
+// "Working on now": the next open content-plan step, else the first open roadmap item
+const nowStep =
+  orderedSteps.find((s) => !s.done) ??
+  sections
+    .flatMap((s) => s.items.filter((i) => !i.done && !i.dropped).map((i) => ({ id: s.title.split(/\s+[—·]\s+/)[0], text: i.text })))
+    .find(Boolean)
 
 const commits = git('log -12 --date=short --format=%h%x09%ad%x09%s')
   .split('\n')

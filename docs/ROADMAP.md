@@ -74,7 +74,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 
 ## Phase 5 — Hardening · 1–2 sessions
 - [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
-- [ ] Clean up old room messages in Firebase (they pile up; the rules only allow creating, not deleting)
+- [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
 ## Later
 - [ ] Content enhancement: help and data for SRD weapons and armor (damage, properties, mastery), more action sources (class features), items/magic items, spells, and other SRD 5.2.1 content
