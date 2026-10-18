@@ -147,13 +147,15 @@ and the 7 untranslated spells in `src/data/README.md`.
    `glossaryTh.ts`, `src/ui/useGlossaryTh.ts`; 📖 rules tab and the phone help sheet ("📖 อ่านกติกาเต็ม").
    Other `docs/DND-TH/` text (adventures, non-SRD) stays out of the app. **Equipment** (`equipmentTh.ts`,
    `useEquipmentTh`): Thai names everywhere items are listed or searched, Thai text only where the SRD English has
-   text, tool uses, property/mastery text. **Next: monsters** (owner planned it for next week, 2026-10-13).
+   text, tool uses, property/mastery text. **Monsters (2026-10-18):** `monstersTh.ts`, `useMonstersTh`, `th` prop on
+   `MonsterStatBlock` (lookup + DM panel): Thai names in the list and search, Thai traits/actions with the ไทย/EN switch;
+   numbers stay the English data and Thai text with different numbers isn't used (see `src/data/README.md`).
    - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
      `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
    - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
      (`2024-classes.zip`, `2024-races.zip`; not in git).
    - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
-     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → ~~glossary~~ → ~~equipment~~ → monsters (next week).
+     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → ~~glossary~~ → ~~equipment~~ → ~~monsters~~.
    - DND-TH asked to hear about typos; the build scripts list them (spells: 5 sent to the owner to forward;
      feats/classes: Grappler "น้้น" → "นั้น", Barbarian Weapon Mastery "เปลีี่ยน" → "เปลี่ยน"; glossary: 7, listed
      in `src/data/README.md`).
