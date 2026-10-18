@@ -129,8 +129,7 @@ and the 7 untranslated spells in `src/data/README.md`.
      skill `dnd-th-library`). Owner's choices: DND-TH wording · 2024 SRD stat blocks where they exist · the book's
      difficulty with safety valves · dragon d20 location rolls, Session 1 = scare only.
    - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
-   - Battle maps and tokens: Owlbear Rodeo, files in `docs/Owlbear-Rodeo/` (third-party art; the `.gitignore` line for
-     it was added by another session and is **not committed yet**).
+   - Battle maps and tokens: Owlbear Rodeo, files in `docs/Owlbear-Rodeo/` (third-party art, git-ignored).
    - Voices for read-aloud (prep time only, on the laptop): Paxa Labs Thai TTS, key `PAXA_API_KEY` in `.env.local`,
      never in the app (see Claude's memory `paxa-tts`).
    - **Never put test copies of the pack inside the repo** (e.g. `public/`): one leaked in `b5cd2a8` and is still in git
