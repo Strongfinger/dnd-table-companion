@@ -13,6 +13,7 @@ import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
 import LevelUp from './LevelUp'
 import UpgradePanel from './UpgradePanel'
+import { missingLevelChoices } from '../model/feats'
 import { characterArmorClass } from '../model/inventory'
 import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
@@ -21,6 +22,18 @@ import SpellList from './SpellList'
 import { Button, Section, Stat } from '../ui/kit'
 import { Term } from '../ui/help'
 import { classLabel } from '../model/monsterCharacter'
+
+/** Reminder for a subclass or Ability Score Improvement the character should have by their level. */
+function MissingChoices({ c }: { c: Parameters<typeof missingLevelChoices>[0] }) {
+  const missing = missingLevelChoices(c)
+  if (missing.length === 0) return null
+  return (
+    <div className="flex items-start justify-between gap-2 rounded-lg bg-amber-950 p-3 text-sm text-amber-200">
+      <ul className="space-y-0.5">{missing.map((m) => <li key={m.message}>⚠️ {m.message}</li>)}</ul>
+      <Button className="shrink-0 px-3 py-1 text-sm" onClick={() => go(`/c/${c.id}/edit`)}>เลือก</Button>
+    </div>
+  )
+}
 
 export default function CharacterSheet({ id }: { id: string }) {
   // null = not found, undefined = still loading.
@@ -68,6 +81,7 @@ export default function CharacterSheet({ id }: { id: string }) {
 
       <LiveBadge characterId={c.id} />
       <UpgradePanel c={c} />
+      <MissingChoices c={c} />
       {exporting && <ExportPanel c={c} />}
       {!!c.levelLock?.granted && !levelingUp && <p className="rounded-lg bg-amber-950 p-2 text-sm text-amber-200">⬆️ DM อนุญาตให้เลเวลอัปแล้ว · กดปุ่ม ⬆️ ด้านบน</p>}
       {levelingUp && mayLevelUp(c, runsCampaign) && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
