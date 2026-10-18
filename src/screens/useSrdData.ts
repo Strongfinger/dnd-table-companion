@@ -7,6 +7,7 @@ import type { SpellsThFile, SpellTh } from '../model/spellsTh'
 import type { FeaturesThFile, FeatureTh } from '../model/featuresTh'
 import type { MagicItemsThFile, MagicItemTh } from '../model/magicItemsTh'
 import type { EquipmentThFile } from '../model/equipmentTh'
+import type { MonstersThFile, MonsterTh } from '../model/monstersTh'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
 import { loadFeatureTexts, type SrdFeatureTexts } from '../model/featureTexts'
 
@@ -16,6 +17,7 @@ const thaiSpellFile = import.meta.glob<SpellsThFile>('../data/srd-spells-th.json
 const thaiFeatureFile = import.meta.glob<FeaturesThFile>('../data/srd-features-th.json', { import: 'default' })
 const thaiItemFile = import.meta.glob<MagicItemsThFile>('../data/srd-magic-items-th.json', { import: 'default' })
 const thaiEquipmentFile = import.meta.glob<EquipmentThFile>('../data/srd-equipment-th.json', { import: 'default' })
+const thaiMonsterFile = import.meta.glob<MonstersThFile>('../data/srd-monsters-th.json', { import: 'default' })
 
 /** Thai spell text by spell id, or {} when there is none. */
 export function useSpellsTh(): Record<string, SpellTh> {
@@ -56,6 +58,16 @@ export function useEquipmentTh(): Pick<EquipmentThFile, 'items' | 'properties' |
     load?.().then((f) => setData({ items: f.items ?? {}, properties: f.properties ?? {}, masteries: f.masteries ?? {} }))
   }, [])
   return data
+}
+
+/** Thai monster names and stat block text by SRD monster id, or {} when there is none. */
+export function useMonstersTh(): Record<string, MonsterTh> {
+  const [map, setMap] = useState<Record<string, MonsterTh>>({})
+  useEffect(() => {
+    const load = Object.values(thaiMonsterFile)[0]
+    load?.().then((f) => setMap(f.monsters ?? {}))
+  }, [])
+  return map
 }
 
 export function useMonsters(): FullMonster[] | null {

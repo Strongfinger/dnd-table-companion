@@ -18,7 +18,7 @@ import { EquipmentSearch, FeatureSearch, MagicItemSearch } from './LookupMore'
 import { LangSwitch, ThaiCredit } from '../ui/ThaiText'
 import { useTextLang } from '../ui/useTextLang'
 import { useGlossaryTh } from '../ui/useGlossaryTh'
-import { useMonsters, useSpells, useSpellsTh } from './useSrdData'
+import { useMonsters, useMonstersTh, useSpells, useSpellsTh } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
 export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'items' | 'features'
@@ -74,14 +74,15 @@ function ResultLink({ href, onOpen, className, children }: { href: string; onOpe
 
 export function MonsterSearch({ onOpen }: { onOpen?: OpenResult }) {
   const monsters = useMonsters()
+  const thai = useMonstersTh()
   const [query, setQuery] = useState('')
   const [crMax, setCrMax] = useState(30)
   if (!monsters) return <p className="text-stone-400">กำลังโหลดข้อมูลมอนสเตอร์…</p>
-  const found = searchMonsters(monsters, query, crMax) as FullMonster[]
+  const found = searchMonsters(monsters, query, crMax, Object.fromEntries(Object.entries(thai).map(([id, t]) => [id, t.name]))) as FullMonster[]
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <div className="flex-1"><TextInput value={query} placeholder="ชื่อหรือประเภท เช่น goblin, dragon, undead" onChange={setQuery} /></div>
+        <div className="flex-1"><TextInput value={query} placeholder="ชื่อหรือประเภท เช่น goblin, กอบลิน, dragon, undead" onChange={setQuery} /></div>
         <select aria-label="CR" className="rounded-lg border border-stone-600 bg-stone-900 px-2 text-base" value={crMax} onChange={(e) => setCrMax(Number(e.target.value))}>
           {CR_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
@@ -93,6 +94,7 @@ export function MonsterSearch({ onOpen }: { onOpen?: OpenResult }) {
             <ResultLink href={`#/lookup/monster/${m.id}`} onOpen={onOpen && (() => onOpen({ kind: 'monster', id: m.id }))} className="flex items-center justify-between gap-2 rounded-lg bg-stone-800 px-3 py-2 hover:bg-stone-700">
               <span>
                 <b>{m.name}</b>
+                {thai[m.id] && <span className="ml-1 text-xs text-stone-400">{thai[m.id].name}</span>}
                 <span className="ml-2 text-xs text-stone-400">{m.size} {m.type}</span>
               </span>
               <span className="text-right text-sm text-stone-400">CR {formatCR(m.cr)} · AC {m.ac} · HP {m.hp}</span>
@@ -265,6 +267,7 @@ export function RulesSearch() {
 export function MonsterView({ id }: { id: string }) {
   const isPlayer = useIsPlayer()
   const monsters = useMonsters()
+  const thai = useMonstersTh()
   if (isPlayer) return <p className="text-center text-stone-400">ข้อมูลมอนสเตอร์ดูได้เฉพาะ DM · <a href="#/lookup/rules" className="underline">กลับ</a></p>
   if (!monsters) return <p className="text-stone-400">กำลังโหลด…</p>
   const m = monsters.find((x) => x.id === id)
@@ -273,7 +276,7 @@ export function MonsterView({ id }: { id: string }) {
     <div className="space-y-4">
       <BackLink fallback="/lookup/monsters" />
       <AddToFight m={m} />
-      <MonsterStatBlock m={m} />
+      <MonsterStatBlock m={m} th={thai[m.id]} />
     </div>
   )
 }

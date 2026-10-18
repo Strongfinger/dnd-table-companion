@@ -36,11 +36,11 @@ export function formatCR(cr: number): string {
   return String(cr)
 }
 
-/** Search by name or type (case-insensitive), optionally limited to a CR range. Lower CR first. */
-export function searchMonsters(list: SrdMonster[], query: string, crMax = 30): SrdMonster[] {
+/** Search by name, Thai name (when given, by id) or type (case-insensitive), optionally limited to a CR range. Lower CR first. */
+export function searchMonsters(list: SrdMonster[], query: string, crMax = 30, thaiNames?: Record<string, string>): SrdMonster[] {
   const q = query.trim().toLowerCase()
   return list
-    .filter((m) => m.cr <= crMax && (!q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q)))
+    .filter((m) => m.cr <= crMax && (!q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q) || !!thaiNames?.[m.id]?.includes(q)))
     .sort((a, b) => a.cr - b.cr || a.name.localeCompare(b.name))
 }
 

@@ -14,7 +14,7 @@ import { Button } from '../ui/kit'
 import { MonsterSearch, RulesSearch, SpellCard, SpellSearch, type OpenResult } from './Lookup'
 import Generators from './Generators'
 import { NotebookList, NotebookPage } from './Notebook'
-import { useMonsters, useSpells } from './useSrdData'
+import { useMonsters, useMonstersTh, useSpells } from './useSrdData'
 
 type PanelTab = 'stats' | 'lookup' | 'gen' | 'notes' | 'log'
 const TABS: { id: PanelTab; label: string }[] = [
@@ -76,6 +76,7 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
 /** The active monster's stat block (follows the turn), or one picked from this fight. */
 function StatsTab({ encounter }: { encounter: Encounter }) {
   const monsters = useMonsters()
+  const thai = useMonstersTh()
   const [picked, setPicked] = useState<string | null>(null) // SRD id; null = follow the turn
   if (!monsters) return <p className="text-sm text-stone-400">กำลังโหลดข้อมูลมอนสเตอร์…</p>
 
@@ -104,7 +105,7 @@ function StatsTab({ encounter }: { encounter: Encounter }) {
       {shown ? (
         <>
           {!picked && active && <p className="text-xs text-amber-300">ตาของ {active.name}</p>}
-          <MonsterStatBlock m={shown} />
+          <MonsterStatBlock m={shown} th={thai[shown.id]} />
         </>
       ) : (
         <p className="rounded-lg bg-stone-900 p-3 text-sm text-stone-400">
@@ -124,6 +125,7 @@ function LookupTab({ encounter }: { encounter: Encounter }) {
   const [sub, setSub] = useState<'monsters' | 'spells' | 'rules'>('monsters')
   const [open, setOpen] = useState<Parameters<OpenResult>[0] | null>(null)
   const monsters = useMonsters()
+  const thai = useMonstersTh()
   const spells = useSpells()
   const [added, setAdded] = useState('')
 
@@ -141,7 +143,7 @@ function LookupTab({ encounter }: { encounter: Encounter }) {
             {added && <span className="text-xs text-emerald-300">เพิ่ม {added} แล้ว</span>}
           </div>
         )}
-        {m && <MonsterStatBlock m={m} />}
+        {m && <MonsterStatBlock m={m} th={thai[m.id]} />}
         {sp && <SpellCard sp={sp} />}
       </div>
     )

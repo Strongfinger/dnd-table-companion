@@ -227,3 +227,26 @@ and the 2 Spell Scroll lines (not in DND-TH's equipment file).
   "Utilize" line.
 - **Made by:** `node scripts/srd/equipment-th.ts <equipments.json>` (`src/model/equipmentTh.ts`).
 - **Typos found:** none.
+
+## srd-monsters-th.json
+
+Thai monster names and stat block text for **340 of the 341** SRD 5.2.1 monster entries (each Vampire and
+lycanthrope form counted), by the ids in `srd-monsters.json`: the traits, actions, bonus actions, reactions and
+legendary actions, **1,385 of 1,392 entries**. Only words: every number on the card (AC, HP, scores, CR…) is still
+the English data. Translation by **DND-TH**, **CC BY-NC-SA 4.0**, used with permission (2026-10-13).
+
+- **Source:** https://dnd-th.com/data/monsters.json (the owner downloaded it 2026-10-18, 1,063,577 bytes,
+  SHA-256 `857d8ff45a97b5af89c928316ac94a79e5dc482fc64f2ed61cb1fbbc25c3c7a1`): 334 `version: "2024"` monsters and
+  2 homebrew ones (left out). One stat block per Vampire/lycanthrope; each of our forms takes the entries it has.
+- **Made by:** `node scripts/srd/monsters-th.ts <monsters.json>` (`src/model/monstersTh.ts`). Each Thai entry is
+  matched to ours by the English name in its header ("**_ควบคุมจิตใจ (Dominate Mind) (2/วัน)._**"), also without
+  the note ("Entangling Rope (Requires Magic Rope)"), as a plural ("Vampire Weaknesses") or DND-TH's typo
+  "Lighting Blade". Paragraphs without a header (spell lists, second paragraphs) join the entry before; the Legendary
+  Actions intro is left out (the card writes its own).
+- **Number check:** an entry is used only when its dice, DCs and bonuses equal the English text's (DND-TH writes
+  "spell save DC 14" as "DC การทอยป้องกันคาถา 14"); a test checks the whole file. All match except Rhinoceros
+  Gore, whose Thai leaves out "an extra 9 (2d8) Piercing damage" (stays English; worth telling DND-TH).
+- **Stay English:** Warhorse Skeleton (no DND-TH entry); Mule, because **our English Mule is the Octopus stat
+  block** (5e-bits error: Compression, Tentacles, Ink Cloud; the SRD 5.2.1 has both a Mule and an Octopus; fix the
+  English from the PDF); Ancient Copper Dragon's "Spike (level 5 version)" entry (a 5e-bits split of its spell list).
+- **Typos found:** none by `findTypos`. Seen by eye: Aboleth "ใต้นำ" (ใต้น้ำ), "Tentable" (Tentacle).
