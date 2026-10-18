@@ -36,7 +36,8 @@ export interface RoomConnection {
   send: (e: Envelope) => void
   /** Update what others see about me (e.g. the character I picked). */
   updateMe: (patch: Partial<Pick<Me, 'name' | 'characterId' | 'characterName'>>) => void
-  leave: () => void
+  /** `forget`: also take me off the member list (when kicked), instead of just showing me offline. */
+  leave: (options?: { forget?: boolean }) => void
 }
 
 export interface RoomTransport {

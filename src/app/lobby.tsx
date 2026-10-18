@@ -25,7 +25,7 @@ import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { cleanupOldMessages, firebaseTransport } from '../sync/firebaseTransport'
-import { isDm, isKicked, parseKick, lastHostedRoom, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
+import { addKicked, isDm, isKicked, parseKick, lastHostedRoom, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
 import {
@@ -150,9 +150,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function disconnect() {
+  /** `forget`: kicked, so also leave the room's member list (see RoomConnection.leave). */
+  function disconnect(forget = false) {
     connectRun.current++
-    conn.current?.leave()
+    conn.current?.leave({ forget })
     conn.current = null
     membersRef.current = []
     setMembers([])
@@ -181,11 +182,17 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     }
     if (e.kind === 'kick') {
       const kick = parseKick(e.body)
-      // Only the DM may remove someone, and only this device reacts to its own kick.
-      if (kick?.deviceId === deviceFor(s.local).id && isDm(membersRef.current, e.from)) {
-        disconnect()
+      // Only the DM may remove someone.
+      if (!kick || !isDm(membersRef.current, e.from)) return
+      if (kick.deviceId === deviceFor(s.local).id) {
+        disconnect(true)
         save(null)
         setKickedNotice(`${e.fromName} (DM) นำคุณออกจากห้อง ${s.code}`)
+      } else if (s.role === 'player' && !isKicked((sessionRef.current ?? s).kicked, kick.deviceId)) {
+        // Someone else was removed: remember it, so their (offline) entry leaves my member list too.
+        const name = membersRef.current.find((m) => m.deviceId === kick.deviceId)?.name ?? ''
+        const now = sessionRef.current ?? s
+        save({ ...now, kicked: addKicked(now.kicked, kick.deviceId, name) })
       }
       return
     }
@@ -212,6 +219,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     const theirCharacter = membersRef.current.find((m) => m.deviceId === from)?.characterId
     const handedToThem = s.grants.filter((g) => g.deviceId === from).map((g) => g.characterId)
     send('control', { grants: s.grants })
+    // Removed devices still listed (e.g. offline when kicked): tell the newcomer, so it hides them too.
+    for (const k of s.kicked) if (membersRef.current.some((m) => m.deviceId === k.deviceId)) send('kick', { deviceId: k.deviceId })
     for (const id of handedToThem) {
       const c = await getCharacter(id)
       if (c) sendState(c)
@@ -679,7 +688,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (!s || s.role !== 'dm' || isKicked(s.kicked, deviceId)) return
       conn.current?.send(makeEnvelope('kick', { deviceId }, deviceFor(s.local)))
       const name = membersRef.current.find((m) => m.deviceId === deviceId)?.name ?? ''
-      save({ ...s, kicked: [...s.kicked, { deviceId, name }] })
+      save({ ...s, kicked: addKicked(s.kicked, deviceId, name) })
     },
     readmit: (deviceId) => {
       const s = sessionRef.current

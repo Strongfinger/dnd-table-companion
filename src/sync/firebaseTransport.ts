@@ -34,6 +34,7 @@ export function firebaseTransport(): RoomTransport | null {
       const queue: Envelope[] = []
       let sendNow: ((e: Envelope) => void) | null = null
       let updateSelf: (() => void) | null = null
+      let goOffline: ((forget: boolean) => void) | null = null
       const cleanups: (() => void)[] = []
       handlers.onStatus('connecting')
 
@@ -122,7 +123,12 @@ export function firebaseTransport(): RoomTransport | null {
         // `at` on the record is when it was sent (listeners only read recent records); the envelope
         // inside keeps its own time. A change re-sent from a player's outbox is old but sent now.
         sendNow = (e) => void db.push(db.ref(database, `${room}/messages`), { fromUid: user.uid, at: Date.now(), json: JSON.stringify(e) })
-        cleanups.push(() => void db.update(memberRef, { online: false, lastSeen: db.serverTimestamp() }))
+        // Leaving: show me offline. Kicked (`forget`): delete my member record, or the others keep seeing
+        // me as an offline member. Cancel the "mark me offline" first: it would write a half record after the delete.
+        goOffline = (forget) => {
+          if (forget) db.onDisconnect(memberRef).cancel().then(() => db.remove(memberRef)).catch((err) => console.error('lobby: could not leave room', err))
+          else void db.update(memberRef, { online: false, lastSeen: db.serverTimestamp() })
+        }
       })().catch((err) => {
         console.error('lobby: could not connect', err)
         handlers.onStatus('offline')
@@ -135,9 +141,10 @@ export function firebaseTransport(): RoomTransport | null {
           self = { ...self, ...patch }
           updateSelf?.()
         },
-        leave: () => {
+        leave: (options) => {
           closed = true
           cleanups.splice(0).forEach((stop) => stop())
+          goOffline?.(options?.forget === true)
           handlers.onStatus('offline')
         },
       }
