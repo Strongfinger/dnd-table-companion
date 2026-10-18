@@ -73,8 +73,13 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character, rate limit per device (4.4)
 
 ## Phase 5 — Hardening · 1–2 sessions
-- [ ] Multi-device tests (several browser tabs as players), a real test session with friends, fixes
-- [ ] Translation: Thai text for SRD rules content, game terms stay English, English original kept (TH/EN switch).
+- [ ] Multi-device tests, a real test session with friends, fixes
+  - [x] Playtest (2026-10-16) and its fixes (2026-10-18, PRs #1–#3): DM rejoins the room they left, Thai help for the
+        18 skills, Action/Bonus Action/Reaction only suggest spells and features that fit, spells open in place + back
+        button, ค้นหา tab for everyone, party rest on the DM tab, missing subclass/ASI warning, kicked players leave
+        every list
+  - [ ] First real session with friends (Icespire Session 1) on several phones; check the Firebase cleanup live
+- [x] Translation: Thai text for SRD rules content, game terms stay English, English original kept (TH/EN switch).
       Source: **DND-TH's translation, used with permission (2026-10-13)**; only SRD 5.2.1 (2024) entries, credit
       DND-TH. Our own translation only where DND-TH has none.
   - [x] Spells: 332 of 339 (`src/data/srd-spells-th.json`, 2026-10-13)
@@ -83,7 +88,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
   - [x] Class features (231/232) and species traits (all base traits) from DND-TH's markdown pages (2026-10-13; sheet + Lookup 🧬)
   - [x] Rules Glossary incl. conditions: all 154 SRD entries (2026-10-13; 📖 rules tab + help sheet on phones)
   - [x] Equipment: 180 of 196 items + all weapon properties and masteries (2026-10-13; Lookup ⚔️, inventory picker and details)
-  - [ ] Monster names/stat blocks (planned for next week, owner 2026-10-13)
+  - [x] Monsters: Thai names + stat block text, 340 of 341 monsters, ไทย/EN switch, Thai search (`src/data/srd-monsters-th.json`, 2026-10-18, PR #4)
 - [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
 ## Later
