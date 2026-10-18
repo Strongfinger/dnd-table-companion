@@ -84,7 +84,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
       DND-TH. Our own translation only where DND-TH has none.
   - [x] Spells: 332 of 339 (`src/data/srd-spells-th.json`, 2026-10-13)
   - [x] Feats: all 17 SRD feats (`src/data/srd-features-th.json`, 2026-10-13; Lookup 🧬 tab and the sheet)
-  - [x] Magic items: 259 of 263 (`src/data/srd-magic-items-th.json`, 2026-10-13; new Lookup tab 🪄 ไอเทมเวท, loot generator)
+  - [x] Magic items: 274 of 278 (`src/data/srd-magic-items-th.json`, 2026-10-13; +15 SRD items 5e-bits lacks, from the PDF, 2026-10-18; new Lookup tab 🪄 ไอเทมเวท, loot generator)
   - [x] Class features (231/232) and species traits (all base traits) from DND-TH's markdown pages (2026-10-13; sheet + Lookup 🧬)
   - [x] Rules Glossary incl. conditions: all 154 SRD entries (2026-10-13; 📖 rules tab + help sheet on phones)
   - [x] Equipment: 180 of 196 items + all weapon properties and masteries (2026-10-13; Lookup ⚔️, inventory picker and details)

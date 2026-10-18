@@ -56,11 +56,11 @@ description and the higher-level / cantrip-upgrade text.
 
 ## srd-magic-items.json
 
-SRD 5.2.1 magic items for the loot generator (263 entries): name, rarity, category, attunement and
+SRD 5.2.1 magic items for the loot generator (278 entries): name, rarity, category, attunement and
 description. Loaded only when the loot generator opens.
 
 - **Source:** item list, rarity, category and attunement from 5e-bits/5e-database
-  `src/2024/en/5e-SRD-Magic-Items.json` (downloaded 2026-10-12, again 2026-10-13 unchanged, 288,137 bytes, SHA-256
+  `src/2024/en/5e-SRD-Magic-Items.json` (263 items; 15 more from the PDF, see below) (downloaded 2026-10-12, again 2026-10-13 unchanged, 288,137 bytes, SHA-256
   `c97abb7d570656f9329007f17d5bb4fddbe0d65d62abd141f66c1ff3b9c39d2f`). **Descriptions from the official SRD 5.2.1
   PDF** (`SRD_CC_v5.2.1.pdf` from D&D Beyond, 6,031,375 bytes, SHA-256 `8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87`;
   "Magic Items A–Z", pp. 209–253), text taken out with
@@ -87,10 +87,14 @@ description. Loaded only when the loot generator opens.
   lines ("be- comes") are joined when the joined word is a real word or the second part a suffix ("-ing"); compounds
   ("bright-pink", "50-foot-long") keep the hyphen. Checked: the prose matches the PDF word for
   word.
-- **Not in the app yet:** 15 SRD 5.2.1 items that 5e-bits doesn't have: Bead of Nourishment, Cloak of Invisibility,
-  Elixir of Health, Energy Bow, Gloves of Thievery, Hat of Many Spells, Potions of Invulnerability, Longevity and
-  Vitality, Quarterstaff of the Acrobat, Rod of Resurrection, Sending Stones, Sentinel Shield, Shield of the Cavalier,
-  Thunderous Greatclub.
+- **Items from the PDF only** (`PDF_ONLY` in the script, added 2026-10-13): 15 SRD 5.2.1 items that 5e-bits doesn't
+  have: Bead of Nourishment, Cloak of Invisibility, Elixir of Health, Energy Bow, Gloves of Thievery, Hat of Many
+  Spells, Potions of Invulnerability, Longevity and Vitality, Quarterstaff of the Acrobat, Rod of Resurrection, Sending
+  Stones, Sentinel Shield, Shield of the Cavalier, Thunderous Greatclub. Their id (`hat-of-many-spells`), name, rarity
+  and attunement come from the PDF's heading and type line; the category from the type line's first word, named like
+  5e-bits does (Weapon → Weapons, Potion → Potions, Rod and Scroll → Wondrous Items…). The script checks this mapping
+  against the 5e-bits category of all 263 other items. The script fails if a `PDF_ONLY` item turns up in 5e-bits.
+- **Not in the app:** nothing; all SRD 5.2.1 magic items are in.
 
 ## srd-equipment.json
 
@@ -177,7 +181,7 @@ them). Translation by **DND-TH** (https://dnd-th.com/), **CC BY-NC-SA 4.0**, use
 
 ## srd-magic-items-th.json
 
-Thai name and text for **259 of the 263** SRD 5.2.1 magic items, by the ids in `srd-magic-items.json`.
+Thai name and text for **274 of the 278** SRD 5.2.1 magic items, by the ids in `srd-magic-items.json`.
 Translation by **DND-TH**, **CC BY-NC-SA 4.0**, used with permission (2026-10-13). Stay English: Amulet of the
 Planes, Mace of Terror, Weapon of Warning (no 2024 DND-TH entry) and Dragon Orb (DND-TH's "Orb of Dragonkind" is
 the longer Dragonlance artifact, not the SRD item).

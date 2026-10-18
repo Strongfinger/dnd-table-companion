@@ -191,6 +191,22 @@ export const TABLES = {
     ],
     check: false,
   }],
+  'hat-of-many-spells': [{
+    from: '1d100 Effect', to: 'destroyed before then.',
+    rows: rollTable('1d100 | Effect', [
+      '01–50 | You cast a random spell determined by rolling 1d10: on a 1, Enlarge/Reduce (enlarge effect); on a 2, Enlarge/Reduce (reduce effect); on a 3, Faerie Fire; on a 4, Fireball; on a 5, Gust of Wind; on a 6, Invisibility (cast on yourself); on a 7, Lightning Bolt; on an 8, Phantasmal Force; on a 9, Polymorph; on a 10, Stinking Cloud.',
+      '51–55 | You have the Stunned condition until the end of your next turn, believing something awesome just happened.',
+      '56–60 | A harmless swarm of butterflies fills a 10-foot Cube within 30 feet of yourself. The swarm disperses after 1 minute.',
+      "61–65 | You pull a nonmagical object out of the hat. Roll 1d4 to determine the object: on a 1, a vial of Acid; on a 2, a flask of Alchemist's Fire; on a 3, a Crowbar; on a 4, a lit Torch.",
+      '66–70 | You suffer a bout of "magic sickness" and have the Poisoned condition for 1 hour.',
+      '71–75 | You have the Petrified condition until the end of your next turn.',
+      '76–80 | You pull a nonmagical object out of the hat. Roll 1d4 to determine the object: on a 1, a Dagger; on a 2, a Rope with a Grappling Hook tied to one end; on a 3, a bag of Caltrops; on a 4, a gem worth 50 GP.',
+      "81–85 | A creature appears in an unoccupied space as close to you as possible. The creature isn't under your control and acts as it normally would, and it disappears after 1 hour or when it drops to 0 Hit Points. Roll 1d4 to determine the creature: on a 1, a Camel; on a 2, a Constrictor Snake; on a 3, an Elephant; on a 4, a Mule.",
+      '86–90 | A Hostile Swarm of Bats flies out of the hat, occupies your space, and attacks you.',
+      '91–95 | A vertical, 10-foot-diameter, two-way portal to another plane of existence opens in an unoccupied space within 30 feet of you and remains open until the end of your next turn. The GM determines where it leads.',
+      "96–00 | You pull a magic item out of the hat. Roll 1d6 to determine the item's rarity: on a 1–3, Common; on a 4–5, Uncommon; on a 6, Rare. The GM chooses the item, which disappears after 1 hour if it's not consumed or destroyed before then.",
+    ]),
+  }],
   'horn-of-valhalla': [{
     from: '1d100 Horn Type Spirits Requirement', to: 'Martial weapons',
     rows: rollTable('1d100 | Horn Type | Spirits | Requirement', [

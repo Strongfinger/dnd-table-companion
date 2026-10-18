@@ -1,7 +1,8 @@
 // Builds src/data/srd-magic-items.json (SRD 5.2.1 magic items, for the loot generator and the lookup).
 //
 // The item list, rarity, category and attunement come from the 5e-bits/5e-database file
-// src/2024/en/5e-SRD-Magic-Items.json. The descriptions come from the official SRD 5.2.1 PDF instead, because
+// src/2024/en/5e-SRD-Magic-Items.json, except for PDF_ONLY items (in the SRD but not in 5e-bits), which take them
+// from the PDF's heading and type line. The descriptions come from the official SRD 5.2.1 PDF instead, because
 // the 5e-bits texts have too many errors to patch (rows missing from tables, text from one item pasted into
 // another, words run together, tables flattened). Tables are written out by hand in magic-item-tables.mjs.
 //
@@ -48,13 +49,20 @@ const PDF_NAMES = {
   'Ammunition, +1, +2, or +3': 'ammunition', 'Armor, +1, +2, or +3': 'armor', 'Shield, +1, +2, or +3': 'shield',
   'Weapon, +1, +2, or +3': 'weapon', 'Wand of the War Mage, +1, +2, or +3': 'wand-of-the-war-mage',
 }
-/** SRD 5.2.1 items that the 5e-bits file doesn't have (not in the app yet). */
-const NOT_IN_SOURCE = [
+/** SRD 5.2.1 items that the 5e-bits file doesn't have: their name, rarity, category and attunement come from the PDF. */
+const PDF_ONLY = [
   'Bead of Nourishment', 'Cloak of Invisibility', 'Elixir of Health', 'Energy Bow', 'Gloves of Thievery', 'Hat of Many Spells',
   'Potion of Invulnerability', 'Potion of Longevity', 'Potion of Vitality', 'Quarterstaff of the Acrobat', 'Rod of Resurrection',
   'Sending Stones', 'Sentinel Shield', 'Shield of the Cavalier', 'Thunderous Greatclub',
 ]
 /** A type line: "Wondrous Item, Rare (Requires Attunement)", "Weapon (Any Ammunition), Very Rare"… */
+/** The category for each kind of type line, named like 5e-bits does (it files rods and scrolls as Wondrous Items). */
+const CATEGORIES = {
+  Armor: 'Armor', Weapon: 'Weapons', 'Wondrous Item': 'Wondrous Items', Potion: 'Potions', Ring: 'Rings',
+  Rod: 'Wondrous Items', Scroll: 'Wondrous Items', Staff: 'Staffs', Wand: 'Wands',
+}
+/** An id like the 5e-bits ones: "Hat of Many Spells" → "hat-of-many-spells". */
+const toId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const TYPE_LINE = /^(Armor|Weapon|Wondrous Item|Potion|Ring|Rod|Scroll|Staff|Wand)(, | \()/
 const key = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '')
 const byKey = new Map(raw.map((x) => [key(x.name), x.index]))
@@ -76,16 +84,15 @@ for (let i = 0; i < lines.length; i++) {
     const twoLines = byKey.get(key(lines[i - 1] + lines[i])) // a name printed over two lines
     const id = twoLines ?? byKey.get(key(lines[i]))
     if (twoLines) current.text.pop()
-    if (id || NOT_IN_SOURCE.includes(lines[i].trim())) {
+    const pdfOnly = !id && PDF_ONLY.includes(lines[i].trim()) ? lines[i].trim() : null
+    if (id || pdfOnly) {
       // The type line can run over a few lines: "…Very Rare (Requires" / "Attunement)", "…Rare" / "(+2), or…".
       let type = lines[++i]
       const goesOn = () => /(,|\(Requires|Very| or| by a)$/.test(type.trimEnd()) || type.split('(').length > type.split(')').length || !!lines[i + 1]?.startsWith('(')
       while (goesOn()) type += ' ' + lines[++i].trim()
-      current = { id: id ?? null, type: type.replace(/\s+/g, ' ').trim(), text: [] }
-      if (id) {
-        if (pdf.has(id)) fail(id, 'twice in the PDF')
-        pdf.set(id, current)
-      }
+      current = { id: id ?? toId(pdfOnly), name: pdfOnly, type: type.replace(/\s+/g, ' ').trim(), text: [] }
+      if (pdf.has(current.id)) fail(current.id, 'twice in the PDF')
+      pdf.set(current.id, current)
       continue
     }
     if (!lines[i].trim().endsWith('.')) fail(lines[i], 'looks like an item name but is not in the source')
@@ -176,6 +183,13 @@ function paragraphs(id, text) {
 
 // ---- The items ----
 
+/** The type line split up: "Weapon (Quarterstaff), Very Rare (Requires Attunement)" → kind, typeLine, rarity, attunement. */
+function parseType(id, type) {
+  const m = type.match(/^((Armor|Weapon|Wondrous Item|Potion|Ring|Rod|Scroll|Staff|Wand)\b.*?), (Common|Uncommon|Rare|Very Rare|Legendary|Artifact|Rarity Varies)\b(.*)$/)
+    ?? fail(id, `type line "${type}"`)
+  return { typeLine: m[1], category: CATEGORIES[m[2]], rarity: m[3], attunement: /\(Requires Attunement\b/.test(m[4]) }
+}
+
 const parentOf = new Map(raw.flatMap((x) => (x.variants ?? []).map((v) => [v.index, x.index])))
 const out = []
 for (const x of raw) {
@@ -183,11 +197,13 @@ for (const x of raw) {
   const name = str(x.name, id, 'name', 80)
   const entry = pdf.get(id) ?? pdf.get(parentOf.get(id)) ?? fail(id, 'not in the PDF')
   if ((x.attunement === true) !== /Requires Attunement/.test(entry.type)) fail(id, `attunement differs from the PDF (${entry.type})`)
-  const typeLine = entry.type.match(/^(.*?), (?:Common|Uncommon|Rare|Very Rare|Legendary|Artifact|Rarity Varies)\b/)?.[1] ?? fail(id, `type line "${entry.type}"`)
+  const { typeLine, category } = parseType(id, entry.type)
   // Variant entries write their rarity with the bonus, e.g. "Uncommon (+1)".
   const rarity = str(x.rarity?.name, id, 'rarity', 120).replace(/^(Common|Uncommon|Rare|Very Rare|Legendary) \(\+\d\)$/, '$1')
   if (RARITIES.includes(rarity) && !parentOf.has(id) && !entry.type.includes(`, ${rarity}`)) fail(id, `rarity ${rarity} differs from the PDF (${entry.type})`)
   const desc = [typeLine, ...paragraphs(entry.id, entry.text)].join('  \n ')
+  // The PDF's kind of item must give the 5e-bits category, so PDF_ONLY items get the same category names.
+  if (x.equipment_category?.name !== category) fail(id, `category ${x.equipment_category?.name} differs from the PDF (${entry.type})`)
   const base = { category: str(x.equipment_category?.name, id, 'category', 40), attunement: x.attunement === true, desc: str(desc, id, 'desc', 12000) }
   if (TIERS[id]) {
     for (const [tierName, tierRarity] of TIERS[id]) out.push({ id: `${id}-${tierRarity.toLowerCase().replace(' ', '-')}`, name: tierName, rarity: tierRarity, ...base })
@@ -198,6 +214,14 @@ for (const x of raw) {
   } else if ((x.variants ?? []).length === 0) {
     fail(id, `rarity "${rarity}" without variants`)
   } // else: a "+1/+2/+3" parent whose variants are their own entries
+}
+for (const name of PDF_ONLY) {
+  const entry = [...pdf.values()].find((e) => e.name === name) ?? fail(name, 'PDF_ONLY item not in the PDF (or now in 5e-bits)')
+  const { typeLine, category, rarity, attunement } = parseType(entry.id, entry.type)
+  if (!RARITIES.includes(rarity)) fail(entry.id, `PDF_ONLY item with rarity "${rarity}"`)
+  if (out.some((i) => i.id === entry.id)) fail(entry.id, 'id already used')
+  const desc = [typeLine, ...paragraphs(entry.id, entry.text)].join('  \n ')
+  out.push({ id: entry.id, name, rarity, category, attunement, desc: str(desc, entry.id, 'desc', 12000) })
 }
 for (const id of Object.keys(TABLES)) if (!pdf.has(id)) fail(id, 'table for an item that is not in the PDF')
 out.sort((a, b) => a.name.localeCompare(b.name))

@@ -3,7 +3,7 @@
 **Start here.** The app is feature-complete for the table. Phases 0–4 and 3 are done, plus the content plan in
 [docs/RESEARCH.md](RESEARCH.md) and the **Thai translation** of all SRD content (spells, feats, magic items, class
 features, species, Rules Glossary, equipment, monsters; DND-TH's text, with permission). A **playtest on
-2026-10-16** found five problems; they and two more were fixed on 2026-10-18 (PRs #1–#4, see "Phase 5" below).
+2026-10-16** found five problems; they and two more were fixed on 2026-10-18 (PRs #1–#4, see "Phase 5" below). All 278 SRD magic items are in.
 **Suggested next:** the first real session with friends (*Dragon of Icespire Peak* Session 1), then a fix pass.
 Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local post-commit hook rebuilds it).
 
@@ -145,17 +145,16 @@ and the 7 untranslated spells in `src/data/README.md`.
    are in `src/data/README.md`. Only SRD 5.2.1 entries; other `docs/DND-TH/` text stays out of the app.
    - **Gaps with no DND-TH text** (still English): 7 spells, 4 magic items, 16 equipment items, 1 class feature,
      1 monster. Could get our own translation.
-4. **Unfinished work in a worktree:** `.claude/worktrees/eager-bhabha-938e7b` (branch `claude/eager-bhabha-938e7b`)
-   has **uncommitted** changes adding the 15 SRD 5.2.1 magic items that 5e-bits lacks (`PDF_ONLY` in
-   `scripts/srd/magic-items.mjs`, a Hat of Many Spells table, data + README). Finish and merge it, or drop it on
-   purpose; don't delete the worktree by accident.
+4. **All 278 SRD 5.2.1 magic items are in (2026-10-18):** the 15 that 5e-bits lacks (Hat of Many Spells, Cloak of
+   Invisibility, Sending Stones…) are built from the PDF (`PDF_ONLY` in `scripts/srd/magic-items.mjs`; category named
+   like 5e-bits and checked against the other 263). Thai for 274 of 278 (see `src/data/README.md`).
 5. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
    Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
 
 ## Next steps (suggested)
 1. **Icespire Session 1** with friends on several phones; keep a list of problems during play.
 2. **Fix pass** on that list (one commit per issue, like the playtest PR).
-3. Optional: finish the 15 PDF-only magic items (item 4 above); our own Thai for the translation gaps; QR export
+3. Optional: our own Thai for the translation gaps; QR export
    (the last "Later" item in `docs/ROADMAP.md`).
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
