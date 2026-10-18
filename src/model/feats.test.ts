@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
-import { featPicksOf, featSlotViews, featWarnings, increaseProblem, setFeatPick } from './feats'
+import { featPicksOf, featSlotViews, featWarnings, increaseProblem, missingLevelChoices, setFeatPick } from './feats'
 import { parseCharacterImport, exportCharacter } from './io'
 
 const fighter = (o = {}) => createCharacter({
@@ -73,5 +73,16 @@ describe('feat slots on a character', () => {
     const barb = createCharacter({ name: 'B', className: 'Barbarian', level: 4, scores: { str: 12, dex: 12, con: 14, int: 10, wis: 10, cha: 8 } })
     expect(featWarnings(setFeatPick(barb, 'asi-4', 'Archery'))).toContain('Archery: ต้องมี Fighting Style ของ Class')
     expect(featWarnings(setFeatPick(barb, 'asi-4', 'Grappler', { str: 1 }))).toContain('Grappler: ต้องมี STR หรือ DEX 13+')
+  })
+})
+
+describe('missing subclass / ASI on the sheet', () => {
+  it('uses the feat picks (also on older sheets) and skips monsters', () => {
+    expect(missingLevelChoices(fighter()).map((m) => m.kind)).toEqual(['subclass', 'asi'])
+    const done = setFeatPick(fighter({ subclass: 'Champion' }), 'asi-4', 'Ability Score Improvement', { str: 2 })
+    expect(missingLevelChoices(done)).toEqual([])
+    // Older sheet with feat names only: the third feat fills the level 4 slot.
+    expect(missingLevelChoices(fighter({ subclass: 'Champion', feats: ['Alert', 'Skilled', 'Defense', 'Grappler'] }))).toEqual([])
+    expect(missingLevelChoices({ ...fighter(), monster: { cr: 1, pb: 2, hitDie: 8, source: 'x' } })).toEqual([])
   })
 })

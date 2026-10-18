@@ -2,7 +2,7 @@
 // Epic Boon), with the ability increases each pick applied, so a pick can be changed or removed and its
 // increase is taken back. `feats` (names) stays the list the rest of the app reads; it is rebuilt from the picks.
 // Feats outside the SRD (e.g. from the Player's Handbook) can be typed into any slot (owner decision 2026-10-13).
-import { ABILITIES, featSlots, findSrdFeat, hasFightingStyleFeature, type Ability, type FeatSlot } from '../rules'
+import { ABILITIES, featSlots, findSrdFeat, hasFightingStyleFeature, missingChoices, type Ability, type FeatSlot, type MissingChoice } from '../rules'
 import type { Character, FeatPick } from './character'
 
 /** Picks for every feat on the sheet. Older sheets (names only) get their feats placed into slots once. */
@@ -118,4 +118,10 @@ export function featWarnings(c: Character): string[] {
     if (srd?.name === 'Boon of Spell Recall' && !c.spellcastingAbility) out.push('Boon of Spell Recall: ต้องมี Spellcasting')
   }
   return out
+}
+
+/** Subclass and Ability Score Improvement / Epic Boon picks the character should have by now (sheet reminder). */
+export function missingLevelChoices(c: Character): MissingChoice[] {
+  if (c.monster) return []
+  return missingChoices({ ...c, filledSlots: featPicksOf(c).map((p) => p.slot) })
 }
