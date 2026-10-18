@@ -4,7 +4,7 @@ import { useLobby } from '../app/useLobby'
 import { visibleMembers } from '../sync/lobby'
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
-import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
+import type { SuggestionKind } from '../model/actionSuggestions'
 import { actionLabel, type CharacterAction } from '../model/characterActions'
 import {
   addEffect, conditionsToClear, damageMonster, sheetOnlyConditions, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
@@ -13,7 +13,7 @@ import {
 import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton } from '../ui/kit'
 import { Term } from '../ui/help'
-import UseActionDialog from '../ui/UseActionDialog'
+import ActionChoiceDialog from './ActionChoiceDialog'
 import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
@@ -268,9 +268,10 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           </div>
 
           {pending && (
-            <UseActionDialog
+            <ActionChoiceDialog
+              kind={pending}
+              character={isPc && character ? character : null}
               title={pending === 'concentration' ? `🔮 ${c.name} เริ่ม Concentration: คาถาอะไร?` : `⚡ ${c.name} ใช้ ${actionLabel(pending)} ทำอะไร?`}
-              suggestions={actionSuggestions(pending, isPc && character ? character : null)}
               placeholder={pending === 'concentration' ? 'พิมพ์ชื่อคาถา' : 'เลือกด้านบน หรือพิมพ์เอง (เว้นว่างได้)'}
               required={pending === 'concentration'}
               onCancel={() => setPending(null)}
