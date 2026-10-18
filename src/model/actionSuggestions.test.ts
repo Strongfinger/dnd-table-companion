@@ -58,6 +58,7 @@ const caster = createCharacter({
   features: [
     { id: 'r', name: 'Rage', max: 2, used: 0, recharge: 'long', srdId: 'barbarian-rage' },
     { id: 'as', name: 'Action Surge', max: 1, used: 0, recharge: 'short', srdId: 'fighter-action-surge' },
+    { id: 'fp', name: 'Focus Points', max: 2, used: 0, recharge: 'short', pool: true, srdId: 'monk-monks-focus' },
     { id: 'hb', name: 'Homebrew Trick', max: 1, used: 0, recharge: 'long' },
   ],
 })
@@ -69,6 +70,7 @@ describe('actionSuggestions: only what fits the button', () => {
     const list = actionSuggestions('bonusAction', caster, SRD)
     expect(magic(list)).toEqual(['Magic: Healing Word', 'Magic: Hex'])
     expect(list).toContain('Rage')
+    expect(list).toContain('Focus Points')
     expect(list).not.toContain('Action Surge')
     expect(list).not.toContain('Homebrew Trick')
   })

@@ -27,6 +27,12 @@ const ACTIVATION_KINDS: Record<Activation, ActionKind[]> = {
   Special: ['action', 'bonusAction', 'reaction'],
 }
 
+/** Pools marked 'Free' in the catalog whose main uses still take a Bonus Action (Flurry of Blows…, creating a spell slot). */
+const BONUS_ACTION_POOLS = new Set(['monk-monks-focus', 'sorcerer-font-of-magic'])
+
+const featureKinds = (id: string, activation: Activation): ActionKind[] =>
+  BONUS_ACTION_POOLS.has(id) ? ['bonusAction'] : ACTIVATION_KINDS[activation]
+
 type SpellInfo = Pick<SrdSpell, 'name' | 'castingTime' | 'concentration'>
 
 /**
@@ -57,7 +63,7 @@ export function actionSuggestions(
     .filter((f) => {
       if (!f.name) return false
       const srd = f.srdId ? findLimitedFeature(f.srdId) : undefined
-      return srd ? ACTIVATION_KINDS[srd.activation].includes(kind) : kind === 'action'
+      return srd ? featureKinds(srd.id, srd.activation).includes(kind) : kind === 'action'
     })
     .map((f) => f.name)
   const common = kind === 'concentration' ? [] : COMMON[kind]
