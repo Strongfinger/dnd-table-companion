@@ -15,6 +15,7 @@ import {
   type Ability, type GearOption, type ElfLineage, type Skill,
 } from '../rules'
 import { Button, Label, RuleMessages, Section, Stat, TextInput } from '../ui/kit'
+import { useHelp } from '../ui/useHelp'
 import { ABILITY_LABEL } from '../ui/labels'
 
 const STEPS = ['Class', 'Species', 'Background', 'Ability Scores', 'Skills', 'อุปกรณ์', 'สรุป'] as const
@@ -146,9 +147,12 @@ function Card({ selected, onClick, title, subtitle, children }: {
 }
 
 /** Small toggle chip for picking skills/feats/abilities. */
-function Chip({ on, disabled = false, onClick, children }: { on: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+/** `help`: a glossary term (e.g. a skill), shown on hover or press-and-hold. */
+function Chip({ on, disabled = false, onClick, help, children }: { on: boolean; disabled?: boolean; onClick: () => void; help?: string; children: ReactNode }) {
+  const helpProps = useHelp(help ?? '')
   return (
     <button
+      {...helpProps}
       type="button"
       disabled={disabled}
       onClick={onClick}
@@ -373,14 +377,15 @@ function SkillStep({ c, update }: StepProps) {
 
   return (
     <>
+      <p className="text-sm text-stone-400">กดค้าง (มือถือ) หรือชี้เมาส์ที่ชื่อ Skill เพื่อดูว่าใช้ทำอะไร</p>
       <Section title="Skill จาก Background">
-        <div className="flex flex-wrap gap-2">{bgSkills.map((s) => <Chip key={s} on onClick={() => {}}>{s} ✓</Chip>)}</div>
+        <div className="flex flex-wrap gap-2">{bgSkills.map((s) => <Chip key={s} on help={s} onClick={() => {}}>{s} ✓</Chip>)}</div>
       </Section>
 
       <Section title={`Skill จาก ${c.className}: เลือก ${info.skillCount} (${c.classSkills.length}/${info.skillCount})`}>
         <div className="flex flex-wrap gap-2">
           {classList.map((s) => (
-            <Chip key={s} on={c.classSkills.includes(s)} disabled={owned('class').includes(s)}
+            <Chip key={s} help={s} on={c.classSkills.includes(s)} disabled={owned('class').includes(s)}
               onClick={() => update({ classSkills: toggle(c.classSkills, s, info.skillCount), expertise: [] })}>{s}</Chip>
           ))}
         </div>
@@ -390,7 +395,7 @@ function SkillStep({ c, update }: StepProps) {
         <Section title={`Skill จาก ${c.species}: เลือก 1`}>
           <div className="flex flex-wrap gap-2">
             {speciesList.map((s) => (
-              <Chip key={s} on={c.speciesSkill === s} disabled={owned('species').includes(s)}
+              <Chip key={s} help={s} on={c.speciesSkill === s} disabled={owned('species').includes(s)}
                 onClick={() => update({ speciesSkill: c.speciesSkill === s ? null : s, expertise: [] })}>{s}</Chip>
             ))}
           </div>
@@ -401,7 +406,7 @@ function SkillStep({ c, update }: StepProps) {
         <Section title={`Feat Skilled: เลือก 3 (${c.skilledSkills.length}/3)`}>
           <div className="flex flex-wrap gap-2">
             {SKILLS.map((s) => (
-              <Chip key={s} on={c.skilledSkills.includes(s)} disabled={owned('skilled').includes(s)}
+              <Chip key={s} help={s} on={c.skilledSkills.includes(s)} disabled={owned('skilled').includes(s)}
                 onClick={() => update({ skilledSkills: toggle(c.skilledSkills, s, 3), expertise: [] })}>{s}</Chip>
             ))}
           </div>
