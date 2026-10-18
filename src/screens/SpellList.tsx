@@ -3,7 +3,7 @@
 // Counts are checked against the 2024 class tables (warn, never block). Add from the 339 SRD 5.2.1
 // spells (or type a homebrew one). Changes save at once; in a live room they go to the DM like other
 // sheet edits, and casting goes through the same checked actions as the play panel.
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
 import type { Character } from '../model/character'
@@ -14,6 +14,22 @@ import { useCharacterAct } from './useCharacterAct'
 import { findSpellByName, loadSrdSpells, searchSpells, spellLevelLine, type SrdSpell } from '../model/spells'
 import { Button, Section, TextInput } from '../ui/kit'
 import { useSpellsTh } from './useSrdData'
+
+// The full SRD card opens right here under the spell (no page change), so the player stays on the sheet.
+// Loaded only when first opened (it lives with the lookup screens).
+const SpellCard = lazy(() => import('./Lookup').then((m) => ({ default: m.SpellCard })))
+
+/** A spell's SRD card, shown in place under its name. */
+function SpellDetails({ sp, onClose }: { sp: SrdSpell; onClose: () => void }) {
+  return (
+    <div className="mt-2 space-y-1">
+      <Suspense fallback={<p className="text-xs text-stone-400">กำลังโหลด…</p>}>
+        <SpellCard sp={sp} />
+      </Suspense>
+      <button type="button" className="w-full rounded-lg py-1 text-xs text-stone-400 hover:bg-stone-800" onClick={onClose}>▲ ซ่อนรายละเอียด</button>
+    </div>
+  )
+}
 
 const CASTER_CLASSES = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard']
 const levelTitle = (level: number) => (level === 0 ? 'Cantrips' : `Level ${level}`)
@@ -26,6 +42,8 @@ export default function SpellList({ c }: { c: Character }) {
   const [editing, setEditing] = useState(false)
   /** The spell whose cast panel is open. */
   const [casting, setCasting] = useState<string | null>(null)
+  /** The spell whose SRD card is open under it. */
+  const [reading, setReading] = useState<string | null>(null)
   /** What the last cast spent, shown under the header. */
   const [castNote, setCastNote] = useState('')
   useEffect(() => {
@@ -102,7 +120,9 @@ export default function SpellList({ c }: { c: Character }) {
                       />
                     )}
                     <span className="min-w-0 flex-1">
-                      {info ? <a href={`#/lookup/spell/${info.id}`} className="font-bold underline decoration-stone-600">{s.name}</a> : <b>{s.name}</b>}
+                      {info
+                        ? <button type="button" aria-expanded={reading === s.id} className="text-left font-bold underline decoration-stone-600" onClick={() => setReading(reading === s.id ? null : s.id)}>{s.name}</button>
+                        : <b>{s.name}</b>}
                       {info && thai[info.id] && <span className="ml-1 text-xs text-stone-400">{thai[info.id].name}</span>}
                       {info?.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
                       {info?.ritual && <span className="ml-1 rounded bg-sky-900 px-1 text-xs">R</span>}
@@ -126,6 +146,7 @@ export default function SpellList({ c }: { c: Character }) {
                       </button>
                     )}
                   </div>
+                  {reading === s.id && info && <SpellDetails sp={info} onClose={() => setReading(null)} />}
                   {casting === s.id && <CastPanel c={c} spell={s} info={info} onDone={(note) => { setCasting(null); if (note) setCastNote(note) }} />}
                   </li>
                 )
@@ -147,6 +168,7 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
   const [all, setAll] = useState(!ownClass)
   const [customName, setCustomName] = useState('')
   const [customLevel, setCustomLevel] = useState(0)
+  const [reading, setReading] = useState<string | null>(null)
   const thai = useSpellsTh()
   if (!srd) return <p className="mb-3 text-sm text-stone-400">กำลังโหลดคาถา…</p>
 
@@ -166,9 +188,10 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
       )}
       <ul className="max-h-72 space-y-1 overflow-y-auto">
         {found.slice(0, 100).map((s) => (
-          <li key={s.id} className="flex items-center justify-between gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
+          <li key={s.id} className="rounded bg-stone-800 px-2 py-1 text-sm">
+          <div className="flex items-center justify-between gap-2">
             <span className="min-w-0">
-              <a href={`#/lookup/spell/${s.id}`} className="font-bold">{s.name}</a>
+              <button type="button" aria-expanded={reading === s.id} className="text-left font-bold underline decoration-stone-600" onClick={() => setReading(reading === s.id ? null : s.id)}>{s.name}</button>
               {thai[s.id] && <span className="ml-1 text-xs text-stone-400">{thai[s.id].name}</span>}
               {s.concentration && <span className="ml-1 rounded bg-violet-900 px-1 text-xs">C</span>}
               <span className="block text-xs text-stone-400">{spellLevelLine(s)}</span>
@@ -176,6 +199,8 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
             {has(s.name)
               ? <span className="text-xs text-emerald-400">✓ มีแล้ว</span>
               : <Button className="px-3 py-1 text-sm" onClick={() => onAdd({ name: s.name, level: s.level })}>+ เพิ่ม</Button>}
+          </div>
+          {reading === s.id && <SpellDetails sp={s} onClose={() => setReading(null)} />}
           </li>
         ))}
       </ul>

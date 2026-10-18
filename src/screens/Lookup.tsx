@@ -3,6 +3,7 @@
 // The data loads only when its tab opens.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
+import { goBack } from '../app/router'
 import { useLobby } from '../app/useLobby'
 import { getCharacter } from '../db/characters'
 import { listEncounters } from '../db/encounters'
@@ -158,6 +159,15 @@ export function SpellSearch({ onOpen }: { onOpen?: OpenResult }) {
 
 const Row = ({ label, children }: { label: string; children: ReactNode }) => <p><b className="text-amber-200">{label}:</b> {children}</p>
 
+/** ← back to the page the user came from (the sheet, a fight, the list…), or to the list if opened directly. */
+function BackLink({ fallback }: { fallback: string }) {
+  return (
+    <button type="button" className="text-sm text-stone-400" onClick={() => goBack(fallback)}>
+      ← กลับ
+    </button>
+  )
+}
+
 export function SpellView({ id }: { id: string }) {
   const spells = useSpells()
   if (!spells) return <p className="text-stone-400">กำลังโหลด…</p>
@@ -165,7 +175,7 @@ export function SpellView({ id }: { id: string }) {
   if (!sp) return <p className="text-center text-stone-400">ไม่พบคาถานี้ · <a href="#/lookup/spells" className="underline">กลับ</a></p>
   return (
     <div className="space-y-4">
-      <a href="#/lookup/spells" className="text-sm text-stone-400">← คาถาทั้งหมด</a>
+      <BackLink fallback="/lookup/spells" />
       <SpellCard sp={sp} />
     </div>
   )
@@ -261,7 +271,7 @@ export function MonsterView({ id }: { id: string }) {
   if (!m) return <p className="text-center text-stone-400">ไม่พบมอนสเตอร์นี้ · <a href="#/lookup/monsters" className="underline">กลับ</a></p>
   return (
     <div className="space-y-4">
-      <a href="#/lookup/monsters" className="text-sm text-stone-400">← มอนสเตอร์ทั้งหมด</a>
+      <BackLink fallback="/lookup/monsters" />
       <AddToFight m={m} />
       <MonsterStatBlock m={m} />
     </div>

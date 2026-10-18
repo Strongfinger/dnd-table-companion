@@ -53,7 +53,6 @@ const caster = createCharacter({
     { id: '5', name: 'Shield', level: 1, prepared: true },
     { id: '6', name: 'Ritual Thing', level: 1, prepared: true },
     { id: '7', name: 'My Homebrew Bolt', level: 1, prepared: true },
-    { id: '8', name: 'Not Ready', level: 1, prepared: false },
   ],
   features: [
     { id: 'r', name: 'Rage', max: 2, used: 0, recharge: 'long', srdId: 'barbarian-rage' },
@@ -84,12 +83,6 @@ describe('actionSuggestions: only what fits the button', () => {
 
   it('Reaction: Reaction spells only', () => {
     expect(magic(actionSuggestions('reaction', caster, SRD))).toEqual(['Magic: Shield'])
-  })
-
-  it('unprepared spells are left out', () => {
-    for (const kind of ['action', 'bonusAction', 'reaction', 'concentration'] as const) {
-      expect(actionSuggestions(kind, caster, SRD).join()).not.toContain('Not Ready')
-    }
   })
 
   it('Concentration: only spells that need it (plus ones we cannot check)', () => {

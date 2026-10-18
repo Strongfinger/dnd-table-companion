@@ -646,6 +646,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       send('campaign', { id: campaign.id, name: campaign.name })
     },
     lastHosted,
+    playedIds: session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id), session.grants) : [],
     rejoinLast: () => {
       if (lastHosted && !sessionRef.current) connect(lastHosted)
     },

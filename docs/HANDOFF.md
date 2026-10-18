@@ -44,7 +44,7 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 | Notebook + planner | `src/screens/Notebook.tsx` (`#/dm/note/<id>`), `SessionPlan.tsx`, `src/ui/LinkedText.tsx`; `src/model/note.ts` (kinds, fields, `[[links]]`, backlinks), `sessionPlan.ts` |
 | Campaign pack import | `src/model/campaignPack.ts` (pure parse, stable ids `<campaign>-<id>`), `src/db/campaignPack.ts`, `src/screens/ImportPack.tsx` (`#/dm/import`). The owner's Icespire Peak pack + generator `make_pack.py` live in `docs/DM Scripts/` (private, git-ignored) |
 | Generators | `src/model/generators/` (`index.ts` pure with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` |
-| DM tab | `src/screens/DmHome.tsx` (`#/dm`; players in a room get `📖 ค้นหา` instead) |
+| DM tab | `src/screens/DmHome.tsx` (`#/dm`: party rest `PartyRest.tsx`, generators, notebook; hidden for players in a room). The SRD lookup is its own `📖 ค้นหา` tab for everyone |
 | Storage | `src/db/` — Dexie DB version 5: characters, log, encounters, campaigns, settings, notes |
 | Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 
@@ -64,7 +64,8 @@ sender taken from the connection (never the body), size limit; the DM device rat
 - **Players' rules:** spend but never give back (actions, slots, features), no ↻ new turn, no rests; Action /
   Bonus Action only on their own turn in a fight; Hit Dice only during a DM-started short rest; read-only
   logs; can end their own turn (`endTurn`). The DM may give a use back only in the round it was spent.
-- **Party rest (DM room screen):** Long Rest = one tap; Short Rest = start/end period (`rest {since}`).
+- **Party rest (DM tab, `src/screens/PartyRest.tsx`):** Long Rest = one tap; Short Rest = start/end period (`rest {since}`). Both use `lobby.playedIds` (handed-over characters included).
+- **Leaving / rejoining (DM):** leaving keeps the room (`lobby-last-hosted`); the lobby offers "กลับเข้าห้องเดิม" with the same code, campaign, removed players and grants. A running short rest ends on leave. Players see a note while no DM is online.
 - **Dice:** the floating roller shares rolls with the room (players on, DM off by default); the DM logs them.
 - **Campaign:** players adopt the DM's campaign id; the DM can switch the room's campaign any time
   (`setCampaign` → `campaign` message). Rename/delete only on the device that created it (`canManageCampaign`).

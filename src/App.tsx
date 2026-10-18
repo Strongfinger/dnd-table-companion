@@ -99,18 +99,20 @@ function FightRoute({ id }: { id: string }) {
 function NavBar({ route }: { route: Route }) {
   const lobby = useLobby()
   const inFights = route.name === 'fights' || route.name === 'fight'
-  const inDm = route.name === 'dm' || route.name === 'packImport' || route.name === 'note' || route.name === 'lookup' || route.name === 'monster' || route.name === 'spell'
-  const tab = (active: boolean) => `flex-1 py-3 text-center font-bold ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
+  const inLookup = route.name === 'lookup' || route.name === 'monster' || route.name === 'spell'
+  const inDm = route.name === 'dm' || route.name === 'packImport' || route.name === 'note'
+  const isPlayer = lobby.session?.role === 'player'
+  // Phones: icon above a short label so five tabs fit; wider screens: one line.
+  const tab = (active: boolean) => `flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap px-1 py-2 text-xs font-bold sm:flex-row sm:justify-center sm:gap-1 sm:py-3 sm:text-base ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
   return (
     <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
-      <div className="mx-auto flex max-w-5xl text-sm sm:text-base">
-        <a href="#/" className={tab(!inFights && !inDm && route.name !== 'lobby')}>📜 ตัวละคร</a>
-        <a href="#/fights" className={tab(inFights)}>⚔️ การต่อสู้</a>
-        {/* Players in a room get the lookup (spells, rules, conditions) instead of the DM's tools. */}
-        {lobby.session?.role === 'player'
-          ? <a href="#/lookup" className={tab(inDm)}>📖 ค้นหา</a>
-          : <a href="#/dm" className={tab(inDm)}>🧙 DM</a>}
-        <a href="#/lobby" className={tab(route.name === 'lobby')}>🌐 ห้อง <LobbyDot /></a>
+      <div className="mx-auto flex max-w-5xl">
+        <a href="#/" className={tab(!inFights && !inDm && !inLookup && route.name !== 'lobby')}><span className="text-base leading-none">📜</span><span>ตัวละคร</span></a>
+        <a href="#/fights" className={tab(inFights)}><span className="text-base leading-none">⚔️</span><span>การต่อสู้</span></a>
+        {/* The lookup (spells, rules, conditions; monsters for the DM) is everyone's. The DM's tools are not for players in a room. */}
+        <a href="#/lookup" className={tab(inLookup)}><span className="text-base leading-none">📖</span><span>ค้นหา</span></a>
+        {!isPlayer && <a href="#/dm" className={tab(inDm)}><span className="text-base leading-none">🧙</span><span>DM</span></a>}
+        <a href="#/lobby" className={tab(route.name === 'lobby')}><span className="text-base leading-none">🌐</span><span>ห้อง <LobbyDot /></span></a>
       </div>
       <LiveFightBar />
       {lobby.session?.role === 'player' && lobby.shortRestSince && (

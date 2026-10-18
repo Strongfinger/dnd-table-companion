@@ -48,12 +48,39 @@ export function parseRoute(hash: string): Route {
   return { name: 'list' }
 }
 
+/**
+ * Pages visited in this app since it opened (hashes, oldest first), and where each was scrolled to.
+ * Going back (the ← กลับ button or the browser's back) returns to the same spot instead of the top.
+ */
+const visited: string[] = []
+const scrolledTo = new Map<string, number>()
+const hashOf = (url: string) => new URL(url).hash || '#/'
+
+/** Is there an earlier page of this app to go back to? */
+export const canGoBack = () => visited.length > 1
+
+/** Back to where the user came from, or to `fallback` (e.g. '/lookup/spells') when they opened this page directly. */
+export function goBack(fallback: string): void {
+  if (canGoBack()) window.history.back()
+  else go(fallback)
+}
+
 export function useRoute(): Route {
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
   useEffect(() => {
-    const onChange = () => {
+    if (visited.length === 0) visited.push(window.location.hash || '#/')
+    const onChange = (e: HashChangeEvent) => {
+      const from = hashOf(e.oldURL)
+      const to = hashOf(e.newURL)
+      scrolledTo.set(from, window.scrollY)
+      const back = visited.length > 1 && visited[visited.length - 2] === to
+      if (back) visited.pop()
+      else visited.push(to)
       setRoute(parseRoute(window.location.hash))
-      window.scrollTo(0, 0)
+      if (!back) return window.scrollTo(0, 0)
+      // Lazy screens and live queries render a moment later, so put the scroll back once they have.
+      const y = scrolledTo.get(to) ?? 0
+      for (const ms of [0, 100, 400]) window.setTimeout(() => window.scrollTo(0, y), ms)
     }
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)

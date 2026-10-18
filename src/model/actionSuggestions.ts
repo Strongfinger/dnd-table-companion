@@ -40,7 +40,7 @@ type SpellInfo = Pick<SrdSpell, 'name' | 'castingTime' | 'concentration'>
  * its spells, its limited-use features, then the common choices. No duplicates.
  *
  * Only what fits the button is offered, so a player isn't led to think a spell is a Bonus Action:
- * - spells by their SRD casting time (`srdSpells`); cantrips and prepared spells only.
+ * - spells by their SRD casting time (`srdSpells`). Unprepared spells stay (the app warns, never blocks).
  *   Spells not in the SRD (or while the SRD list is still loading) count as an Action.
  * - Concentration: only spells that need it (unknown spells stay, we can't tell).
  * - features by their catalog activation; features not from the catalog count as an Action.
@@ -52,8 +52,8 @@ export function actionSuggestions(
 ): string[] {
   const attacks = kind === 'action' ? (c?.attacks ?? []).filter((a) => a.name).map((a) => `Attack: ${a.name}`) : []
   const spells = (c?.spells ?? [])
-    .filter((s) => s.name && (s.level === 0 || s.prepared))
     .filter((s) => {
+      if (!s.name) return false
       const info = srdSpells ? findSpellByName(srdSpells as SrdSpell[], s.name) : undefined
       if (kind === 'concentration') return !info || info.concentration
       return (info ? actionKindFor(info.castingTime) : 'action') === kind
