@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDm, joinLink, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
+import { isDm, joinLink, lastHostedRoom, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
 import type { Member } from './transport'
 
 const member = (deviceId: string, name: string, role: Member['role'], online = true): Member =>
@@ -69,5 +69,22 @@ describe('rollerName', () => {
     expect(rollerName(list, 'p1', '?')).toBe('Nyx')
     expect(rollerName(list, 'p2', '?')).toBe('บอส')
     expect(rollerName(list, 'gone', 'เครื่องเก่า')).toBe('เครื่องเก่า')
+  })
+})
+
+describe('lastHostedRoom', () => {
+  const hosted = {
+    code: 'K7QX4M', role: 'dm', campaignId: 'camp1', characterId: null, characterName: null, local: false,
+    kicked: [{ deviceId: 'd9', name: 'Spam' }], shortRestSince: 123, grants: [{ characterId: 'm1', deviceId: 'd2' }],
+  }
+
+  it('keeps the code, campaign, removed players and handed-over characters; the short rest is over', () => {
+    expect(lastHostedRoom(hosted)).toEqual({ ...hosted, shortRestSince: null })
+  })
+
+  it('only for a DM, and only a valid saved room', () => {
+    expect(lastHostedRoom({ ...hosted, role: 'player' })).toBeNull()
+    expect(lastHostedRoom({ ...hosted, code: 'nope' })).toBeNull()
+    expect(lastHostedRoom(null)).toBeNull()
   })
 })

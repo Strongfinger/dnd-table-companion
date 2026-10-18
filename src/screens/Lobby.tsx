@@ -9,11 +9,9 @@ import { listCampaigns } from '../db/campaigns'
 import { listCharacters, updateCharacter } from '../db/characters'
 import { grantLevelUp, revokeLevelUp } from '../model/levelLock'
 import { listEncounters } from '../db/encounters'
-import { restParty } from '../db/play'
 import { liveFight } from '../model/playerView'
 import { currentDevice, getSetting, setDeviceName } from '../db/device'
-import { isKicked, joinLink, visibleMembers } from '../sync/lobby'
-import { playedCharacterIds } from '../sync/sheets'
+import { joinLink, visibleMembers } from '../sync/lobby'
 import { isValidRoomCode, normalizeRoomCode } from '../sync/roomCode'
 import type { ConnectionStatus } from '../sync/transport'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
@@ -70,6 +68,8 @@ function Start({ linkCode }: { linkCode: string | null }) {
         <TextInput value={name} placeholder="เช่น ต้น (DM)" onChange={setName} />
       </Section>
 
+      {lobby.lastHosted && <LastRoom />}
+
       <Section title="🎲 DM: เปิดห้อง">
         <p className="mb-2 text-xs text-stone-400">ห้องเป็นการเล่นสดของแคมเปญหนึ่ง เลือกหรือสร้างแคมเปญก่อน</p>
         <CampaignPicker value={campaignId} onChange={setCampaignId} />
@@ -114,6 +114,23 @@ function Start({ linkCode }: { linkCode: string | null }) {
   )
 }
 
+/** DM: go back to the room left last (same code, campaign and players; players' phones reconnect by themselves). */
+function LastRoom() {
+  const lobby = useLobby()
+  const last = lobby.lastHosted!
+  const campaigns = useLiveQuery(listCampaigns) ?? []
+  const campaign = campaigns.find((c) => c.id === last.campaignId)
+  return (
+    <Section title="🔁 DM: กลับเข้าห้องเดิม">
+      <p className="mb-2 text-xs text-stone-400">
+        ห้อง <b className="font-mono text-stone-200">{last.code}</b>{campaign && <> · 🗺 {campaign.name}</>}
+        {last.local && ' · โหมดทดสอบในเครื่อง'} · ผู้เล่นที่ยังอยู่ในห้องจะเชื่อมต่อกลับเอง ไม่ต้องพิมพ์รหัสใหม่
+      </p>
+      <Button variant="primary" className="w-full" onClick={lobby.rejoinLast}>กลับเข้าห้อง {last.code}</Button>
+    </Section>
+  )
+}
+
 /** In a room: code + QR (DM), status, who's here, my character (player). */
 function InRoom() {
   const lobby = useLobby()
@@ -137,6 +154,9 @@ function InRoom() {
           {STATUS_TEXT[lobby.status]}{s.local && ' · โหมดทดสอบในเครื่อง'}
           {s.role === 'player' && lobby.pending > 0 && ` · ⏳ รอ DM ยืนยัน ${lobby.pending} การเปลี่ยนแปลง`}
         </p>
+        {s.role === 'player' && lobby.status === 'connected' && lobby.members.length > 0 && !lobby.members.some((m) => m.role === 'dm' && m.online) && (
+          <p className="mb-2 rounded-lg bg-amber-950 p-2 text-sm text-amber-200">DM ไม่ได้อยู่ในห้องตอนนี้ · อยู่ในห้องนี้ต่อได้เลย เมื่อ DM กลับเข้าห้องเดิม แอปจะเชื่อมต่อให้เอง</p>
+        )}
         {/* The campaign this room plays: the DM can switch it any time (e.g. after importing a campaign pack). */}
         {s.role === 'dm' ? (
           <label className="mb-3 block text-sm">
@@ -180,7 +200,7 @@ function InRoom() {
         </p>
       )}
 
-      {s.role === 'dm' && <PartyRest characterIds={playedCharacterIds(lobby.members, (id) => isKicked(s.kicked, id)).filter((id) => characters.some((c) => c.id === id))} />}
+      {s.role === 'dm' && <p className="text-sm text-stone-400">☕🌙 พักทั้งปาร์ตี้ (Short / Long Rest) อยู่ที่แท็บ <a href="#/dm" className="text-amber-400 underline">🧙 DM</a></p>}
 
       {s.role === 'player' && lobby.fight && (
         <PlayerViewPanel view={lobby.fight} title={`⚔️ ${lobby.fight.name} · รอบที่ ${lobby.fight.round}`} myCharacterIds={lobby.myCharacterIds} />
@@ -272,77 +292,3 @@ function InRoom() {
   )
 }
 
-/**
- * DM: rest everyone playing in the room. A short rest is a period: while it runs, players roll Hit
- * Dice on their phones; ending it brings back short-rest abilities. A long rest is one tap.
- */
-function PartyRest({ characterIds }: { characterIds: string[] }) {
-  const lobby = useLobby()
-  const [confirm, setConfirm] = useState<'shortRest' | 'longRest' | null>(null)
-  const [result, setResult] = useState('')
-  const party = (useLiveQuery(listCharacters) ?? []).filter((c) => characterIds.includes(c.id))
-  const since = lobby.shortRestSince
-
-  const report = (kind: 'shortRest' | 'longRest', r: { rested: string[]; skipped: string[] }) =>
-    setResult([
-      r.rested.length ? `${kind === 'longRest' ? '🌙 Long Rest' : '☕ Short Rest'} เสร็จ: ${r.rested.join(', ')}` : '',
-      r.skipped.length ? `ไม่ได้พัก: ${r.skipped.join(', ')}${kind === 'longRest' ? ' (HP 0 พักยาวไม่ได้)' : ''}` : '',
-    ].filter(Boolean).join(' · '))
-
-  async function go(kind: 'shortRest' | 'longRest') {
-    setConfirm(null)
-    setResult('')
-    if (kind === 'shortRest') await lobby.startShortRest()
-    else report('longRest', await restParty(characterIds, 'longRest'))
-  }
-
-  if (since) {
-    return (
-      <Section title="☕ กำลังพักสั้นทั้งปาร์ตี้">
-        <p className="mb-2 text-xs text-stone-400">
-          เริ่ม {new Date(since).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} · ผู้เล่นทอย Hit Dice ในมือถือเพื่อฟื้น HP ได้จนกว่าจะจบการพัก
-        </p>
-        <ul className="mb-3 space-y-1 text-sm">
-          {party.map((c) => (
-            <li key={c.id} className="flex justify-between rounded bg-stone-900 px-2 py-1">
-              <span>{c.name}</span>
-              <span className="text-stone-400">HP {c.hp.current}/{c.hp.max} · Hit Dice เหลือ {c.level - c.hitDiceSpent}/{c.level}</span>
-            </li>
-          ))}
-        </ul>
-        <Button variant="primary" className="w-full" onClick={async () => report('shortRest', await lobby.endShortRest())}>
-          จบการพักสั้น (ความสามารถแบบ Short Rest กลับมา)
-        </Button>
-      </Section>
-    )
-  }
-
-  return (
-    <Section title="พักทั้งปาร์ตี้">
-      {characterIds.length === 0 ? (
-        <p className="text-sm text-stone-500">ยังไม่มีตัวละครของผู้เล่นในห้อง (รอผู้เล่นเลือกตัวละคร)</p>
-      ) : (
-        <>
-          <p className="mb-2 text-xs text-stone-400">ทุกตัวละครที่ผู้เล่นในห้องเลือกไว้ ({characterIds.length} ตัว)</p>
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => setConfirm(confirm === 'shortRest' ? null : 'shortRest')}>☕ เริ่มพักสั้น</Button>
-            <Button className="flex-1" onClick={() => setConfirm(confirm === 'longRest' ? null : 'longRest')}>🌙 พักยาว</Button>
-          </div>
-          {confirm && (
-            <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3">
-              <p className="text-sm">
-                {confirm === 'longRest'
-                  ? 'พักยาว 8 ชม.: HP, Hit Dice, Spell Slots และความสามารถทั้งหมดกลับมาเต็ม · Exhaustion −1'
-                  : 'พักสั้น 1 ชม.: ระหว่างพัก ผู้เล่นทอย Hit Dice ฟื้น HP ได้ในมือถือ · กด "จบการพักสั้น" เมื่อพักเสร็จ แล้วความสามารถแบบ Short Rest (และ Spell Slots ของ Warlock) จะกลับมา'}
-              </p>
-              <Button variant="primary" className="w-full" onClick={() => go(confirm)}>
-                {confirm === 'longRest' ? 'ยืนยันพักยาวทั้งปาร์ตี้' : 'เริ่มพักสั้นทั้งปาร์ตี้'}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-      {result && <p className="mt-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{result}</p>}
-    </Section>
-  )
-}

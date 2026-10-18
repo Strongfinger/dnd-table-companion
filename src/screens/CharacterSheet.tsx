@@ -113,13 +113,14 @@ export default function CharacterSheet({ id }: { id: string }) {
       </Section>
 
       <Section title="Skills">
+        <p className="mb-1 text-xs text-stone-500">แตะ/ชี้เมาส์ที่ชื่อ Skill เพื่อดูว่าใช้ทำอะไร</p>
         <ul className="divide-y divide-stone-700">
           {SKILLS.map((skill) => {
             const level = c.skills[skill] ?? 'none'
             return (
               <li key={skill} className={`flex justify-between py-1.5 ${level === 'none' ? 'text-stone-300' : 'font-bold text-amber-300'}`}>
                 <span>
-                  {skill} <span className="text-xs font-normal text-stone-500">{ABILITY_LABEL[SKILL_ABILITY[skill]].short}</span>
+                  <Term name={skill} /> <span className="text-xs font-normal text-stone-500">{ABILITY_LABEL[SKILL_ABILITY[skill]].short}</span>
                   {level === 'expertise' && <span className="ml-1 text-xs">★ Expertise</span>}
                 </span>
                 <span>{mod(s.skills[skill])}</span>

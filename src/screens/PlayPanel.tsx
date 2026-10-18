@@ -2,14 +2,14 @@
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
-import { actionSuggestions, type SuggestionKind } from '../model/actionSuggestions'
+import type { SuggestionKind } from '../model/actionSuggestions'
 import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import type { CharacterAction } from '../model/characterActions'
 import { CONDITIONS, exhaustionPenalty, hitDieSize, MAX_FEATURE_USES, spellSlotsFor, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
-import UseActionDialog from '../ui/UseActionDialog'
+import ActionChoiceDialog from './ActionChoiceDialog'
 import { useCharacterAct } from './useCharacterAct'
 import { FeatureCard, FeaturePicker } from './FeatureCatalog'
 import { useFeatureTexts } from './useSrdData'
@@ -320,9 +320,10 @@ export default function PlayPanel({ c }: { c: Character }) {
         </div>
       </div>
       {pending && (
-        <UseActionDialog
+        <ActionChoiceDialog
+          kind={pending}
+          character={c}
           title={pending === 'concentration' ? '🔮 เริ่ม Concentration: คาถาอะไร?' : `⚡ ใช้ ${pending === 'action' ? 'Action' : pending === 'bonusAction' ? 'Bonus Action' : 'Reaction'} ทำอะไร?`}
-          suggestions={actionSuggestions(pending, c)}
           placeholder={pending === 'concentration' ? 'พิมพ์ชื่อคาถา เช่น Bless' : 'เลือกด้านบน หรือพิมพ์เอง (เว้นว่างได้)'}
           required={pending === 'concentration'}
           onCancel={() => setPending(null)}

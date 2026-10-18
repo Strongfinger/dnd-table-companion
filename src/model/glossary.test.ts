@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CONDITIONS } from '../rules'
+import { CONDITIONS, SKILLS } from '../rules'
 import { STANDARD_ACTIONS } from './actionSuggestions'
 import { GLOSSARY_TERMS, lookupTerm } from './glossary'
 
@@ -7,6 +7,12 @@ describe('glossary', () => {
   it('explains every condition and every standard action', () => {
     for (const c of CONDITIONS) expect(lookupTerm(c), c).not.toBeNull()
     for (const a of STANDARD_ACTIONS) expect(lookupTerm(a), a).not.toBeNull()
+  })
+
+  it('explains every skill, with its ability', () => {
+    for (const s of SKILLS) expect(lookupTerm(s), s).not.toBeNull()
+    expect(lookupTerm('Acrobatics')?.title).toBe('Acrobatics (Skill · DEX)')
+    expect(lookupTerm('Animal Handling')?.srd).toBe('Skill')
   })
 
   it('understands "Attack: Greatsword", "Magic: Bless" and "Bonus"', () => {

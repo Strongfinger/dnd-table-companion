@@ -37,6 +37,12 @@ export interface LobbyApi {
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
+  /** DM: the room this device hosted last (after leaving it), or null. */
+  lastHosted: LobbySession | null
+  /** DM: every character played in the room right now (players' picks and handed-over characters). */
+  playedIds: string[]
+  /** DM: open the last hosted room again with the same code, campaign and players. */
+  rejoinLast: () => void
   /** Player: every character this device plays in the room (the picked one + any the DM handed over). */
   myCharacterIds: string[]
   /** DM: hand a character to a player's device (null = take it back). */

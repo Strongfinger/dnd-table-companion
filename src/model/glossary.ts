@@ -3,6 +3,7 @@
 import { BACKGROUND_INFO, isSrdBackground } from '../rules/srd/backgrounds'
 import { FEAT_INFO, ORIGIN_FEATS, type OriginFeat } from '../rules/srd/feats'
 import { isSrdSpecies, SPECIES_INFO } from '../rules/srd/species'
+import { SKILL_ABILITY, type Skill } from '../rules/skills'
 
 export interface GlossaryEntry {
   title: string
@@ -83,9 +84,32 @@ const TERMS: Record<string, string> = {
   Speed: 'ระยะเคลื่อนที่ต่อเทิร์น (ฟุต) · แบ่งเดินก่อนและหลังการกระทำได้',
 }
 
+/** What each skill is used for, as quick examples (Thai name in brackets). */
+const SKILLS: Record<Skill, string> = {
+  Acrobatics: '(กายกรรม) ทรงตัวบนที่แคบหรือลื่น ตีลังกา กระโดดหลบ ดิ้นหลุดจากการถูกจับ (Grapple)',
+  'Animal Handling': '(จัดการสัตว์) ปลอบหรือควบคุมสัตว์ ขี่ม้าในสถานการณ์ยาก อ่านท่าทีว่าสัตว์จะทำอะไร',
+  Arcana: '(ศาสตร์เวท) รู้เรื่องเวทมนตร์ คาถา ไอเทมเวท สัญลักษณ์ลึกลับ และมิติอื่น',
+  Athletics: '(พละกำลัง) ปีน กระโดดไกล ว่ายน้ำในน้ำเชี่ยว จับล็อก (Grapple) หรือผลักศัตรู',
+  Deception: '(หลอกลวง) โกหกให้เนียน ปลอมตัว แต่งเรื่องหลอกคนอื่น',
+  History: '(ประวัติศาสตร์) รู้เรื่องอดีต อาณาจักร สงคราม บุคคลสำคัญ และตำนานเก่า',
+  Insight: '(หยั่งรู้) อ่านใจคน ดูว่าใครโกหก หรือรู้สึกอย่างไรจริงๆ',
+  Intimidation: '(ข่มขู่) ทำให้คนกลัวจนยอมทำตามหรือยอมบอกข้อมูล',
+  Investigation: '(สืบสวน) ค้นหาเบาะแส หากลไกกับดักหรือประตูลับ วิเคราะห์ว่าเกิดอะไรขึ้น',
+  Medicine: '(การแพทย์) รักษาอาการ ทำให้คนที่ใกล้ตายอาการคงที่ (Stable) ดูว่าอะไรทำให้ป่วยหรือตาย',
+  Nature: '(ธรรมชาติ) รู้เรื่องพืช สัตว์ ภูมิประเทศ และสภาพอากาศ',
+  Perception: '(การรับรู้) สังเกตสิ่งรอบตัว ได้ยินเสียง เห็นศัตรูที่ซ่อนอยู่ · ใช้บ่อยที่สุด',
+  Performance: '(การแสดง) ร้องเพลง เล่นดนตรี เต้น เล่าเรื่อง ให้คนดูประทับใจ',
+  Persuasion: '(โน้มน้าว) พูดจาดีๆ ขอความช่วยเหลือ ต่อรอง ทำให้คนยอมคล้อยตามอย่างจริงใจ',
+  Religion: '(ศาสนา) รู้เรื่องเทพเจ้า พิธีกรรม คำอธิษฐาน และ Undead',
+  'Sleight of Hand': '(มือไว) ล้วงกระเป๋า ซ่อนของในมือ ทำกลมือ ปลดกับดักหรือกุญแจด้วยความไวมือ',
+  Stealth: '(ลอบเร้น) แอบซ่อน เดินเงียบ หลบสายตาศัตรู (ใช้กับ Hide)',
+  Survival: '(เอาตัวรอด) ตามรอย ล่าสัตว์ หาทาง ไม่หลงป่า คาดการณ์สภาพอากาศ',
+}
+
 const ALL: Record<string, GlossaryEntry> = {
   ...Object.fromEntries(Object.entries(CONDITIONS).map(([k, text]) => [k, { title: `${k} (Condition)`, text, ...srdName(k) }])),
   ...Object.fromEntries(Object.entries(ACTIONS).map(([k, text]) => [k, { title: `${k} (Action)`, text, ...srdName(k) }])),
+  ...Object.fromEntries(Object.entries(SKILLS).map(([k, text]) => [k, { title: `${k} (Skill · ${SKILL_ABILITY[k as Skill].toUpperCase()})`, text, srd: 'Skill' }])),
   ...Object.fromEntries(Object.entries(TERMS).map(([k, text]) => [k, { title: k, text, ...srdName(k) }])),
 }
 

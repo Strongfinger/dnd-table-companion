@@ -17,7 +17,7 @@ import {
   deriveSheet, formatModifier, isSrdBackground, MAX_FEATURE_USES, isSrdSpecies, maxExpertise, SKILL_ABILITY, skillSources,
   SKILLS, SPECIES, SPECIES_INFO, spellSlotsFor, SUBCLASS_LEVEL, suggestedMaxHp, type Ability, type ClassName, type ProficiencyLevel, type Skill,
 } from '../rules'
-import { Button, Checkbox, ChoiceField, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
+import { Button, Checkbox, ChoiceField, HelpButton, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
 import { ABILITY_LABEL } from '../ui/labels'
 
 const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
@@ -229,7 +229,7 @@ export default function CharacterEdit({ id }: { id: string }) {
       <Section title="Skills">
         <p className="mb-2 text-xs text-stone-500">
           แตะเพื่อสลับ: ○ → Proficient ● {(freeEdit || maxExpertise(c.className, c.level) > 0) && '→ Expertise ★'} ·
-          เลือกจาก Class ได้ {CLASS_INFO[c.className].skillCount} อย่าง
+          เลือกจาก Class ได้ {CLASS_INFO[c.className].skillCount} อย่าง · กดค้าง/ชี้เมาส์ที่ชื่อเพื่อดูว่าใช้ทำอะไร
           {maxExpertise(c.className, c.level) > 0 && ` · Expertise ได้ ${maxExpertise(c.className, c.level)} อย่าง`}
         </p>
         <ul className="divide-y divide-stone-700">
@@ -237,8 +237,8 @@ export default function CharacterEdit({ id }: { id: string }) {
             const level = c.skills[skill] ?? 'none'
             return (
               <li key={skill}>
-                <button
-                  type="button"
+                <HelpButton
+                  term={skill}
                   className="flex w-full items-center justify-between py-2 text-left"
                   onClick={() => cycleSkill(skill)}
                 >
@@ -249,7 +249,7 @@ export default function CharacterEdit({ id }: { id: string }) {
                     {!backgroundSkills.includes(skill) && classChoices.includes(skill) && <span className="ml-1 rounded bg-stone-700 px-1 text-xs font-normal text-stone-300">Class</span>}
                   </span>
                   <span>{formatModifier(s.skills[skill])}</span>
-                </button>
+                </HelpButton>
               </li>
             )
           })}
