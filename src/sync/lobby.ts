@@ -15,7 +15,10 @@ export interface LobbySession {
   characterName: string | null
   /** Test mode: browser tabs on this computer instead of Firebase. */
   local: boolean
-  /** DM: devices removed from this session (their messages are ignored). */
+  /**
+   * Devices the DM removed from this session. DM: their messages are ignored. Player: learnt from the DM's
+   * 'kick' messages, only to hide them from the member list.
+   */
   kicked: Kicked[]
   /** DM: when the party's short rest started (players may spend Hit Dice until it ends), or null. */
   shortRestSince: number | null
@@ -86,17 +89,24 @@ export function isDm(members: Member[], deviceId: string): boolean {
 /**
  * Members to show: kicked ones left out; DM first, then online players, then by name.
  * A device listed twice (it signed in again, e.g. after clearing site data) shows once, online if it is.
+ * A player's phone hides a kicked device only while it is offline: the DM may have let it back in
+ * (players aren't told), and a kicked device that comes online is kicked again by the DM's device.
  */
-export function visibleMembers(members: Member[], kicked: Kicked[]): Member[] {
+export function visibleMembers(members: Member[], kicked: Kicked[], role: 'dm' | 'player' = 'dm'): Member[] {
   const rank = (m: Member) => (m.role === 'dm' ? 0 : m.online ? 1 : 2)
   const byDevice = new Map<string, Member>()
   for (const m of members) if (!byDevice.get(m.deviceId)?.online) byDevice.set(m.deviceId, m)
   return [...byDevice.values()]
-    .filter((m) => !isKicked(kicked, m.deviceId))
+    .filter((m) => !isKicked(kicked, m.deviceId) || (role === 'player' && m.online))
     .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'th'))
 }
 
 export const isKicked = (kicked: Kicked[], deviceId: string) => kicked.some((k) => k.deviceId === deviceId)
+
+/** The removed list with one more device (unchanged if it is already there). Kept to the newest 50. */
+export function addKicked(kicked: Kicked[], deviceId: string, name: string): Kicked[] {
+  return isKicked(kicked, deviceId) ? kicked : [...kicked, { deviceId, name: name.slice(0, 40) }].slice(-50)
+}
 
 /**
  * The name shown for a roll, from the member list (never from the message): the DM is "DM",

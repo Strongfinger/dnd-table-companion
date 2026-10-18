@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDm, joinLink, lastHostedRoom, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
+import { addKicked, isDm, joinLink, lastHostedRoom, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
 import type { Member } from './transport'
 
 const member = (deviceId: string, name: string, role: Member['role'], online = true): Member =>
@@ -56,9 +56,35 @@ describe('members', () => {
     expect(visibleMembers(list, [{ deviceId: 'p3', name: 'ซี' }]).map((m) => m.deviceId)).toEqual(['dm', 'p1', 'p2'])
   })
 
+  it("on a player's phone, hides a kicked device only while it is offline", () => {
+    const withKicked = [...list, member('p9', 'โดนเตะ', 'player', false)]
+    const kicked = [{ deviceId: 'p9', name: 'โดนเตะ' }]
+    expect(visibleMembers(withKicked, kicked, 'player').some((m) => m.deviceId === 'p9')).toBe(false)
+    // Let back in by the DM (players aren't told) and online again: shown.
+    const back = [...list, member('p9', 'โดนเตะ', 'player', true)]
+    expect(visibleMembers(back, kicked, 'player').some((m) => m.deviceId === 'p9')).toBe(true)
+    // The DM's device always hides it.
+    expect(visibleMembers(back, kicked).some((m) => m.deviceId === 'p9')).toBe(false)
+  })
+
   it('shows a device listed twice once, preferring the online entry', () => {
     const twice = [member('p1', 'old', 'player', false), member('p1', 'new', 'player', true), member('p1', 'older', 'player', false)]
     expect(visibleMembers(twice, [])).toEqual([member('p1', 'new', 'player', true)])
+  })
+})
+
+describe('addKicked', () => {
+  it('adds a device once', () => {
+    const one = addKicked([], 'p1', 'มุก')
+    expect(one).toEqual([{ deviceId: 'p1', name: 'มุก' }])
+    expect(addKicked(one, 'p1', 'อื่น')).toBe(one)
+  })
+
+  it('keeps the newest 50', () => {
+    let kicked: ReturnType<typeof addKicked> = []
+    for (let i = 0; i < 60; i++) kicked = addKicked(kicked, `d${i}`, '')
+    expect(kicked).toHaveLength(50)
+    expect(kicked[0].deviceId).toBe('d10')
   })
 })
 

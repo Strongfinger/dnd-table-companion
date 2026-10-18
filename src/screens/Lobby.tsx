@@ -141,7 +141,7 @@ function InRoom() {
   const encounters = useLiveQuery(listEncounters) ?? []
   const shownFight = s.role === 'dm' ? liveFight(encounters, s.campaignId) : null
   const link = joinLink(window.location.origin + window.location.pathname, s.code)
-  const shown = visibleMembers(lobby.members, s.kicked)
+  const shown = visibleMembers(lobby.members, s.kicked, s.role)
   const leave = () => {
     if (lobby.pending > 0 && !confirm(`ยังมี ${lobby.pending} การเปลี่ยนแปลงที่ DM ยังไม่ได้รับ ออกจากห้องตอนนี้จะไม่ส่งแล้ว ออกเลยไหม?`)) return
     lobby.leave()
