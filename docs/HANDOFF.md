@@ -1,21 +1,16 @@
-# Handoff — state on 2026-10-13 (evening)
+# Handoff — state on 2026-10-18
 
-**Start here for Phase 5.** Since the morning: a **campaign pack import** (the owner's *Dragon of Icespire Peak*
-Session 1 is prepared in it), and **Thai spell text from DND-TH** (with their permission). See "Phase 5: where to
-start" below.
-
-
-**Phases 0–4 and 3 are done**, plus the content plan in [docs/RESEARCH.md](RESEARCH.md) (2026-10-13): SRD weapons,
-armor and gear in the inventory (equip on the sheet), attacks with separate attack/damage rolls, AC from armor,
-the 2024 Short Rest rule + pools, a limited-use feature catalog, every class feature's text on the sheet, monster
-Initiative and Legendary uses from the official PDF, starting equipment in the wizard, Lookup tabs for equipment and
-features; owner decisions round 2 (upgrade button, free casts, poisons, lazy DM screens) done. **Suggested next:**
-Phase 5 (a real session with phones), using the QA list in docs/QA.md.
+**Start here.** The app is feature-complete for the table. Phases 0–4 and 3 are done, plus the content plan in
+[docs/RESEARCH.md](RESEARCH.md) and the **Thai translation** of all SRD content (spells, feats, magic items, class
+features, species, Rules Glossary, equipment, monsters; DND-TH's text, with permission). A **playtest on
+2026-10-16** found five problems; they and two more were fixed on 2026-10-18 (PRs #1–#4, see "Phase 5" below).
+**Suggested next:** the first real session with friends (*Dragon of Icespire Peak* Session 1), then a fix pass.
+Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local post-commit hook rebuilds it).
 
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (600 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (625 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -46,7 +41,10 @@ Phase 5 (a real session with phones), using the QA list in docs/QA.md.
 | Generators | `src/model/generators/` (`index.ts` pure with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` |
 | DM tab | `src/screens/DmHome.tsx` (`#/dm`: party rest `PartyRest.tsx`, generators, notebook; hidden for players in a room). The SRD lookup is its own `📖 ค้นหา` tab for everyone |
 | Storage | `src/db/` — Dexie DB version 5: characters, log, encounters, campaigns, settings, notes |
-| Help/glossary | `src/model/glossary.ts`, `src/ui/help.tsx`, `src/ui/useHelp.ts` |
+| Help/glossary | `src/model/glossary.ts` (incl. Thai help for the 18 skills), `src/ui/help.tsx`, `src/ui/useHelp.ts` |
+| Action suggestions | `src/model/actionSuggestions.ts` (`actionKindFor`: spells by SRD casting time, features by `activation`; Focus/Sorcery Points also under Bonus Action), `src/screens/ActionChoiceDialog.tsx` |
+| Missing choices | `src/rules/missingChoices.ts` (subclass from level 3, empty ASI slots) → amber banner with "เลือก" on `CharacterSheet.tsx` |
+| Navigation | `src/app/router.ts` `goBack()` (previous in-app page, scroll restored); lookup pages have "← กลับ"; spell cards open in place on the sheet |
 
 ## Live rooms: how they work now
 The **DM device is the source of truth**. Messages are envelopes (`src/sync/envelope.ts`): id (deduped),
@@ -66,6 +64,8 @@ sender taken from the connection (never the body), size limit; the DM device rat
   logs; can end their own turn (`endTurn`). The DM may give a use back only in the round it was spent.
 - **Party rest (DM tab, `src/screens/PartyRest.tsx`):** Long Rest = one tap; Short Rest = start/end period (`rest {since}`). Both use `lobby.playedIds` (handed-over characters included).
 - **Leaving / rejoining (DM):** leaving keeps the room (`lobby-last-hosted`); the lobby offers "กลับเข้าห้องเดิม" with the same code, campaign, removed players and grants. A running short rest ends on leave. Players see a note while no DM is online.
+- **Kicked players (2026-10-18):** the kick is shared through Firebase (`src/sync/lobby.ts`, `firebaseTransport.ts`),
+  so a kicked player leaves every phone's member list, not only the DM's; "let back in" + rejoin shows them again.
 - **Dice:** the floating roller shares rolls with the room (players on, DM off by default); the DM logs them.
 - **Campaign:** players adopt the DM's campaign id; the DM can switch the room's campaign any time
   (`setCampaign` → `campaign` message). Rename/delete only on the device that created it (`canManageCampaign`).
@@ -114,59 +114,50 @@ and the 7 untranslated spells in `src/data/README.md`.
   (`turn.spellSlot`, Reactions excepted). The old 2014 "Bonus Action spell → cantrip" rule no longer exists.
 - Generators' loot amounts and encounter XP budget are a homebrew guide (labelled in the UI).
 
-## Phase 5: where to start
+## Phase 5: where things stand
 
-1. **First real session (owner's next game night):** the owner is a first-time DM running *Dragon of Icespire
-   Peak* with 4 friends on phones (level 1: Fighter, Paladin, Rogue, Cleric; they build characters in the wizard at
-   the table). Prep is done:
+1. **Playtest (2026-10-16) — done, fixes merged 2026-10-18** (PR #1 one commit per issue, #2, #3): DM can rejoin the
+   room they left; Thai help for all 18 skills; Action/Bonus Action/Reaction/Concentration only suggest what fits;
+   spell cards open in place + back button; 📖 ค้นหา tab for everyone; party rest on the DM tab (`lobby.playedIds`,
+   fixes a Long Rest that skipped handed-over characters); missing subclass/ASI banner; kicked players leave every
+   list. Checked with Playwright in test mode (two tabs); **Firebase online mode was not re-tested** after these.
+2. **First real session (open, the owner's next game night):** first-time DM running *Dragon of Icespire Peak* with
+   4 friends on phones (level 1: Fighter, Paladin, Rogue, Cleric; they build characters in the wizard at the table).
    - Private files in `docs/DM Scripts/` (git-ignored): `icespire-campaign-pack.json` (**v2**, 2026-10-13: 56 notebook
-     pages, a 15-scene Session 1 plan, 7 prepared fights), `Session 1 - DM Prep.md` (v1→v2 changes, monster notes,
-     safety valves, DM tips, typos for DND-TH), and the owner's original Thai script PDFs.
-   - `python3 "docs/DM Scripts/make_pack.py"` rebuilds the pack: it reads read-aloud boxes, quest leaflets and tables
-     from the private DND-TH library (`docs/DND-TH/doip/`, skill `dnd-th-library`) at build time. Owner's choices:
-     DND-TH wording · 2024 SRD stat blocks where they exist (Orc, Rock Gnome Recluse from the book, in notes) · the
-     book's difficulty with safety valves · dragon d20 location rolls, Session 1 = scare only.
+     pages, a 15-scene Session 1 plan, 7 prepared fights), `Session 1 - DM Prep.md`, the owner's Thai script PDFs.
+   - `python3 "docs/DM Scripts/make_pack.py"` rebuilds the pack from the private DND-TH library (`docs/DND-TH/doip/`,
+     skill `dnd-th-library`). Owner's choices: DND-TH wording · 2024 SRD stat blocks where they exist · the book's
+     difficulty with safety valves · dragon d20 location rolls, Session 1 = scare only.
    - Import on the DM laptop: DM → 📒 → 📦 นำเข้าแพ็ก. Re-import is safe ("add only" keeps edits).
-   - **Never put test copies of the pack inside the repo** (e.g. `public/`): one was committed by another session in
-     `b5cd2a8` and pushed; removed from `main` in `621a541` (`public/zz-*` now ignored), but it is still in git history
-     and in that commit's Vercel deployment. The owner decided not to rewrite history (2026-10-13). Stage only your
-     own files (never `git add -A`).
-   - After the session: collect what broke or felt clunky (docs/QA.md) and fix. Check the Firebase cleanup live.
-2. **Thai translation (Phase 5 item, ROADMAP):** spells, feats, magic items, class features and species traits
-   are done (class/species parsed from DND-TH's markdown pages: `classSections`/`traitSections` in
-   `featuresTh.ts`; one script builds all of `srd-features-th.json`, see `src/data/README.md`). Shared helpers in
-   `src/model/dndTh.ts` (credit, `cleanMarkdown`, `findTypos`, **`stripNonSrdNames`** + `nonSrdName`: DND-TH
-   translates the full books, so names the SRD drops, e.g. Tasha, Bigby, Heward, Kwalish, Dragonlance, are taken
-   out or the text stays English). One builder + script + `src/data/srd-*-th.json` per kind:
-   `spellsTh.ts`, `featuresTh.ts` (keyed by `srd-features.json` ids: class features and species traits go into the
-   **same file** and show up via `FeatureText.tsx`), `magicItemsTh.ts` (aliases for renamed/tiered items).
-   UI: `src/ui/ThaiText.tsx` (`LangSwitch`, `ThaiCredit`, `WithThai`), `src/ui/useTextLang.ts` (one ไทย/EN choice
-   for every card). Magic items: Lookup tab 🪄 ไอเทมเวท (`MagicItemSearch` in `LookupMore.tsx`) and the loot
-   generator. `miniMarkdown` now reads `*italic*` and `***bold italic***`. **Rules Glossary** (all 154 SRD
-   entries, from the private `docs/DND-TH/free-rules/rules-glossary.md`, owner confirmed DND-TH's OK for the app):
-   `glossaryTh.ts`, `src/ui/useGlossaryTh.ts`; 📖 rules tab and the phone help sheet ("📖 อ่านกติกาเต็ม").
-   Other `docs/DND-TH/` text (adventures, non-SRD) stays out of the app. **Equipment** (`equipmentTh.ts`,
-   `useEquipmentTh`): Thai names everywhere items are listed or searched, Thai text only where the SRD English has
-   text, tool uses, property/mastery text. **Monsters (2026-10-18):** `monstersTh.ts`, `useMonstersTh`, `th` prop on
-   `MonsterStatBlock` (lookup + DM panel): Thai names in the list and search, Thai traits/actions with the ไทย/EN switch;
-   numbers stay the English data and Thai text with different numbers isn't used (see `src/data/README.md`).
-   - JSON (2014 + 2024 mixed; keep `version: "2024"` and SRD 5.2.1 entries only):
-     `https://dnd-th.com/data/{feats,magic-items,monsters,equipments}.json`
-   - Class features and species: markdown zips from DND-TH in the owner's `~/Downloads/resrd5_2_1/`
-     (`2024-classes.zip`, `2024-races.zip`; not in git).
-   - Same pattern as spells: build script → separate `src/data/srd-*-th.json` → TH/EN switch, credit DND-TH.
-     Suggested order: ~~feats~~ → ~~magic items~~ → ~~class features/species~~ → ~~glossary~~ → ~~equipment~~ → ~~monsters~~.
-   - DND-TH asked to hear about typos; the build scripts list them (spells: 5 sent to the owner to forward;
-     feats/classes: Grappler "น้้น" → "นั้น", Barbarian Weapon Mastery "เปลีี่ยน" → "เปลี่ยน"; glossary: 7, listed
-     in `src/data/README.md`).
-3. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
+   - Battle maps and tokens: Owlbear Rodeo, files in `docs/Owlbear-Rodeo/` (third-party art; the `.gitignore` line for
+     it was added by another session and is **not committed yet**).
+   - Voices for read-aloud (prep time only, on the laptop): Paxa Labs Thai TTS, key `PAXA_API_KEY` in `.env.local`,
+     never in the app (see Claude's memory `paxa-tts`).
+   - **Never put test copies of the pack inside the repo** (e.g. `public/`): one leaked in `b5cd2a8` and is still in git
+     history (owner decided not to rewrite it). Stage only your own files (never `git add -A`).
+   - After the session: collect what broke or felt clunky in [docs/QA.md](QA.md), fix, and check that the Firebase
+     cleanup ran.
+3. **Thai translation — done** (2026-10-13 to 10-18). One builder + script + `src/data/srd-*-th.json` per kind
+   (`spellsTh.ts`, `featuresTh.ts` for feats/class features/species, `magicItemsTh.ts`, `glossaryTh.ts`,
+   `equipmentTh.ts`, `monstersTh.ts`); shared helpers in `src/model/dndTh.ts` (credit, `cleanMarkdown`, `findTypos`,
+   `stripNonSrdNames`: DND-TH translates the full books, so non-SRD names like Tasha or Bigby are removed or the text
+   stays English). UI: `src/ui/ThaiText.tsx`, `src/ui/useTextLang.ts` (one ไทย/EN choice for every card). Monsters:
+   numbers stay the English data; Thai text with different numbers isn't used. Sources, checksums and typos for DND-TH
+   are in `src/data/README.md`. Only SRD 5.2.1 entries; other `docs/DND-TH/` text stays out of the app.
+   - **Gaps with no DND-TH text** (still English): 7 spells, 4 magic items, 16 equipment items, 1 class feature,
+     1 monster. Could get our own translation.
+4. **Unfinished work in a worktree:** `.claude/worktrees/eager-bhabha-938e7b` (branch `claude/eager-bhabha-938e7b`)
+   has **uncommitted** changes adding the 15 SRD 5.2.1 magic items that 5e-bits lacks (`PDF_ONLY` in
+   `scripts/srd/magic-items.mjs`, a Hat of Many Spells table, data + README). Finish and merge it, or drop it on
+   purpose; don't delete the worktree by accident.
+5. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
    Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
 
 ## Next steps (suggested)
-0. **Done 2026-10-13:** content plan [docs/RESEARCH.md](RESEARCH.md) steps E1–E7, F1 and F2 (weapons/attacks, equipped
-   armor AC, class features, limited-use features, starting gear, monster Initiative). QA findings: [docs/QA.md](QA.md).
-1. **Phase 5 (next):** a real session with friends on several phones; collect what broke or felt clunky; fix.
-2. "Later" list in `docs/ROADMAP.md`: QR export and other items not yet built.
+1. **Icespire Session 1** with friends on several phones; keep a list of problems during play.
+2. **Fix pass** on that list (one commit per issue, like the playtest PR).
+3. Optional: finish the 15 PDF-only magic items (item 4 above); our own Thai for the translation gaps; QR export
+   (the last "Later" item in `docs/ROADMAP.md`).
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
 - Reply in English; UI in Thai with English game terms; generated proper names in English.
