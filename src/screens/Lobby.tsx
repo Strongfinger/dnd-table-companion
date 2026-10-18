@@ -70,6 +70,8 @@ function Start({ linkCode }: { linkCode: string | null }) {
         <TextInput value={name} placeholder="เช่น ต้น (DM)" onChange={setName} />
       </Section>
 
+      {lobby.lastHosted && <LastRoom />}
+
       <Section title="🎲 DM: เปิดห้อง">
         <p className="mb-2 text-xs text-stone-400">ห้องเป็นการเล่นสดของแคมเปญหนึ่ง เลือกหรือสร้างแคมเปญก่อน</p>
         <CampaignPicker value={campaignId} onChange={setCampaignId} />
@@ -114,6 +116,23 @@ function Start({ linkCode }: { linkCode: string | null }) {
   )
 }
 
+/** DM: go back to the room left last (same code, campaign and players; players' phones reconnect by themselves). */
+function LastRoom() {
+  const lobby = useLobby()
+  const last = lobby.lastHosted!
+  const campaigns = useLiveQuery(listCampaigns) ?? []
+  const campaign = campaigns.find((c) => c.id === last.campaignId)
+  return (
+    <Section title="🔁 DM: กลับเข้าห้องเดิม">
+      <p className="mb-2 text-xs text-stone-400">
+        ห้อง <b className="font-mono text-stone-200">{last.code}</b>{campaign && <> · 🗺 {campaign.name}</>}
+        {last.local && ' · โหมดทดสอบในเครื่อง'} · ผู้เล่นที่ยังอยู่ในห้องจะเชื่อมต่อกลับเอง ไม่ต้องพิมพ์รหัสใหม่
+      </p>
+      <Button variant="primary" className="w-full" onClick={lobby.rejoinLast}>กลับเข้าห้อง {last.code}</Button>
+    </Section>
+  )
+}
+
 /** In a room: code + QR (DM), status, who's here, my character (player). */
 function InRoom() {
   const lobby = useLobby()
@@ -137,6 +156,9 @@ function InRoom() {
           {STATUS_TEXT[lobby.status]}{s.local && ' · โหมดทดสอบในเครื่อง'}
           {s.role === 'player' && lobby.pending > 0 && ` · ⏳ รอ DM ยืนยัน ${lobby.pending} การเปลี่ยนแปลง`}
         </p>
+        {s.role === 'player' && lobby.status === 'connected' && lobby.members.length > 0 && !lobby.members.some((m) => m.role === 'dm' && m.online) && (
+          <p className="mb-2 rounded-lg bg-amber-950 p-2 text-sm text-amber-200">DM ไม่ได้อยู่ในห้องตอนนี้ · อยู่ในห้องนี้ต่อได้เลย เมื่อ DM กลับเข้าห้องเดิม แอปจะเชื่อมต่อให้เอง</p>
+        )}
         {/* The campaign this room plays: the DM can switch it any time (e.g. after importing a campaign pack). */}
         {s.role === 'dm' ? (
           <label className="mb-3 block text-sm">

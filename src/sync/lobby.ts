@@ -56,6 +56,16 @@ export function parseLobbySession(v: unknown): LobbySession | null {
   }
 }
 
+/**
+ * DM: the room this device hosted last, to open it again with the same code (players stay in it and
+ * reconnect on their own). Kept: campaign, removed players, handed-over characters. A short rest that
+ * was running is over: leaving the room ended it.
+ */
+export function lastHostedRoom(saved: unknown): LobbySession | null {
+  const s = parseLobbySession(saved)
+  return s && s.role === 'dm' ? { ...s, shortRestSince: null } : null
+}
+
 /** The link in the QR code: opens the lobby with the code filled in. */
 export function joinLink(origin: string, code: string): string {
   return `${origin.replace(/\/$/, '')}/#/lobby/${code}`
