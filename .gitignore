@@ -18,3 +18,6 @@ docs/DND-TH/
 
 # Temporary test copies (never commit: the campaign pack is private)
 public/zz-*
+
+# Owlbear Rodeo maps and tokens (large, third-party art: never commit)
+docs/Owlbear-Rodeo/
