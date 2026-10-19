@@ -101,8 +101,10 @@ export function normalizeEquipment(c: Character, data: SrdEquipment): Character 
     if (i.slot && slotsFor(i, srdOf(i, data)).includes(i.slot) && tryPlace(i, i.slot)) continue
     place.set(i.id, null)
   }
-  for (const i of worn) {
-    if (place.get(i.id) !== null || i.slot) continue
+  // Armor and Shields before weapons, so a Shield keeps the off hand (and the AC it gives).
+  const legacy = worn.filter((i) => place.get(i.id) === null && !i.slot)
+  const isWeapon = (i: InventoryItem) => srdOf(i, data)?.kind === 'weapon'
+  for (const i of [...legacy.filter((i) => !isWeapon(i)), ...legacy.filter(isWeapon)]) {
     slotsFor(i, srdOf(i, data)).some((s) => tryPlace(i, s))
   }
   let changed = false
@@ -156,7 +158,9 @@ export function equipItem(c: Character, itemId: string, slot: EquipSlot, data: S
   const out = start.inventory.filter((i) => i.slot && i.id !== itemId && filled(i, i.slot, data).some((s) => needs.includes(s)))
   let inventory = start.inventory
   for (const o of out) inventory = toPack(inventory, o)
-  if (target.qty > 1 && !target.slot) {
+  // Read it again: a displaced twin may have just stacked onto it.
+  const stack = inventory.find((i) => i.id === itemId)!
+  if (stack.qty > 1 && !stack.slot) {
     inventory = inventory.flatMap((i) => (i.id === itemId
       ? [{ ...i, qty: i.qty - 1 }, { ...takeOff(i), id: newId(), qty: 1, equipped: true as const, slot }]
       : [i]))

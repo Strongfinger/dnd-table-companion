@@ -49,4 +49,10 @@ describe('coins', () => {
       expect(totalCopper(after)).toBe(totalCopper(before) - n * { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 }[coin])
     }
   })
+
+  it('ignores amounts that are not numbers', () => {
+    expect(gainCoins(purse({ gp: 1 }), 'gp', NaN)).toEqual(purse({ gp: 1 }))
+    expect(spendCoins(purse({ gp: 1 }), 'gp', NaN)).toBeNull()
+    expect(spendCoins(purse({ gp: 1 }), 'gp', Infinity)).toBeNull()
+  })
 })

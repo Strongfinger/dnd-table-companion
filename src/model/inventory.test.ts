@@ -183,4 +183,22 @@ describe('inventory', () => {
       { id: 'x', name: 'Bad', qty: 1 },
     ])
   })
+
+  it('older saves: a Shield keeps the off hand before weapons', async () => {
+    const data = await loadSrdEquipment()
+    const item = (srdId: string) => ({ id: srdId, name: findItem(data, srdId)!.name, qty: 1, srdId, equipped: true as const })
+    const old = { ...rogue(), className: 'Fighter' as const, inventory: [item('dagger'), item('shortsword'), item('shield'), item('chain-mail')] }
+    const c = normalizeEquipment(old, data)
+    expect(c.inventory.map((i) => i.slot ?? null)).toEqual(['mainHand', 'back', 'offHand', 'body'])
+    expect(characterArmorClass(c, data).ac).toBe(18)
+  })
+
+  it('equipping a twin of the item in the slot leaves one in the slot and one in the pack', async () => {
+    const data = await loadSrdEquipment()
+    let c = addSrdItem(rogue(), findItem(data, 'dagger')!, data, 2)
+    c = equipItem(c, c.inventory[0].id, 'mainHand', data)
+    const spare = c.inventory.find((i) => !i.equipped)!
+    c = equipItem(c, spare.id, 'mainHand', data)
+    expect(c.inventory.map((i) => [i.qty, i.slot ?? null])).toEqual([[1, null], [1, 'mainHand']])
+  })
 })

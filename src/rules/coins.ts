@@ -20,7 +20,8 @@ export function totalCopper(coins: Coins): number {
 
 /** Get `amount` coins of one kind. */
 export function gainCoins(coins: Coins, coin: Coin, amount: number): Coins {
-  return { ...coins, [coin]: Math.min(MAX_COINS, coins[coin] + Math.max(0, Math.floor(amount))) }
+  const n = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0
+  return { ...coins, [coin]: Math.min(MAX_COINS, coins[coin] + n) }
 }
 
 /**
@@ -29,6 +30,7 @@ export function gainCoins(coins: Coins, coin: Coin, amount: number): Coins {
  * and gets change, biggest coins first. Example: pay 5 SP with 0 SP and 1 GP → 5 SP left; pay 1 CP with 1 GP → 9 SP 9 CP.
  */
 export function spendCoins(coins: Coins, coin: Coin, amount: number): Coins | null {
+  if (!Number.isFinite(amount)) return null
   const n = Math.max(0, Math.floor(amount))
   if (totalCopper(coins) < n * COIN_VALUE_CP[coin]) return null
   const out = { ...coins }
@@ -53,7 +55,7 @@ export function spendCoins(coins: Coins, coin: Coin, amount: number): Coins | nu
   let change = -owed
   for (const k of COINS.slice(0, 4).reverse().filter((k) => k !== 'ep' || coin === 'ep')) {
     const back = Math.floor(change / COIN_VALUE_CP[k])
-    out[k] += back
+    out[k] = Math.min(MAX_COINS, out[k] + back)
     change -= back * COIN_VALUE_CP[k]
   }
   return out
