@@ -81,6 +81,14 @@ export async function setCharacterCampaign(id: string, campaignId: string | null
   await db.characters.update(id, { campaignId })
 }
 
+/**
+ * Live room: the characters played there belong to the room's campaign on this device (the DM's and the
+ * players' alike), whatever campaign they were filed under before. Only those not in it yet are changed.
+ */
+export async function moveToCampaign(ids: string[], campaignId: string): Promise<void> {
+  await db.characters.where('id').anyOf(ids).filter((c) => c.campaignId !== campaignId).modify({ campaignId })
+}
+
 /** Call `onChange` with these characters now and after every change to them. Returns a stop function. */
 export function watchCharacters(ids: string[], onChange: (list: Character[]) => void): () => void {
   const sub = liveQuery(() => db.characters.where('id').anyOf(ids).toArray()).subscribe({

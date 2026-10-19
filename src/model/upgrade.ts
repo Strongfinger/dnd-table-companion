@@ -5,7 +5,7 @@ import type { LimitedFeature } from '../rules'
 import type { Character } from './character'
 import type { SrdEquipment, SrdItem } from './equipment'
 import { addCatalogFeature, featuresToAdd, refreshCatalogFeatures } from './featureCatalog'
-import { applyAutoAC, characterArmorClass } from './inventory'
+import { applyAutoAC, characterArmorClass, normalizeEquipment } from './inventory'
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z' ,]/g, ' ').replace(/\s+/g, ' ').trim()
 
@@ -101,7 +101,8 @@ export function applyUpgrade(c: Character, data: SrdEquipment, plan: UpgradePlan
       attacks: next.attacks.filter((a) => !plan.attacks.some((x) => x.attackId === a.id)),
     }
   }
-  return next
+  // One item per slot: weapons beyond two hands and the back go back in the pack.
+  return normalizeEquipment(next, data)
 }
 
 /** The AC the character would have with the armor found worn (to show before upgrading). */

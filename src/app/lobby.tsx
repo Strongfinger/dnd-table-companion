@@ -13,7 +13,7 @@
 // applied, so a re-sent change, or one replayed after a reload, is only confirmed again.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { adoptCampaign, getCampaign } from '../db/campaigns'
-import { deleteCharacter, getCharacter, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
+import { deleteCharacter, getCharacter, moveToCampaign, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { getEncounter, watchPlayerFight } from '../db/encounters'
 import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs, watchFightsForPlayers } from '../db/log'
@@ -291,8 +291,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       roomCampaign.current = b.id
       setRoomCampaignId(b.id)
       // The DM's campaign on this phone too, with my character in it (party overview, lists).
+      // (The session as it is now: the character may have been picked after this message's handler was set up.)
       void adoptCampaign(b.id, b.name, e.from).then(async () => {
-        if (s.characterId) await setCharacterCampaign(s.characterId, b.id as string)
+        await moveToCampaign(myIds(sessionRef.current ?? s), b.id as string)
         await setSetting('currentCampaignId', b.id)
       })
     }
@@ -548,6 +549,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       }
       return
     }
+    // Everyone played here belongs to the room's campaign on this device too, also a character that came in
+    // filed under another campaign (or none), e.g. imported from a player's file or played in an earlier room.
+    const roomCampaignId = sessionRef.current?.campaignId
+    if (roomCampaignId) void moveToCampaign(played.split(','), roomCampaignId)
     return watchCharacters(played.split(','), (list) => {
       for (const c of list) if (lastSent.current.get(c.id) !== c.rev) sendState(c)
       // Everyone's read-only party cards (only when one of them changed).
@@ -651,7 +656,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       lastFight.current = null
       save({ ...s, campaignId })
       // The characters played right now belong to the new campaign too (party overview, lists).
-      for (const id of playedNow()) await setCharacterCampaign(id, campaignId)
+      await moveToCampaign(playedNow(), campaignId)
       send('campaign', { id: campaign.id, name: campaign.name })
     },
     lastHosted,

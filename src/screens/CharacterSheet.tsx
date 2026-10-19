@@ -11,6 +11,7 @@ import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
 import ExportPanel from './ExportPanel'
 import Inventory from './Inventory'
+import Notes from './Notes'
 import LevelUp from './LevelUp'
 import UpgradePanel from './UpgradePanel'
 import { missingLevelChoices } from '../model/feats'
@@ -169,7 +170,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       <ClassFeatures c={c} />
       <TextBlock title="ความสามารถพิเศษ (Features & Traits)" text={c.featuresText} />
       <TextBlock title="ความชำนาญอื่นๆ และภาษา" text={c.proficienciesText} />
-      <TextBlock title="โน้ต" text={c.notes} />
+      <Notes c={c} />
     </div>
   )
 }

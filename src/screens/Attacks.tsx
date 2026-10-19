@@ -54,6 +54,7 @@ function WeaponRow({ w }: { w: EquippedWeapon }) {
         <button type="button" className="min-w-[10rem] flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
           <span className="font-bold">{w.name}</span>
           {!w.trained && <span className="ml-1 rounded bg-amber-900 px-1 text-xs text-amber-200">ไม่ชำนาญ</span>}
+          {w.slot === 'back' && <span className="ml-1 text-xs font-normal text-stone-400">(สะพายหลัง)</span>}
           <span className="block text-xs text-stone-400">
             {ABILITY_LABEL[attack.ability].short} · {range} · {w.mastery.name}{w.mastery.usable ? ' ⭐' : ''}
           </span>
