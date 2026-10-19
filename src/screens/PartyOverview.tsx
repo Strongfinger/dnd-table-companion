@@ -8,13 +8,14 @@ import { getSetting } from '../db/device'
 import { isDead, isDying } from '../model/actions'
 import type { Character } from '../model/character'
 import { HEALTH_LABEL, healthStatus } from '../model/playerView'
-import { deriveSheet, formatModifier, hitDieSize, isSrdSpecies, SPECIES_INFO } from '../rules'
+import { buffedArmorClass, deriveSheet, formatModifier, hitDieSize, isSrdSpecies, SPECIES_INFO } from '../rules'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Term } from '../ui/help'
 import { ActionEconomyBar } from '../ui/kit'
 import { CONDITION_TH } from '../ui/labels'
 import type { PartyCard as RoomCard } from '../sync/party'
 import { classLabel } from '../model/monsterCharacter'
+import { BuffChips } from './BuffPanel'
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 
@@ -73,7 +74,7 @@ function PartyCard({ c }: { c: Character }) {
           </div>
         </div>
         <div className="text-right text-xs text-stone-400">
-          <div><Term name="AC" /> <b className="text-base text-stone-100">{c.ac}</b></div>
+          <div><Term name="AC" /> <b className="text-base text-stone-100">{buffedArmorClass(c.ac, c.buffs)}</b></div>
           <div><Term name="Initiative" /> <b className="text-stone-100">{formatModifier(s.initiative)}</b></div>
         </div>
       </div>
@@ -118,6 +119,8 @@ function PartyCard({ c }: { c: Character }) {
           )}
         </div>
       )}
+
+      {c.buffs.length > 0 && <BuffChips buffs={c.buffs} />}
 
       {/* This turn */}
       <ActionEconomyBar economy={c.turn} compact />

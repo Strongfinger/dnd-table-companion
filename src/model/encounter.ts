@@ -1,7 +1,7 @@
 // Encounters for the DM's combat tracker. Monsters keep their own HP here;
 // player characters are linked to their saved sheet (HP lives on the sheet).
 import {
-  CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie,
+  buffedArmorClass, CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie,
   type ActionEconomy, type Condition, type Rng, type TimedEffect, type TurnCombatant,
 } from '../rules'
 import { newId, type Character } from './character'
@@ -68,7 +68,7 @@ export function combatantFromCharacter(c: Character): Combatant {
     tieBreak: 0,
     defeated: false,
     effects: [],
-    ac: c.ac,
+    ac: buffedArmorClass(c.ac, c.buffs),
     hp: { ...c.hp },
     concentration: '',
     notes: '',

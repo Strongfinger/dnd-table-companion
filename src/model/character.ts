@@ -1,7 +1,7 @@
 // The Character record saved on the device (IndexedDB) and used for JSON export/import.
 // Only things the player enters are stored; calculated numbers come from deriveSheet().
 
-import { FRESH_TURN, type FeatureUses, type Ability, type AttackInput, type CharacterTurn, type Condition, type SheetInput } from '../rules'
+import { FRESH_TURN, type Buff, type FeatureUses, type Ability, type AttackInput, type CharacterTurn, type Condition, type SheetInput } from '../rules'
 
 export interface Character extends SheetInput {
   id: string
@@ -34,6 +34,8 @@ export interface Character extends SheetInput {
   /** 0–6 (2024: −2 per level to D20 Tests, −5 ft. Speed; level 6 = death). */
   exhaustion: number
   conditions: Condition[]
+  /** Temporary buffs the DM put on (Longstrider, a blessing…), see rules/buffs.ts; rests end some of them. */
+  buffs: Buff[]
   /** Action / Bonus Action / Reaction used this turn (and whether a spell slot was spent). */
   turn: CharacterTurn
   /** Name of the spell being concentrated on, or '' if none. */
@@ -146,6 +148,7 @@ export function createCharacter(overrides: Partial<Character> = {}): Character {
     heroicInspiration: false,
     exhaustion: 0,
     conditions: [],
+    buffs: [],
     concentration: '',
     turn: { ...FRESH_TURN },
     features: [],

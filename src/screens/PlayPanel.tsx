@@ -1,4 +1,4 @@
-// In-play tracking on the sheet: HP, death saves, rests, spell slots, features, conditions.
+// In-play tracking on the sheet: HP, death saves, rests, spell slots, features, conditions, buffs.
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
@@ -10,6 +10,7 @@ import { CONDITIONS, exhaustionPenalty, hitDieSize, MAX_FEATURE_USES, spellSlots
 import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
 import ActionChoiceDialog from './ActionChoiceDialog'
+import BuffPanel from './BuffPanel'
 import { useCharacterAct } from './useCharacterAct'
 import { FeatureCard, FeaturePicker } from './FeatureCatalog'
 import { useFeatureTexts } from './useSrdData'
@@ -319,6 +320,7 @@ export default function PlayPanel({ c }: { c: Character }) {
           })}
         </div>
       </div>
+      <BuffPanel c={c} act={act} canAdd={!asPlayer} canRemove />
       {pending && (
         <ActionChoiceDialog
           kind={pending}

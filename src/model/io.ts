@@ -5,6 +5,7 @@ import {
   type Ability, type AttackInput, type ClassName, type Condition, type ProficiencyLevel, type Skill,
 } from '../rules'
 import { createCharacter, EQUIP_SLOTS, newId, type Character, type EquipSlot } from './character'
+import { parseBuff } from './characterActions'
 
 export const EXPORT_FORMAT = 'dnd-table-companion/character'
 export const EXPORT_VERSION = 1
@@ -127,6 +128,7 @@ export function parseCharacterImport(text: string): ImportResult {
     exhaustion: field('exhaustion', int(0, 6), 0, 'Exhaustion'),
     conditions: field('conditions', subsetOf(CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')), [], 'Conditions'),
     concentration: field('concentration', str(100), '', 'Concentration'),
+    buffs: field('buffs', arrayOf((v) => parseBuff(v) ?? undefined, 30), [], 'บัฟ/เอฟเฟกต์'),
     turn: field('turn', economy, d.turn, 'Action/Bonus Action/Reaction'),
     features: field('features', arrayOf(feature, 50), [], 'ความสามารถที่ใช้ได้จำกัด'),
     ac: field('ac', int(1, 40), d.ac, 'AC'),

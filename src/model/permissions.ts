@@ -49,8 +49,11 @@ export function useKeys(c: Character, a: CharacterAction): string[] {
 
 export type Permission = { ok: true } | { ok: false; reason: string }
 
-/** Only the DM starts these for a player in a room: rests bring back slots and features, a new turn brings back actions. */
-const DM_ONLY: CharacterAction['type'][] = ['shortRest', 'longRest', 'resetTurn']
+/**
+ * Only the DM starts these for a player in a room: rests bring back slots and features, a new turn brings back actions,
+ * and buffs are the DM's call. (A player may remove a buff, e.g. when the caster's Concentration ends.)
+ */
+const DM_ONLY: CharacterAction['type'][] = ['shortRest', 'longRest', 'resetTurn', 'addBuff']
 
 /** Where the character is in a fight: not in one, or in one (and whether it's their turn now). */
 export type TurnInfo = { inFight: false } | { inFight: true; myTurn: boolean }
@@ -69,6 +72,7 @@ export const NO_CONTEXT: PlayContext = { turn: { inFight: false }, shortRest: fa
  * used on someone else's turn, e.g. Shield or an Opportunity Attack).
  */
 export function playerMay(c: Character, a: CharacterAction, ctx: PlayContext = NO_CONTEXT): Permission {
+  if (a.type === 'addBuff') return { ok: false, reason: 'บัฟ/เอฟเฟกต์: DM เป็นคนใส่ให้' }
   if (DM_ONLY.includes(a.type)) return { ok: false, reason: 'พักสั้น/พักยาว และเริ่มเทิร์นใหม่: DM เป็นคนกดให้' }
   if (a.type === 'spendHitDie' && !ctx.shortRest) return { ok: false, reason: 'ใช้ Hit Dice ได้เฉพาะระหว่างพักสั้นที่ DM เริ่ม' }
   const turn = ctx.turn
