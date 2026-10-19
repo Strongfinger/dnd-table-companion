@@ -1,5 +1,5 @@
 // The sheet's coin purse and inventory. Coins: pick a coin, type an amount, then "รับ" or "จ่าย" (paying
-// breaks bigger coins and gives change, src/rules/coins.ts). Items: one per slot (head, neck, … main hand,
+// breaks bigger coins and gives change, src/rules/coins.ts). Items: one per slot (head, neck, two rings, … main hand,
 // off hand, back; model/inventory.ts); "+ เพิ่มของ" picks SRD 5.2.1 equipment (a pack adds what's inside)
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
 // Names and quantities of any item are edited on the edit page.
@@ -108,7 +108,7 @@ function CoinPurse({ c, change }: { c: Character; change: Change }) {
   )
 }
 
-/** The ten slots and what is in each. */
+/** Every slot and what is in each. */
 function SlotGrid({ slots, onTakeOff }: { slots: Partial<Record<EquipSlot, InventoryItem>>; onTakeOff: (itemId: string) => void }) {
   return (
     <div className="mb-3 grid grid-cols-1 gap-x-3 sm:grid-cols-2">
@@ -245,10 +245,10 @@ function ItemPicker({ data, onAdd, onAddCustom }: {
   )
 }
 
-/** Wear slots a custom item can have: "in a hand" means either hand. */
+/** Wear slots a custom item can have: "in a hand" means either hand, a ring either ring slot. */
 const WEAR_OPTIONS: { value: EquipSlot | ''; label: string }[] = [
   { value: '', label: 'ไม่ได้สวมใส่ (เก็บในเป้)' },
-  ...EQUIP_SLOTS.filter((s) => s !== 'offHand').map((s) => ({ value: s, label: s === 'mainHand' ? 'ถือในมือ' : `สวมที่${SLOT_LABEL[s]}` })),
+  ...EQUIP_SLOTS.filter((s) => s !== 'offHand' && s !== 'ring2').map((s) => ({ value: s, label: s === 'mainHand' ? 'ถือในมือ' : s === 'ring1' ? 'สวมที่นิ้ว (แหวน)' : `สวมที่${SLOT_LABEL[s]}` })),
 ]
 
 /** A custom item the SRD list doesn't have (a quest item, a reward from the DM…). */

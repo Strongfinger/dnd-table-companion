@@ -201,4 +201,14 @@ describe('inventory', () => {
     c = equipItem(c, spare.id, 'mainHand', data)
     expect(c.inventory.map((i) => [i.qty, i.slot ?? null])).toEqual([[1, null], [1, 'mainHand']])
   })
+
+  it('two ring slots: a third ring replaces the first', async () => {
+    const data = await loadSrdEquipment()
+    let c = rogue()
+    for (const n of ['Ring A', 'Ring B', 'Ring C']) c = addPlainItem(c, n, 1, 'ring1')
+    for (const i of [...c.inventory]) c = toggleEquipped(c, i.id, data)
+    const slots = slotContents(c, data)
+    expect([slots.ring1?.name, slots.ring2?.name]).toEqual(['Ring C', 'Ring B'])
+    expect(c.inventory.filter((i) => i.equipped)).toHaveLength(2)
+  })
 })

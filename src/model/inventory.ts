@@ -48,11 +48,12 @@ function addOne(c: Character, srdId: string | undefined, name: string, qty: numb
 
 /** Thai names of the slots, in the order the sheet shows them. */
 export const SLOT_LABEL: Record<EquipSlot, string> = {
-  head: 'หัว', neck: 'คอ', hands: 'ถุงมือ', cloak: 'ผ้าคลุม', body: 'เกราะ/ชุด',
+  head: 'หัว', neck: 'คอ', hands: 'ถุงมือ', ring1: 'แหวน 1', ring2: 'แหวน 2', cloak: 'ผ้าคลุม', body: 'เกราะ/ชุด',
   legs: 'ขา', feet: 'เท้า', mainHand: 'มือหลัก', offHand: 'มือรอง', back: 'สะพายหลัง',
 }
 
 const HANDS: EquipSlot[] = ['mainHand', 'offHand']
+const RINGS: EquipSlot[] = ['ring1', 'ring2']
 
 function isTwoHanded(srd: SrdItem | undefined): boolean {
   return !!srd?.weapon?.properties.includes('Two-Handed')
@@ -61,13 +62,14 @@ function isTwoHanded(srd: SrdItem | undefined): boolean {
 /**
  * The slots an item can go in. Weapons: either hand or slung on the back; a Two-Handed weapon is held in the
  * main hand and takes the off hand too. Shield: off hand. Armor: body. Anything else: its `wear` slot
- * (a hand slot means either hand).
+ * (a hand slot means either hand, a ring slot either ring).
  */
 export function slotsFor(item: InventoryItem, srd: SrdItem | undefined): EquipSlot[] {
   if (srd?.kind === 'weapon') return isTwoHanded(srd) ? ['mainHand', 'back'] : ['mainHand', 'offHand', 'back']
   if (srd?.kind === 'shield') return ['offHand']
   if (srd?.kind === 'armor') return ['body']
   if (!item.wear) return []
+  if (RINGS.includes(item.wear)) return RINGS
   return HANDS.includes(item.wear) ? HANDS : [item.wear]
 }
 

@@ -23,7 +23,7 @@ import { ABILITY_LABEL } from '../ui/labels'
 /** Where a non-SRD item can be worn ("ถือ" = either hand). */
 const WEAR_EDIT_OPTIONS: { value: EquipSlot | ''; label: string }[] = [
   { value: '', label: 'ไม่สวม' },
-  ...EQUIP_SLOTS.filter((s) => s !== 'offHand').map((s) => ({ value: s, label: s === 'mainHand' ? 'ถือ' : SLOT_LABEL[s] })),
+  ...EQUIP_SLOTS.filter((s) => s !== 'offHand' && s !== 'ring2').map((s) => ({ value: s, label: s === 'mainHand' ? 'ถือ' : s === 'ring1' ? 'แหวน' : SLOT_LABEL[s] })),
 ]
 const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
 const ABILITY_OPTIONS = ABILITIES.map((a) => ({ value: a, label: ABILITY_LABEL[a].short }))
