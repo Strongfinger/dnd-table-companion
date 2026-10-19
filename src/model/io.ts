@@ -60,7 +60,14 @@ export function parseCharacterImport(text: string): ImportResult {
     if (!isObject(data.character)) return { ok: false, error: 'ไม่พบข้อมูลตัวละครในไฟล์' }
     raw = data.character
   }
+  return parseCharacterRecord(raw)
+}
 
+/**
+ * Check one character object (already unwrapped from a file) and rebuild a clean Character.
+ * Also used by the full backup import (model/backup.ts).
+ */
+export function parseCharacterRecord(raw: Record<string, unknown>): ImportResult {
   // Core fields: without these the sheet can't be calculated.
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 100) : ''
   if (!name) return { ok: false, error: 'ไม่มีชื่อตัวละคร' }

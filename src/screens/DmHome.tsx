@@ -30,7 +30,7 @@ export default function DmHome() {
         <Generators campaignId={campaignId === ALL ? null : campaignId} />
       </Section>
 
-      <Section title="📒 สมุดแคมเปญ" action={<a href="#/dm/import" className="text-sm text-amber-400 underline">📦 นำเข้าแพ็ก</a>}>
+      <Section title="📒 สมุดแคมเปญ" action={<span className="flex gap-3"><a href="#/dm/import" className="text-sm text-amber-400 underline">📦 นำเข้าแพ็ก</a><a href="#/backup" className="text-sm text-amber-400 underline">💾 สำรอง</a></span>}>
         <NotebookList campaignId={campaignId === ALL ? null : campaignId} onOpen={(id) => go(`/dm/note/${id}`)} />
       </Section>
     </div>
