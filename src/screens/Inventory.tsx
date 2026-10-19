@@ -41,7 +41,7 @@ export default function Inventory({ c }: { c: Character }) {
           <ItemPicker data={data} onAdd={(item) => data && change((latest) => addSrdItem(latest, item, data))}
             onAddCustom={(name, qty, wear) => change((latest) => addPlainItem(latest, name, qty, wear))} />
         )}
-        {data && <SlotGrid slots={slots} onTakeOff={(id) => change((latest) => unequipItem(latest, id, data))} />}
+        {data && <SlotGrid slots={slots} data={data} onTakeOff={(id) => change((latest) => unequipItem(latest, id, data))} />}
         {pack.length === 0 && !adding && <p className="text-sm text-stone-500">ไม่มีของในเป้ กด "+ เพิ่มของ" เพื่อเลือกจาก SRD 5.2.1 หรือพิมพ์ชื่อของเอง</p>}
         <ul className="divide-y divide-stone-800">
           {pack.map((item) => {
@@ -108,26 +108,48 @@ function CoinPurse({ c, change }: { c: Character; change: Change }) {
   )
 }
 
-/** Every slot and what is in each. */
-function SlotGrid({ slots, onTakeOff }: { slots: Partial<Record<EquipSlot, InventoryItem>>; onTakeOff: (itemId: string) => void }) {
+/** Every slot and what is in each; tap an SRD item's name to read about it. */
+function SlotGrid({ slots, data, onTakeOff }: {
+  slots: Partial<Record<EquipSlot, InventoryItem>>
+  data: SrdEquipment
+  onTakeOff: (itemId: string) => void
+}) {
   return (
     <div className="mb-3 grid grid-cols-1 gap-x-3 sm:grid-cols-2">
       {EQUIP_SLOTS.map((s) => {
         const item = slots[s]
-        // A Two-Handed weapon shows in both hands; take it off from the main hand.
-        const both = s === 'offHand' && item && slots.mainHand === item
-        return (
-          <div key={s} className="flex min-h-9 items-center gap-2 border-b border-stone-800 py-1 text-sm">
-            <span className="w-20 shrink-0 text-xs text-stone-400">{SLOT_LABEL[s]}</span>
-            {item
-              ? <span className={`min-w-0 flex-1 truncate ${both ? 'text-stone-500' : 'font-bold text-amber-300'}`}>{both ? `(${item.name} ใช้สองมือ)` : item.name}</span>
-              : <span className="flex-1 text-stone-600">—</span>}
-            {item && !both && (
-              <button type="button" onClick={() => onTakeOff(item.id)} className="shrink-0 rounded-full border border-stone-600 px-2.5 py-0.5 text-xs text-stone-300">ถอด</button>
-            )}
-          </div>
-        )
+        // A Two-Handed weapon shows in both hands; take it off (and read it) from the main hand.
+        const both = s === 'offHand' && !!item && slots.mainHand === item
+        return <SlotRow key={s} slot={s} item={item} both={both} srd={item?.srdId ? findItem(data, item.srdId) : undefined} onTakeOff={onTakeOff} />
       })}
+    </div>
+  )
+}
+
+function SlotRow({ slot, item, both, srd, onTakeOff }: {
+  slot: EquipSlot
+  item: InventoryItem | undefined
+  both: boolean
+  srd: SrdItem | undefined
+  onTakeOff: (itemId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-stone-800 py-1 text-sm">
+      <div className="flex min-h-7 items-center gap-2">
+        <span className="w-20 shrink-0 text-xs text-stone-400">{SLOT_LABEL[slot]}</span>
+        {!item && <span className="flex-1 text-stone-600">—</span>}
+        {item && both && <span className="min-w-0 flex-1 truncate text-stone-500">({item.name} ใช้สองมือ)</span>}
+        {item && !both && (
+          <button type="button" className="min-w-0 flex-1 truncate text-left font-bold text-amber-300" onClick={() => setOpen(!open)} disabled={!srd} aria-expanded={open}>
+            {item.name}{srd && <span className="ml-1 text-xs font-normal text-stone-500">ⓘ</span>}
+          </button>
+        )}
+        {item && !both && (
+          <button type="button" onClick={() => onTakeOff(item.id)} className="shrink-0 rounded-full border border-stone-600 px-2.5 py-0.5 text-xs text-stone-300">ถอด</button>
+        )}
+      </div>
+      {open && srd && item && !both && <ItemDetails srd={srd} />}
     </div>
   )
 }
