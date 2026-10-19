@@ -4,7 +4,7 @@ import {
   ABILITIES, CLASSES, CONDITIONS, MAX_FEATURE_USES, SKILLS,
   type Ability, type AttackInput, type ClassName, type Condition, type ProficiencyLevel, type Skill,
 } from '../rules'
-import { createCharacter, newId, type Character } from './character'
+import { createCharacter, EQUIP_SLOTS, newId, type Character, type EquipSlot } from './character'
 
 export const EXPORT_FORMAT = 'dnd-table-companion/character'
 export const EXPORT_VERSION = 1
@@ -244,7 +244,13 @@ function item(v: unknown): Character['inventory'][number] | undefined {
   const out: Character['inventory'][number] = { id: itemId(v.id), name, qty: v.qty }
   if (typeof v.srdId === 'string' && /^[a-z0-9-]{1,64}$/.test(v.srdId)) out.srdId = v.srdId
   if (v.equipped === true) out.equipped = true
+  if (isSlot(v.slot)) out.slot = v.slot
+  if (isSlot(v.wear)) out.wear = v.wear
   return out
+}
+
+function isSlot(v: unknown): v is EquipSlot {
+  return typeof v === 'string' && (EQUIP_SLOTS as readonly string[]).includes(v)
 }
 
 function featPick(v: unknown): NonNullable<Character['featPicks']>[number] | undefined {
