@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { findItem, loadSrdEquipment } from './equipment'
-import { addPlainItem, addSrdItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
+import { addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
 import { parseCharacterImport } from './io'
 
 const rogue = () => createCharacter({ name: 'Nyx', className: 'Rogue', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
@@ -210,5 +210,22 @@ describe('inventory', () => {
     const slots = slotContents(c, data)
     expect([slots.ring1?.name, slots.ring2?.name]).toEqual(['Ring C', 'Ring B'])
     expect(c.inventory.filter((i) => i.equipped)).toHaveLength(2)
+  })
+
+  it('use one, edit and remove items', async () => {
+    const data = await loadSrdEquipment()
+    let c = addPlainItem(rogue(), 'Potion of Healing', 2)
+    c = addSrdItem(c, findItem(data, 'rope')!, data)
+    const [potion, rope] = c.inventory
+    c = consumeItem(c, potion.id)
+    expect(c.inventory[0].qty).toBe(1)
+    c = consumeItem(c, potion.id)
+    expect(c.inventory.map((i) => i.name)).toEqual(['Rope'])
+    c = editItem(c, rope.id, '  Silk Rope ', 3)
+    expect(c.inventory[0]).toMatchObject({ name: 'Silk Rope', qty: 3, srdId: 'rope' })
+    expect(editItem(c, rope.id, '', 3)).toBe(c)
+    expect(editItem(c, rope.id, 'X', 0).inventory).toEqual([])
+    expect(removeItem(c, rope.id).inventory).toEqual([])
+    expect(removeItem(c, 'nope')).toBe(c)
   })
 })

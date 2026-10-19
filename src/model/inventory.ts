@@ -46,6 +46,34 @@ function addOne(c: Character, srdId: string | undefined, name: string, qty: numb
   return { ...c, inventory }
 }
 
+/** Use up one (a potion, a ration…): the quantity goes down by 1, and the item goes when none are left. */
+export function consumeItem(c: Character, itemId: string): Character {
+  const item = c.inventory.find((i) => i.id === itemId)
+  if (!item) return c
+  return item.qty > 1 ? setItemQty(c, itemId, item.qty - 1) : removeItem(c, itemId)
+}
+
+/** Rename an item and set how many there are (0 removes it). An empty name keeps the old one. */
+export function editItem(c: Character, itemId: string, name: string, qty: number): Character {
+  const item = c.inventory.find((i) => i.id === itemId)
+  if (!item) return c
+  const n = Number.isFinite(qty) ? Math.max(0, Math.min(9999, Math.floor(qty))) : item.qty
+  if (n === 0) return removeItem(c, itemId)
+  const newName = name.trim().slice(0, 200) || item.name
+  if (newName === item.name && n === item.qty) return c
+  return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? { ...i, name: newName, qty: n } : i)) }
+}
+
+function setItemQty(c: Character, itemId: string, qty: number): Character {
+  return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? { ...i, qty } : i)) }
+}
+
+/** Throw an item away. */
+export function removeItem(c: Character, itemId: string): Character {
+  if (!c.inventory.some((i) => i.id === itemId)) return c
+  return { ...c, inventory: c.inventory.filter((i) => i.id !== itemId) }
+}
+
 /** Thai names of the slots, in the order the sheet shows them. */
 export const SLOT_LABEL: Record<EquipSlot, string> = {
   head: 'หัว', neck: 'คอ', hands: 'ถุงมือ', ring1: 'แหวน 1', ring2: 'แหวน 2', cloak: 'ผ้าคลุม', body: 'เกราะ/ชุด',

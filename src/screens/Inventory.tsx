@@ -2,13 +2,13 @@
 // breaks bigger coins and gives change, src/rules/coins.ts). Items: one per slot (head, neck, two rings, … main hand,
 // off hand, back; model/inventory.ts); "+ เพิ่มของ" picks SRD 5.2.1 equipment (a pack adds what's inside)
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
-// Names and quantities of any item are edited on the edit page.
+// Tap an item in the pack to use one, rename it, change how many, or throw it away.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addPlainItem, addSrdItem, equipItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addPlainItem, addSrdItem, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
 import { Button, Section, Select, TextInput } from '../ui/kit'
 import { useEquipment, useEquipmentTh } from './useSrdData'
@@ -48,7 +48,7 @@ export default function Inventory({ c }: { c: Character }) {
             const srd = data && item.srdId ? findItem(data, item.srdId) : undefined
             return (
               <ItemRow key={item.id} item={item} srd={srd} slots={slots}
-                onEquip={(slot) => data && change((latest) => equipItem(latest, item.id, slot, data))} />
+                onEquip={(slot) => data && change((latest) => equipItem(latest, item.id, slot, data))} change={change} />
             )
           })}
         </ul>
@@ -154,11 +154,12 @@ function SlotRow({ slot, item, both, srd, onTakeOff }: {
   )
 }
 
-function ItemRow({ item, srd, slots, onEquip }: {
+function ItemRow({ item, srd, slots, onEquip, change }: {
   item: InventoryItem
   srd: SrdItem | undefined
   slots: Partial<Record<EquipSlot, InventoryItem>>
   onEquip: (slot: EquipSlot) => void
+  change: Change
 }) {
   const [open, setOpen] = useState(false)
   const [choosing, setChoosing] = useState(false)
@@ -167,10 +168,10 @@ function ItemRow({ item, srd, slots, onEquip }: {
   return (
     <li className="py-1.5">
       <div className="flex items-center gap-2">
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} disabled={!srd}>
+        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
           {item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
           {item.wear && <span className="ml-1 text-xs text-stone-500">({SLOT_LABEL[item.wear]})</span>}
-          {srd && <span className="ml-1 text-xs font-normal text-stone-500">ⓘ</span>}
+          <span className="ml-1 text-xs font-normal text-stone-500">{srd ? 'ⓘ' : '✎'}</span>
         </button>
         {fits.length > 0 && (
           <button type="button" onClick={() => (fits.length === 1 ? onEquip(fits[0]) : setChoosing(!choosing))}
@@ -189,8 +190,50 @@ function ItemRow({ item, srd, slots, onEquip }: {
           ))}
         </div>
       )}
+      {open && <ItemActions item={item} change={change} />}
       {open && srd && <ItemDetails srd={srd} />}
     </li>
+  )
+}
+
+/** Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up). */
+function ItemActions({ item, change }: { item: InventoryItem; change: Change }) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(item.name)
+  const [qty, setQty] = useState(String(item.qty))
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const pill = 'rounded-full border px-3 py-1 text-sm'
+
+  if (editing) {
+    return (
+      <div className="mt-1 space-y-2 rounded-lg bg-stone-900 p-2">
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1"><TextInput value={name} onChange={setName} /></div>
+          <input className="w-16 rounded-lg border border-stone-600 bg-stone-900 px-2 py-2 text-center" inputMode="numeric" aria-label="จำนวน"
+            value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="primary" className="px-3 text-sm" onClick={() => {
+            change((latest) => editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty)))
+            setEditing(false)
+          }}>บันทึก</Button>
+          <Button className="px-3 text-sm" onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(false) }}>ยกเลิก</Button>
+        </div>
+        {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
+      </div>
+    )
+  }
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      <button type="button" className={`${pill} border-emerald-600 text-emerald-300`} onClick={() => change((latest) => consumeItem(latest, item.id))}>
+        ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
+      </button>
+      <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(true) }}>แก้ไข</button>
+      <button type="button" className={`${pill} ${confirmDelete ? 'border-red-500 bg-red-900 font-bold text-red-100' : 'border-red-800 text-red-400'}`}
+        onClick={() => (confirmDelete ? change((latest) => removeItem(latest, item.id)) : setConfirmDelete(true))}>
+        {confirmDelete ? 'แตะอีกครั้งเพื่อลบ' : 'ลบ'}
+      </button>
+    </div>
   )
 }
 
