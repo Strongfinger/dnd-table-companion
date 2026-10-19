@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PACK_FORMAT, packRecordId, parseCampaignPack } from './campaignPack'
+import { PACK_FORMAT, defaultPackTarget, packRecordId, parseCampaignPack } from './campaignPack'
 
 const pack = (extra: object = {}) => JSON.stringify({
   format: PACK_FORMAT,
@@ -69,5 +69,14 @@ describe('parseCampaignPack', () => {
     expect(cs).toHaveLength(20)
     expect(cs[0].hp.max).toBe(999)
     expect(cs[0].hidden).toBe(true)
+  })
+})
+
+describe('defaultPackTarget', () => {
+  const p = { campaign: { id: 'doip', name: 'Dragon of Icespire Peak' } }
+  it('the pack\'s own campaign if it is here, else one with the same name, else none', () => {
+    expect(defaultPackTarget(p, [{ id: 'x', name: 'dragon of icespire peak ' }, { id: 'doip', name: 'Old name' }])).toBe('doip')
+    expect(defaultPackTarget(p, [{ id: 'a', name: 'Other' }, { id: 'x', name: 'dragon of icespire peak ' }])).toBe('x')
+    expect(defaultPackTarget(p, [{ id: 'a', name: 'Other' }])).toBeNull()
   })
 })
