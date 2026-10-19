@@ -39,6 +39,17 @@ const int = (v: unknown, min: number, max: number, fallback: number) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback
 const list = (v: unknown, max: number): unknown[] => (Array.isArray(v) ? v.slice(0, max) : [])
 
+/**
+ * Which campaign on this device a pack goes into by default: the pack's own campaign if it is here already,
+ * else a campaign with the same name (e.g. one the DM made by hand before importing, which players' phones
+ * already follow), else none (a new campaign is made with the pack's id and name).
+ */
+export function defaultPackTarget(pack: Pick<CampaignPack, 'campaign'>, campaigns: { id: string; name: string }[]): string | null {
+  if (campaigns.some((c) => c.id === pack.campaign.id)) return pack.campaign.id
+  const name = pack.campaign.name.trim().toLowerCase()
+  return campaigns.find((c) => c.name.trim().toLowerCase() === name)?.id ?? null
+}
+
 /** Stored id of a pack record: `<campaign>-<id>` (both slugs, so it stays a short, safe id). */
 export const packRecordId = (campaignId: string, id: string) => `${campaignId}-${id}`
 

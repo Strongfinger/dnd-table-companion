@@ -5,7 +5,7 @@ import { sampleCharacters } from '../dev/sampleCharacters'
 import { createCharacter } from '../model/character'
 import { ALL_FIXTURES } from '../rules/fixtures/characters'
 import { deriveSheet } from '../rules'
-import { deleteCharacter, getCharacter, listCharacters, saveCharacter, saveReceivedCharacter, updateCharacter } from './characters'
+import { deleteCharacter, getCharacter, listCharacters, saveCharacter, moveToCampaign, saveReceivedCharacter, updateCharacter } from './characters'
 import { db } from './db'
 import { combatantFromCharacter, createEncounter } from '../model/encounter'
 import { saveEncounter, getEncounter } from './encounters'
@@ -101,5 +101,19 @@ describe('deleting a character that is in a fight', () => {
     await deleteCharacter(boom.id)
     const row = (await getEncounter(fight.id))!.combatants[0]
     expect(row).toMatchObject({ characterId: boom.id, hp: { current: 4, max: 19 }, ac: 18 })
+  })
+})
+
+describe('moveToCampaign', () => {
+  it('files the room\'s characters under its campaign, leaving others alone', async () => {
+    await db.characters.clear()
+    const a = { ...createCharacter({ name: 'A' }), campaignId: null }
+    const b = { ...createCharacter({ name: 'B' }), campaignId: 'from-a-phone' }
+    const c = { ...createCharacter({ name: 'C' }), campaignId: 'other' }
+    await db.characters.bulkPut([a, b, c])
+    await moveToCampaign([a.id, b.id], 'doip')
+    expect((await db.characters.toArray()).map((x) => [x.name, x.campaignId, x.rev]).sort()).toEqual([
+      ['A', 'doip', a.rev], ['B', 'doip', b.rev], ['C', 'other', c.rev],
+    ])
   })
 })

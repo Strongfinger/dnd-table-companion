@@ -1,6 +1,7 @@
 // Bring a character in from a JSON file (or pasted text), with a preview before saving.
 import { useState } from 'react'
 import { go } from '../app/router'
+import { getCampaign } from '../db/campaigns'
 import { getCharacter, saveCharacter, saveReceivedCharacter } from '../db/characters'
 import { addLog } from '../db/log'
 import { newId, type Character } from '../model/character'
@@ -40,7 +41,12 @@ export default function ImportCharacter() {
   async function save(mode: 'first' | 'replace' | 'copy') {
     if (!preview) return
     const now = Date.now()
-    const c = mode === 'copy' ? { ...preview.character, id: newId(), createdAt: now } : preview.character
+    const fromFile = mode === 'copy' ? { ...preview.character, id: newId(), createdAt: now } : preview.character
+    // The file's campaign is the other device's: kept only if that campaign is on this device too, else
+    // the copy being replaced keeps its own (a new character has none).
+    const known = fromFile.campaignId && (await getCampaign(fromFile.campaignId)) ? fromFile.campaignId : null
+    const kept = mode === 'replace' ? (await getCharacter(fromFile.id))?.campaignId ?? null : null
+    const c = { ...fromFile, campaignId: known ?? kept }
     // A first import keeps the file's revision as-is (like a sheet received in a live room), so a player
     // who edits once more before joining still counts as newer than this copy.
     const saved = mode === 'first'

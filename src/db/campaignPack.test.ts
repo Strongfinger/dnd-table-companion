@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { PACK_FORMAT, parseCampaignPack } from '../model/campaignPack'
 import { applyPack, planPackImport } from './campaignPack'
 import { db } from './db'
-import { getSetting } from './device'
+import { deviceId, getSetting } from './device'
+import { createCampaign } from '../model/campaign'
 import { addLog } from './log'
 
 const file = JSON.stringify({
@@ -65,5 +66,26 @@ describe('applyPack', () => {
     const fight = await db.encounters.get('doip-f')
     expect([fight?.status, fight?.round]).toEqual(['setup', 0])
     expect((await db.log.where('encounterId').equals('doip-f').toArray()).map((l) => l.characterId)).toEqual(['pc-1'])
+  })
+
+  it('renames the pack\'s own campaign when the file changes its name', async () => {
+    await applyPack(parsed(), 'replace')
+    const renamed = { ...parsed(), campaign: { id: 'doip', name: 'Icespire (ภาค 2)' } }
+    await applyPack(renamed, 'addOnly')
+    expect((await db.campaigns.get('doip'))?.name).toBe('Icespire (ภาค 2)')
+    expect(await db.campaigns.count()).toBe(1)
+  })
+
+  it('can go into another campaign already here (no second campaign with the same name)', async () => {
+    await db.campaigns.put({ ...createCampaign('Dragon of Icespire Peak', deviceId()), id: 'mine' })
+    await applyPack(parsed(), 'replace', false, 'mine')
+    expect((await db.campaigns.toArray()).map((c) => c.id)).toEqual(['mine'])
+    expect((await db.campaigns.get('mine'))?.name).toBe('Dragon of Icespire Peak')
+    expect((await db.notes.get('doip-p'))?.campaignId).toBe('mine')
+    expect((await db.encounters.get('doip-f'))?.campaignId).toBe('mine')
+    expect(await getSetting('currentCampaignId')).toBe('mine')
+    // Importing again still finds the same records.
+    await applyPack(parsed(), 'replace', false, 'mine')
+    expect(await db.notes.count()).toBe(1)
   })
 })
