@@ -76,6 +76,8 @@ export interface WeaponContext {
   feats: string[]
   /** Amount subtracted from D20 Tests (Exhaustion). */
   d20Penalty: number
+  /** Flat attack roll bonus from buffs (rules/buffs.ts). */
+  attackBuff?: number
 }
 
 const hasFeat = (feats: string[], name: RegExp) => feats.some((f) => name.test(f))
@@ -87,7 +89,7 @@ export function weaponAttack(w: WeaponStats, ctx: WeaponContext): WeaponAttack {
   const archery = w.type === 'Ranged' && hasFeat(ctx.feats, /^archery$/i) ? 2 : 0
   const out: WeaponAttack = {
     ability,
-    hit: attackBonus(mod, ctx.proficiencyBonus, ctx.trained) + archery - ctx.d20Penalty,
+    hit: attackBonus(mod, ctx.proficiencyBonus, ctx.trained) + archery - ctx.d20Penalty + (ctx.attackBuff ?? 0),
     damage: formatDamage(w.dice, mod),
   }
   if (w.versatile) out.twoHanded = formatDamage(w.versatile, mod)

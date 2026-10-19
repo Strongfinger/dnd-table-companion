@@ -96,7 +96,7 @@ export function playedCharacterIds(members: Member[], isRemoved: (deviceId: stri
 export const isEditHello = (body: unknown) => typeof body === 'object' && body !== null && (body as Record<string, unknown>).edit === true
 
 /** Fields that change during play. In a live session the DM's device owns them. */
-export const PLAY_FIELDS = ['hitDiceSpent', 'deathSaves', 'heroicInspiration', 'exhaustion', 'conditions', 'concentration', 'turn'] as const
+export const PLAY_FIELDS = ['hitDiceSpent', 'deathSaves', 'heroicInspiration', 'exhaustion', 'conditions', 'buffs', 'concentration', 'turn'] as const
 
 /**
  * The DM device got a player's edit-screen save: take what the player builds (scores, items,

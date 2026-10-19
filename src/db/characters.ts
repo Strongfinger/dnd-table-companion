@@ -1,6 +1,7 @@
 // Read/write characters. UI code uses these instead of touching `db` directly.
 import { liveQuery } from 'dexie'
 import { withDefaults, type Character } from '../model/character'
+import { buffedArmorClass } from '../rules'
 import { stamp } from '../model/sync'
 import { db } from './db'
 import { deviceId } from './device'
@@ -98,7 +99,7 @@ export async function deleteCharacter(id: string): Promise<void> {
     if (sheet) {
       const me = deviceId()
       await db.encounters.filter((e) => e.combatants.some((c) => c.characterId === id)).modify((e) => {
-        const combatants = e.combatants.map((c) => (c.characterId === id ? { ...c, hp: { ...sheet.hp }, ac: sheet.ac } : c))
+        const combatants = e.combatants.map((c) => (c.characterId === id ? { ...c, hp: { ...sheet.hp }, ac: buffedArmorClass(sheet.ac, sheet.buffs) } : c))
         Object.assign(e, stamp({ ...e, combatants }, me))
       })
     }

@@ -10,10 +10,11 @@ import {
   addEffect, conditionsToClear, damageMonster, sheetOnlyConditions, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
 } from '../model/encounter'
-import { CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
+import { buffedArmorClass, CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton } from '../ui/kit'
 import { Term } from '../ui/help'
 import ActionChoiceDialog from './ActionChoiceDialog'
+import BuffPanel from './BuffPanel'
 import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
@@ -151,12 +152,13 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
               <span key={cond} className="rounded-full bg-red-900 px-2 text-xs"><Term name={cond} /></span>
             ))}
             {concentration && <span className="rounded-full bg-violet-900 px-2 text-xs">🔮 {concentration}</span>}
+            {isPc && character?.buffs.map((b) => <span key={b.id} className="rounded-full bg-emerald-900 px-2 text-xs">✨ {b.name}</span>)}
           </div>
           {active && <div className="mt-1"><ActionEconomyBar economy={economy} compact /></div>}
         </div>
         <div className="text-right text-sm">
           <div className="font-bold">{hp.current}/{hp.max}{hp.temp > 0 && <span className="text-sky-300"> +{hp.temp}</span>}</div>
-          <div className="text-stone-400">AC {isPc && character ? character.ac : c.ac}</div>
+          <div className="text-stone-400">AC {isPc && character ? buffedArmorClass(character.ac, character.buffs) : c.ac}</div>
         </div>
       </button>
 
@@ -254,6 +256,9 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
               {active && ' · ตอนนี้เป็นเทิร์นของตัวนี้: เทิร์นนี้นับด้วย ให้ใส่ +1 รอบ'}
             </p>
           </div>
+
+          {/* A PC's buffs live on the sheet (they last past the fight; rests end them) */}
+          {isPc && character && <BuffPanel c={character} act={pcAct} canAdd canRemove />}
 
           {/* Concentration: started through the confirm dialog, so it's always logged */}
           <div className="flex items-center gap-2">

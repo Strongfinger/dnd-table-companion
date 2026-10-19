@@ -126,6 +126,7 @@ export function equippedWeapons(c: Character, data: SrdEquipment): EquippedWeapo
         trained,
         feats: c.feats,
         d20Penalty: sheet.d20Penalty,
+        attackBuff: sheet.buffs.attack,
       }),
       mastery: { name: srd.weapon.mastery, text: masteryText, usable: masteryEligible(c, srd.weapon, trained) },
     })

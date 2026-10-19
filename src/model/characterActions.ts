@@ -2,8 +2,8 @@
 // One function applies them all, so the sheet, the tracker and (later) a live lobby
 // change characters the same way: in a lobby, phones will send these to the DM's device.
 import {
-  ACTION_KINDS, CONDITIONS, hitDieSize, longRest, MAX_FEATURE_USES, shortRest, spellSlotsFor, spendHitDie, startOfTurn,
-  type ActionKind, type Condition,
+  ACTION_KINDS, addBuff, BUFF_ENDS, BUFF_LIMIT, BUFF_TARGETS, buffsAfterRest, CONDITIONS, hitDieSize, longRest, MAX_FEATURE_USES, shortRest, spellSlotsFor, spendHitDie, startOfTurn,
+  type ActionKind, type Buff, type BuffEnds, type BuffTarget, type Condition,
 } from '../rules'
 import { CONDITION_TH } from './thai'
 import {
@@ -39,11 +39,32 @@ export type CharacterAction =
   | { type: 'resetTurn' }
   /** Action Surge: spend one use and get the Action back for one more action this turn. */
   | { type: 'actionSurge'; featureId: string }
+  /** A temporary buff (rules/buffs.ts); one with the same name is replaced. */
+  | { type: 'addBuff'; buff: Buff }
+  | { type: 'removeBuff'; buffId: string }
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 const hpText = (h: Character['hp']) => `HP ${h.current}/${h.max}${h.temp ? ` (+${h.temp} Temp)` : ''}`
 const rollText = (value: number, manual: boolean) => `${manual ? 'ทอยเอง' : '🎲'} ${value}`
 const ACTION_LABEL: Record<ActionKind, string> = { action: 'Action', bonusAction: 'Bonus Action', reaction: 'Reaction' }
+
+/** How long a buff lasts, in Thai (also used on screens). */
+export const BUFF_ENDS_LABEL: Record<BuffEnds, string> = { shortRest: 'จนพักสั้น/พักยาว', longRest: 'จนพักยาว', manual: 'จนกว่าจะเอาออก' }
+/** Short labels for what a buff adds to. */
+export const BUFF_TARGET_LABEL: Record<BuffTarget, string> = {
+  ac: 'AC', speed: 'Speed', attack: 'Attack', saves: 'Saving Throws', skills: 'Skill Checks', initiative: 'Initiative',
+}
+const signed = (n: number) => (n >= 0 ? `+${n}` : String(n))
+/** "Speed +10 ft. · AC +2" (only the numbers it changes). */
+export function buffModsText(b: Pick<Buff, 'mods'>): string {
+  return BUFF_TARGETS.filter((t) => b.mods[t]).map((t) => `${BUFF_TARGET_LABEL[t]} ${signed(b.mods[t]!)}${t === 'speed' ? ' ft.' : ''}`).join(' · ')
+}
+/** " · หมด: Longstrider" for the buffs a rest ends. */
+function endedText(buffs: Buff[], rest: 'short' | 'long'): string {
+  const left = buffsAfterRest(buffs, rest)
+  const ended = buffs.filter((b) => !left.includes(b)).map((b) => b.name)
+  return ended.length ? ` · หมด: ${ended.join(', ')}` : ''
+}
 
 /**
  * Apply one action. Returns the new character and a log line (Thai), or null when there is
@@ -69,13 +90,13 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
       return { character: r, text: `${c.name} ใช้ Hit Die d${size}: ${rollText(a.roll, a.manual)} + CON → ฟื้น ${r.hp.current - c.hp.current} · ${hpText(r.hp)}` }
     }
     case 'shortRest':
-      return { character: shortRest(c), text: `☕ ${c.name} Short Rest เสร็จ: ความสามารถแบบ Short Rest กลับมาแล้ว` }
+      return { character: { ...shortRest(c), buffs: buffsAfterRest(c.buffs, 'short') }, text: `☕ ${c.name} Short Rest เสร็จ: ความสามารถแบบ Short Rest กลับมาแล้ว` + endedText(c.buffs, 'short') }
     case 'longRest': {
       const r = longRest(c)
       if (!r) return null
       return {
-        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious'), turn: startOfTurn() },
-        text: `🌙 ${c.name} Long Rest เสร็จ: ทุกอย่างกลับมาเต็ม` + (c.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : ''),
+        character: { ...r, conditions: r.conditions.filter((x) => x !== 'Unconscious'), turn: startOfTurn(), buffs: buffsAfterRest(c.buffs, 'long') },
+        text: `🌙 ${c.name} Long Rest เสร็จ: ทุกอย่างกลับมาเต็ม` + (c.exhaustion > 0 ? ` · Exhaustion ลดเหลือ ${r.exhaustion}` : '') + endedText(c.buffs, 'long'),
       }
     }
     case 'setSlotUsed': {
@@ -149,6 +170,18 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
         text: `⚡ ${c.name} ใช้ ${f.name}: ได้ Action เพิ่มอีก 1 ครั้งในเทิร์นนี้ (เหลือ ${f.max - f.used - 1}/${f.max})`,
       }
     }
+    case 'addBuff': {
+      const mods = buffModsText(a.buff)
+      return {
+        character: { ...c, buffs: addBuff(c.buffs, a.buff) },
+        text: `✨ ${c.name} ได้ ${a.buff.name}${mods ? ` (${mods})` : ''}${a.buff.note ? ` · ${a.buff.note}` : ''} · ${BUFF_ENDS_LABEL[a.buff.ends]}`,
+      }
+    }
+    case 'removeBuff': {
+      const b = c.buffs.find((x) => x.id === a.buffId)
+      if (!b) return null
+      return { character: { ...c, buffs: c.buffs.filter((x) => x.id !== b.id) }, text: `${c.name}: ${b.name} หมดแล้ว` }
+    }
   }
 }
 
@@ -197,6 +230,12 @@ export function parseCharacterAction(v: unknown): CharacterAction | null {
       return typeof v.spell === 'string' && v.spell.length <= 100 ? { type: 'setConcentration', spell: v.spell } : null
     case 'actionSurge':
       return typeof v.featureId === 'string' && v.featureId.length >= 1 && v.featureId.length <= 64 ? { type: 'actionSurge', featureId: v.featureId } : null
+    case 'addBuff': {
+      const buff = parseBuff(v.buff)
+      return buff ? { type: 'addBuff', buff } : null
+    }
+    case 'removeBuff':
+      return typeof v.buffId === 'string' && v.buffId.length >= 1 && v.buffId.length <= 64 ? { type: 'removeBuff', buffId: v.buffId } : null
     case 'setActionUsed':
       if (!ACTION_KINDS.includes(v.kind as ActionKind) || !isBool(v.used)) return null
       if (v.detail !== undefined && (typeof v.detail !== 'string' || v.detail.length > 100)) return null
@@ -204,4 +243,21 @@ export function parseCharacterAction(v: unknown): CharacterAction | null {
     default:
       return null
   }
+}
+
+/** Check a buff from another device or a file: rebuilt with known fields, numbers within BUFF_LIMIT, or null. */
+export function parseBuff(v: unknown): Buff | null {
+  if (!isObj(v) || !isObj(v.mods)) return null
+  const id = typeof v.id === 'string' && /^[\w-]{1,64}$/.test(v.id) ? v.id : null
+  const name = typeof v.name === 'string' ? v.name.trim().slice(0, 60) : ''
+  if (!id || !name || !BUFF_ENDS.includes(v.ends as BuffEnds)) return null
+  if (v.note !== undefined && typeof v.note !== 'string') return null
+  const mods: Buff['mods'] = {}
+  for (const t of BUFF_TARGETS) {
+    const n = v.mods[t]
+    if (n === undefined || n === 0) continue
+    if (!isInt(n, -BUFF_LIMIT[t], BUFF_LIMIT[t])) return null
+    mods[t] = n
+  }
+  return { id, name, note: typeof v.note === 'string' ? v.note.slice(0, 200) : '', mods, ends: v.ends as BuffEnds }
 }

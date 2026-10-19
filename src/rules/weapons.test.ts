@@ -63,3 +63,11 @@ describe('weapon attacks', () => {
     expect(weaponAttack(blowgun, ctx()).damage).toBe('4')
   })
 })
+
+describe('weaponAttack: attack buffs', () => {
+  it('adds a flat attack bonus from buffs', () => {
+    const w = { dice: '1d6', damageType: 'Piercing', type: 'Melee', category: 'Simple', properties: ['Finesse', 'Light'], mastery: 'Nick' } as unknown as Parameters<typeof weaponAttack>[0]
+    const base = { modifiers: { str: 0, dex: 3, con: 0, int: 0, wis: 0, cha: 0 }, proficiencyBonus: 2, trained: true, feats: [], d20Penalty: 0 }
+    expect(weaponAttack(w, { ...base, attackBuff: 1 }).hit).toBe(weaponAttack(w, base).hit + 1)
+  })
+})

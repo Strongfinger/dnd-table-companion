@@ -5,7 +5,7 @@
 import type { Character } from '../model/character'
 import { isConditionName } from '../model/encounter'
 import { classLabel } from '../model/monsterCharacter'
-import type { ActionEconomy, Condition } from '../rules'
+import { buffedArmorClass, type ActionEconomy, type Condition } from '../rules'
 
 export interface PartyCard {
   characterId: string
@@ -28,7 +28,7 @@ export function partyCard(c: Character): PartyCard {
     name: c.name,
     className: classLabel(c),
     level: c.level,
-    ac: c.ac,
+    ac: buffedArmorClass(c.ac, c.buffs),
     hp: { current: c.hp.current, max: c.hp.max, temp: c.hp.temp },
     conditions: [...c.conditions],
     turn: { action: c.turn.action, bonusAction: c.turn.bonusAction, reaction: c.turn.reaction },

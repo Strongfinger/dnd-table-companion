@@ -5,7 +5,7 @@ import { useLobby } from '../app/useLobby'
 import { useRunsCampaign } from '../app/useRunsCampaign'
 import { mayLevelUp } from '../model/levelLock'
 import { getCharacter } from '../db/characters'
-import { ABILITIES, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
+import { ABILITIES, buffedArmorClass, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
 import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
@@ -87,7 +87,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       {levelingUp && mayLevelUp(c, runsCampaign) && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
 
       <div className="grid grid-cols-4 gap-2">
-        <Stat label="AC" value={c.ac} />
+        <Stat label="AC" value={buffedArmorClass(c.ac, c.buffs)} sub={s.buffs.ac ? `บัฟ ${mod(s.buffs.ac)}` : undefined} />
         <Stat label="Initiative" value={mod(s.initiative)} />
         <Stat label="Speed" value={`${speed} ft.`} />
         <Stat label="Proficiency" value={mod(s.proficiencyBonus)} />
