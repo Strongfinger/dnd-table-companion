@@ -63,6 +63,7 @@ export default function ImportCharacter() {
     <div className="space-y-4">
       <a href="#/" className="text-sm text-stone-400">← ตัวละครทั้งหมด</a>
       <h1 className="text-2xl font-bold text-amber-400">นำเข้าตัวละคร</h1>
+      <p className="text-sm text-stone-400">มีไฟล์สำรองข้อมูลทั้งหมด (dnd-backup-….json)? ไปที่ <a href="#/backup" className="text-amber-400 underline">💾 สำรอง / กู้คืน</a></p>
 
       <Section title="1. เลือกไฟล์ .json">
         <input

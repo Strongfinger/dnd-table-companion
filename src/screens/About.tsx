@@ -74,6 +74,11 @@ export default function About() {
         <a href="#/lab" className="text-sm text-amber-400 underline">🧪 เปิดหน้าทดสอบการเชื่อมต่อ</a>
       </Section>
 
+      <Section title="สำรอง / กู้คืนข้อมูล">
+        <p className="text-sm text-stone-300">เก็บตัวละคร แคมเปญ การต่อสู้ สมุด และบันทึกทั้งหมดเป็นไฟล์เดียว แล้วนำกลับมาใส่ได้</p>
+        <a href="#/backup" className="mt-2 inline-block text-sm text-amber-400 underline">💾 เปิดหน้าสำรอง / กู้คืน</a>
+      </Section>
+
       <ResetDevice />
 
       <Section title="ฟอนต์">
@@ -105,7 +110,7 @@ function ResetDevice() {
         ลบทุกอย่างที่แอปเก็บไว้ในเครื่องนี้: ตัวละคร การต่อสู้ บันทึก แคมเปญ ชื่ออุปกรณ์ และห้องที่เข้าอยู่
         แอปจะเริ่มใหม่เหมือนเพิ่งติดตั้ง · เครื่องอื่นไม่ได้รับผลกระทบ (ต้องล้างแยกทีละเครื่อง)
       </p>
-      <p className="mt-1 text-xs text-amber-300">อยากเก็บตัวละครไว้? กด 📤 ในใบตัวละครเพื่อส่งออกเป็นไฟล์ก่อน แล้วค่อยนำเข้าหลังล้าง</p>
+      <p className="mt-1 text-xs text-amber-300">อยากเก็บข้อมูลไว้? <a href="#/backup" className="underline">💾 สำรองข้อมูล</a> เป็นไฟล์ก่อน แล้วค่อยกู้คืนหลังล้าง</p>
       {!open ? (
         <Button variant="danger" className="mt-3 w-full" onClick={() => setOpen(true)}>🗑 ล้างข้อมูลทั้งหมดในเครื่องนี้…</Button>
       ) : (

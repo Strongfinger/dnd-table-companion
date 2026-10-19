@@ -8,6 +8,8 @@ export type Route =
   | { name: 'import' }
   | { name: 'fights' }
   | { name: 'about' }
+  /** Back up / restore everything on this device. */
+  | { name: 'backup' }
   | { name: 'party' }
   | { name: 'lab' }
   /** `code`: filled in from a QR / join link (#/lobby/K7QX4M). */
@@ -31,6 +33,7 @@ export function parseRoute(hash: string): Route {
   if (first === 'import') return { name: 'import' }
   if (first === 'fights') return { name: 'fights' }
   if (first === 'about') return { name: 'about' }
+  if (first === 'backup') return { name: 'backup' }
   if (first === 'party') return { name: 'party' }
   if (first === 'lab') return { name: 'lab' }
   if (first === 'lobby') return { name: 'lobby', code: id ?? null }

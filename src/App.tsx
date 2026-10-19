@@ -6,6 +6,7 @@ import { LobbyProvider } from './app/lobby'
 import { useLobby } from './app/useLobby'
 import { useRoute, type Route } from './app/router'
 import About from './screens/About'
+import Backup from './screens/Backup'
 import CharacterEdit from './screens/CharacterEdit'
 import CharacterList from './screens/CharacterList'
 import CharacterSheet from './screens/CharacterSheet'
@@ -51,6 +52,7 @@ export default function App() {
         {route.name === 'fights' && <FightsRoute />}
         {route.name === 'fight' && <FightRoute key={route.id} id={route.id} />}
         {route.name === 'about' && <About />}
+        {route.name === 'backup' && <Backup />}
         {route.name === 'party' && <PartyOverview />}
         {route.name === 'lab' && <LobbyLab />}
         {route.name === 'lobby' && <Lobby code={route.code} />}

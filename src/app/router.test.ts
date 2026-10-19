@@ -30,3 +30,9 @@ describe('parseRoute', () => {
     expect(parseRoute('#/c/abc/edit')).toEqual({ name: 'edit', id: 'abc' })
   })
 })
+
+describe('backup route', () => {
+  it('opens the backup page', () => {
+    expect(parseRoute('#/backup')).toEqual({ name: 'backup' })
+  })
+})
