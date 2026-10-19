@@ -9,8 +9,8 @@ import { Button } from '../ui/kit'
 /** SRD 5.2.1 spells that are common buffs. Dice bonuses (Bless) can't be added into a number, so they're a note. */
 const PRESETS: Omit<Buff, 'id'>[] = [
   { name: 'Longstrider', note: '1 ชม.', mods: { speed: 10 }, ends: 'shortRest' },
-  { name: 'Shield of Faith', note: 'Concentration 10 นาที', mods: { ac: 2 }, ends: 'manual' },
-  { name: 'Bless', note: '+1d4 ทุก Attack roll และ Saving Throw · Concentration 1 นาที', mods: {}, ends: 'manual' },
+  { name: 'Shield of Faith', note: 'Concentration 10 นาที', mods: { ac: 2 }, ends: 'shortRest' },
+  { name: 'Bless', note: '+1d4 ทุก Attack roll และ Saving Throw · Concentration 1 นาที', mods: {}, ends: 'shortRest' },
 ]
 
 const EMPTY: Omit<Buff, 'id'> = { name: '', note: '', mods: {}, ends: 'longRest' }

@@ -19,8 +19,9 @@ describe('buffTotals', () => {
     expect(buffTotals([weak, strong])).toMatchObject({ skills: 2, saves: 1 })
   })
 
-  it('penalties count too', () => {
+  it('penalties count too; the same penalty twice counts its biggest value', () => {
     expect(buffTotals([buff({ name: 'Curse', mods: { attack: -2 } })]).attack).toBe(-2)
+    expect(buffTotals([buff({ id: 'a', name: 'Curse', mods: { attack: -1 } }), buff({ id: 'b', name: 'Curse', mods: { attack: -3 } })]).attack).toBe(-3)
   })
 })
 

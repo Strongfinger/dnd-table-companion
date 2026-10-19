@@ -30,7 +30,8 @@ const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().t
 
 /**
  * Total bonus per number. 2024 "Combining Game Effects": different effects add up, but the same effect
- * twice doesn't (only the most potent counts), so same-named buffs give their highest value per number.
+ * twice doesn't (only the most potent counts), so same-named buffs give their strongest value per number
+ * (the biggest bonus, or the biggest penalty).
  */
 export function buffTotals(buffs: readonly Buff[] = []): BuffTotals {
   const best = new Map<string, Partial<Record<BuffTarget, number>>>()
@@ -38,7 +39,7 @@ export function buffTotals(buffs: readonly Buff[] = []): BuffTotals {
     const key = b.name.trim().toLowerCase()
     const prev = best.get(key)
     if (!prev) best.set(key, { ...b.mods })
-    else for (const t of BUFF_TARGETS) if (b.mods[t] !== undefined) prev[t] = Math.max(prev[t] ?? -Infinity, b.mods[t]!)
+    else for (const t of BUFF_TARGETS) if (b.mods[t] !== undefined && Math.abs(b.mods[t]!) > Math.abs(prev[t] ?? 0)) prev[t] = b.mods[t]
   }
   const out = Object.fromEntries(BUFF_TARGETS.map((t) => [t, 0])) as BuffTotals
   for (const mods of best.values()) for (const t of BUFF_TARGETS) out[t] += mods[t] ?? 0
