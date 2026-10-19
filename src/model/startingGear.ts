@@ -3,7 +3,7 @@
 import { BACKGROUND_STARTING_GEAR, CLASS_STARTING_GEAR, type GearOption } from '../rules'
 import type { Character } from './character'
 import type { SrdEquipment } from './equipment'
-import { addPlainItem, addSrdItem, applyAutoAC, isEquippable } from './inventory'
+import { addPlainItem, addSrdItem, applyAutoAC, isEquippable, normalizeEquipment } from './inventory'
 
 export function classGearOptions(c: Pick<Character, 'className'>): GearOption[] {
   return CLASS_STARTING_GEAR[c.className]
@@ -35,5 +35,5 @@ export function applyStartingGear(c: Character, options: GearOption[], data: Srd
     if (srd!.kind === 'shield') { if (shieldOn) return i; shieldOn = true }
     return { ...i, equipped: true as const }
   })
-  return applyAutoAC({ ...next, inventory, coins: { ...next.coins, gp: next.coins.gp + gp }, acAuto: true }, data)
+  return applyAutoAC(normalizeEquipment({ ...next, inventory, coins: { ...next.coins, gp: next.coins.gp + gp }, acAuto: true }, data), data)
 }

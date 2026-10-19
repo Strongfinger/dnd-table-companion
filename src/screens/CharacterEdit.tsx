@@ -5,9 +5,9 @@ import { useRunsCampaign } from '../app/useRunsCampaign'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
-import { newId, type Character } from '../model/character'
+import { EQUIP_SLOTS, newId, type Character, type EquipSlot } from '../model/character'
 import { mergeDraft } from '../model/sync'
-import { applyAutoAC, characterArmorClass } from '../model/inventory'
+import { applyAutoAC, characterArmorClass, SLOT_LABEL } from '../model/inventory'
 import { addNewlyAvailable, refreshCatalogFeatures } from '../model/featureCatalog'
 import { useEquipment } from './useSrdData'
 import { FeatSlotsEditor } from './FeatSlots'
@@ -20,6 +20,11 @@ import {
 import { Button, Checkbox, ChoiceField, HelpButton, Label, NumberInput, RuleMessages, Section, Select, TextArea, TextInput } from '../ui/kit'
 import { ABILITY_LABEL } from '../ui/labels'
 
+/** Where a non-SRD item can be worn ("ถือ" = either hand). */
+const WEAR_EDIT_OPTIONS: { value: EquipSlot | ''; label: string }[] = [
+  { value: '', label: 'ไม่สวม' },
+  ...EQUIP_SLOTS.filter((s) => s !== 'offHand').map((s) => ({ value: s, label: s === 'mainHand' ? 'ถือ' : SLOT_LABEL[s] })),
+]
 const CLASS_OPTIONS = CLASSES.map((c) => ({ value: c, label: c }))
 const ABILITY_OPTIONS = ABILITIES.map((a) => ({ value: a, label: ABILITY_LABEL[a].short }))
 const RECHARGE_OPTIONS = [
@@ -406,6 +411,12 @@ export default function CharacterEdit({ id }: { id: string }) {
               <div key={item.id} className="flex items-center gap-2">
                 <div className="flex-1"><TextInput value={item.name} placeholder="Rope" onChange={(v) => update({ name: v })} /></div>
                 <div className="w-20"><NumberInput value={item.qty} min={0} max={9999} onChange={(v) => update({ qty: v })} /></div>
+                {!item.srdId && (
+                  <div className="w-28">
+                    <Select value={item.wear ?? ''} options={WEAR_EDIT_OPTIONS}
+                      onChange={(v) => update({ wear: v || undefined, ...(v === item.wear ? {} : { equipped: undefined, slot: undefined }) })} />
+                  </div>
+                )}
                 <button type="button" className="px-2 text-red-400" onClick={() => set('inventory', c.inventory.filter((_, j) => j !== i))}>✕</button>
               </div>
             )
