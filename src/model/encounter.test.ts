@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { sampleCharacters } from '../dev/sampleCharacters'
 import {
-  addEffect, combatantFromCharacter, conditionsToClear, createEncounter, createMonsters, damageMonster, healMonster, removeEffect,
+  addEffect, combatantFromCharacter, conditionsToClear, createEncounter, createMonsters, damageMonster, renameEncounter, healMonster, removeEffect,
   rollInitiative, sheetOnlyConditions, tempHpMonster,
 } from './encounter'
 
@@ -119,5 +119,16 @@ describe('sheetOnlyConditions', () => {
   })
   it('nothing without a linked sheet', () => {
     expect(sheetOnlyConditions([], undefined)).toEqual([])
+  })
+})
+
+describe('renaming a fight', () => {
+  it('changes only the name (id stays, so the fight log and plan links keep working)', () => {
+    const e = createEncounter('Goblin ambush', 'camp1')
+    const r = renameEncounter(e, '  ซุ่มโจมตีที่ถ้ำ  ')
+    expect(r).toEqual({ ...e, name: 'ซุ่มโจมตีที่ถ้ำ' })
+    expect(renameEncounter(e, '   ')).toBe(e)
+    expect(renameEncounter(e, 'Goblin ambush')).toBe(e)
+    expect(renameEncounter(e, 'x'.repeat(150)).name).toHaveLength(100)
   })
 })

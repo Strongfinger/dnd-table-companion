@@ -10,7 +10,7 @@ import { playAction } from '../db/play'
 import { advanceTurn, makeCharacterFromCombatant } from '../db/turns'
 import { isDead } from '../model/actions'
 import type { CharacterAction } from '../model/characterActions'
-import { conditionsToClear, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
+import { conditionsToClear, MAX_FIGHT_NAME, renameEncounter, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
 import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
 import { Button } from '../ui/kit'
 import { playerView } from '../model/playerView'
@@ -197,7 +197,7 @@ export default function Tracker({ id }: { id: string }) {
       <a href="#/fights" className="text-sm text-stone-400">← การต่อสู้ทั้งหมด</a>
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-amber-400">{enc.name}</h1>
+          <FightTitle name={enc.name} onRename={(name) => patch((x) => renameEncounter(x, name))} />
           <p className="text-stone-400">
             {enc.status === 'setup' && 'เตรียมการ: เพิ่มผู้ร่วมต่อสู้และทอย Initiative'}
             {enc.status === 'active' && <span className="text-lg font-bold text-stone-100">รอบที่ {enc.round}</span>}
@@ -314,4 +314,36 @@ function groupByRound<T extends { round?: number }>(entries: T[]): [number, T[]]
     groups.set(r, [...(groups.get(r) ?? []), e])
   }
   return [...groups.entries()]
+}
+
+/** The fight's name; ✏️ turns it into a box to rename it (Enter saves, Esc cancels). */
+function FightTitle({ name, onRename }: { name: string; onRename: (name: string) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const save = () => {
+    if (draft !== null && draft.trim()) onRename(draft)
+    setDraft(null)
+  }
+  if (draft === null) {
+    return (
+      <h1 className="text-2xl font-bold text-amber-400">
+        {name}{' '}
+        <button type="button" onClick={() => setDraft(name)} className="align-middle text-base text-stone-400 hover:text-amber-300" aria-label="แก้ไขชื่อการต่อสู้" title="แก้ไขชื่อการต่อสู้">✏️</button>
+      </h1>
+    )
+  }
+  return (
+    <form className="flex flex-wrap items-center gap-2" onSubmit={(ev) => { ev.preventDefault(); save() }}>
+      <input
+        autoFocus
+        aria-label="ชื่อการต่อสู้"
+        value={draft}
+        maxLength={MAX_FIGHT_NAME}
+        onChange={(ev) => setDraft(ev.target.value)}
+        onKeyDown={(ev) => { if (ev.key === 'Escape') setDraft(null) }}
+        className="min-w-0 flex-1 rounded-lg border border-amber-400 bg-stone-900 px-3 py-1 text-xl font-bold text-amber-300 focus:outline-none"
+      />
+      <Button variant="primary" className="text-sm" onClick={save}>บันทึก</Button>
+      <Button className="text-sm" onClick={() => setDraft(null)}>ยกเลิก</Button>
+    </form>
+  )
 }

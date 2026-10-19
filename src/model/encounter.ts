@@ -44,9 +44,26 @@ export interface Encounter {
 export function createEncounter(name: string, campaignId: string | null = null): Encounter {
   const now = Date.now()
   return {
-    id: newId(), name: name.trim() || 'การต่อสู้', campaignId, rev: 0, updatedBy: '',
+    id: newId(), name: fightName(name) || 'การต่อสู้', campaignId, rev: 0, updatedBy: '',
     status: 'setup', round: 0, activeId: null, combatants: [], createdAt: now, updatedAt: now,
   }
+}
+
+/** Players' phones keep at most this many characters of a fight's name (see sync/fights.ts). */
+export const MAX_FIGHT_NAME = 100
+
+/** A fight name as typed: spaces trimmed, cut to the length players' phones accept. */
+export function fightName(raw: string): string {
+  return raw.trim().slice(0, MAX_FIGHT_NAME)
+}
+
+/**
+ * The DM renames a fight. Only the name changes: the id stays, so its fight log and any
+ * session-plan scene linked to it keep working. A blank name leaves the old one.
+ */
+export function renameEncounter(e: Encounter, raw: string): Encounter {
+  const name = fightName(raw)
+  return name && name !== e.name ? { ...e, name } : e
 }
 
 /** Fill in fields that didn't exist when an older fight was saved. */
