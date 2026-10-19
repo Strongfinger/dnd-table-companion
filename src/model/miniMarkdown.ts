@@ -1,6 +1,7 @@
 // A very small markdown reader for translated rules text (DND-TH's Thai spells): paragraphs, line breaks,
 // #-headings, "- " / "* " lists, | tables |, **bold**, _italic_ and *italic*. Everything else stays plain text.
 // It returns plain data; src/ui/MiniMarkdown.tsx turns it into React elements (never raw HTML).
+// With `story` (the journey chronicle) it also reads pictures "![caption](img:<id>)", "> quotes" and "---" breaks.
 
 export interface Span {
   text: string
@@ -14,6 +15,10 @@ export type Block =
   | { kind: 'h'; line: Line }
   | { kind: 'ul'; items: Line[] }
   | { kind: 'table'; head: Line[]; rows: Line[][] }
+  /** story only: a chapter picture by id, with its caption. */
+  | { kind: 'img'; id: string; caption: string }
+  | { kind: 'quote'; lines: Line[] }
+  | { kind: 'hr' }
 
 /**
  * "**bold**, _italic_, *italic*, \*" → spans. Unclosed marks just end with the line. A single "*" starts italic
@@ -43,7 +48,7 @@ export function parseInline(text: string): Line {
 const tableCells = (line: string) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => parseInline(c.trim()))
 const isTableRule = (line: string) => /^\|?(\s*:?-{2,}:?\s*\|)+\s*:?-*:?\s*\|?$/.test(line.trim())
 
-export function parseMarkdown(md: string): Block[] {
+export function parseMarkdown(md: string, opts: { story?: boolean } = {}): Block[] {
   const blocks: Block[] = []
   const last = () => blocks[blocks.length - 1]
   let open = false // is the last block still taking lines?
@@ -52,6 +57,18 @@ export function parseMarkdown(md: string): Block[] {
     if (!line) { open = false; continue }
     const heading = line.match(/^#{1,6}\s+(.*)$/)
     const item = line.match(/^[-*+]\s+(.*)$/)
+    if (opts.story) {
+      const img = line.match(/^!\[([^\]\n]*)\]\(img:([\w-]{1,64})\)$/)
+      const quote = line.match(/^>\s?(.*)$/)
+      if (img) { blocks.push({ kind: 'img', id: img[2], caption: img[1].trim() }); open = false; continue }
+      if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) { blocks.push({ kind: 'hr' }); open = false; continue }
+      if (quote) {
+        const b = last()
+        if (open && b?.kind === 'quote') b.lines.push(parseInline(quote[1]))
+        else { blocks.push({ kind: 'quote', lines: [parseInline(quote[1])] }); open = true }
+        continue
+      }
+    }
     if (heading) { blocks.push({ kind: 'h', line: parseInline(heading[1]) }); open = false }
     else if (line.startsWith('|')) {
       const b = last()

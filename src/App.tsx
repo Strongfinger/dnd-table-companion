@@ -29,6 +29,10 @@ const MonsterView = lazy(() => import('./screens/Lookup').then((m) => ({ default
 const SpellView = lazy(() => import('./screens/Lookup').then((m) => ({ default: m.SpellView })))
 const NotePageRoute = lazy(() => import('./screens/Notebook'))
 const Tracker = lazy(() => import('./screens/Tracker'))
+const StoryShelf = lazy(() => import('./screens/Chronicle'))
+const BookRoute = lazy(() => import('./screens/Chronicle').then((m) => ({ default: m.BookRoute })))
+const StoryManage = lazy(() => import('./screens/Chronicle').then((m) => ({ default: m.StoryManage })))
+const ChapterEditor = lazy(() => import('./screens/Chronicle').then((m) => ({ default: m.ChapterEditor })))
 
 export default function App() {
   const route = useRoute()
@@ -62,6 +66,10 @@ export default function App() {
         {route.name === 'lookup' && <Lookup tab={route.tab} />}
         {route.name === 'monster' && <MonsterView key={route.id} id={route.id} />}
         {route.name === 'spell' && <SpellView key={route.id} id={route.id} />}
+        {route.name === 'stories' && <StoryShelf />}
+        {route.name === 'book' && <BookRoute key={`${route.source}/${route.id}`} source={route.source} id={route.id} chapterId={route.chapterId} />}
+        {route.name === 'storyManage' && <StoryManage key={route.campaignId} campaignId={route.campaignId} />}
+        {route.name === 'chapterEdit' && <ChapterEditor key={route.id} id={route.id} />}
         </Suspense>
         <footer className="mt-10 text-center text-xs text-stone-600">
           <a href="#/about" className="underline">เกี่ยวกับแอป · เครดิต SRD 5.2.1 (CC-BY-4.0)</a>

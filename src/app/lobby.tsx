@@ -12,13 +12,14 @@
 // device confirms them ('ack'), and are re-sent until then; the DM's device saves the ids it has
 // applied, so a re-sent change, or one replayed after a reload, is only confirmed again.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { adoptCampaign, getCampaign } from '../db/campaigns'
+import { adoptCampaign, getCampaign, watchCampaign } from '../db/campaigns'
 import { deleteCharacter, getCharacter, moveToCampaign, saveReceivedCharacter, setCharacterCampaign, updateCharacter, watchCharacters } from '../db/characters'
 import { currentDevice, getSetting, setSetting } from '../db/device'
 import { getEncounter, watchPlayerFight } from '../db/encounters'
 import { applyCharacterLog, logCharacterEvent, logSharedRoll, watchCharacterLogs, watchFightsForPlayers } from '../db/log'
 import { logShortRestStart, playAction, restParty } from '../db/play'
 import { advanceTurn } from '../db/turns'
+import type { Campaign } from '../model/campaign'
 import type { Character } from '../model/character'
 import { checkIncomingLevel, lockLevel } from '../model/levelLock'
 import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
@@ -26,6 +27,7 @@ import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEven
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { cleanupOldMessages, firebaseTransport } from '../sync/firebaseTransport'
 import { addKicked, isDm, isKicked, parseKick, lastHostedRoom, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
+import { isShareId } from '../sync/chronicleShare'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
 import {
@@ -231,7 +233,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
-    if (campaign) send('campaign', { id: campaign.id, name: campaign.name })
+    if (campaign) send('campaign', campaignMessage(campaign))
   }
 
   /** DM: characters played in the room right now. */
@@ -286,13 +288,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       const since = (e.body as { since?: unknown } | null)?.since
       setRestSince(Number.isFinite(since) ? (since as number) : null)
     } else if (e.kind === 'campaign') {
-      const b = e.body as { id?: unknown; name?: unknown } | null
+      const b = e.body as { id?: unknown; name?: unknown; chronicle?: unknown } | null
       if (typeof b?.id !== 'string' || b.id.length > 64 || typeof b.name !== 'string') return
+      // The journey chronicle's share id (if the DM shared it): players can then read it any time.
+      const chronicle = isShareId(b.chronicle) ? b.chronicle : undefined
       roomCampaign.current = b.id
       setRoomCampaignId(b.id)
       // The DM's campaign on this phone too, with my character in it (party overview, lists).
       // (The session as it is now: the character may have been picked after this message's handler was set up.)
-      void adoptCampaign(b.id, b.name, e.from).then(async () => {
+      void adoptCampaign(b.id, b.name, e.from, chronicle).then(async () => {
         await moveToCampaign(myIds(sessionRef.current ?? s), b.id as string)
         await setSetting('currentCampaignId', b.id)
       })
@@ -587,6 +591,18 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
   }, [played])
 
+  // DM: a new chronicle link for the room's campaign (shared, or made again) goes to the players at once.
+  useEffect(() => {
+    if (!dmCampaign) return
+    let sentChronicle: string | undefined
+    return watchCampaign(dmCampaign, (c) => {
+      if (!c) return
+      if (sentChronicle !== undefined && c.chronicleId !== sentChronicle) send('campaign', campaignMessage(c))
+      sentChronicle = c.chronicleId ?? ''
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
+  }, [dmCampaign])
+
   // DM: send what players see of the running fight whenever it changes (turns, rounds, HP...).
   useEffect(() => {
     if (dmCampaign === null) return
@@ -657,7 +673,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       save({ ...s, campaignId })
       // The characters played right now belong to the new campaign too (party overview, lists).
       await moveToCampaign(playedNow(), campaignId)
-      send('campaign', { id: campaign.id, name: campaign.name })
+      send('campaign', campaignMessage(campaign))
     },
     lastHosted,
     playedIds: session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id), session.grants) : [],
@@ -742,4 +758,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   }
 
   return <LobbyContext.Provider value={api}>{children}</LobbyContext.Provider>
+}
+
+/** The room's campaign for players: id, name, and the chronicle's share id once the DM has shared it. */
+function campaignMessage(c: Campaign) {
+  return { id: c.id, name: c.name, ...(c.chronicleId ? { chronicle: c.chronicleId } : {}) }
 }

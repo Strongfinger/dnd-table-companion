@@ -3,20 +3,27 @@ import { createCampaign } from './campaign'
 import { createCharacter } from './character'
 import { createEncounter, combatantFromCharacter } from './encounter'
 import { createNote } from './note'
+import { createChapter } from './chronicle'
 import { backupFileName, campaignSlice, makeBackup, parseBackup, planRestore, type BackupData } from './backup'
 
 function makeSample(): BackupData {
-  const camp = { ...createCampaign('Icespire', 'dm-1', 1000), id: 'doip' }
+  const camp = { ...createCampaign('Icespire', 'dm-1', 1000), id: 'doip', chronicleId: 'AbCdEfGhIjKlMnOpQrSt' }
   const other = { ...createCampaign('Other', 'dm-1', 1000), id: 'other' }
   const boom = { ...createCharacter({ name: 'Boom', className: 'Fighter', level: 3 }), id: 'boom', campaignId: 'doip', rev: 4, updatedAt: 5000 }
   const solo = { ...createCharacter({ name: 'Solo', className: 'Wizard' }), id: 'solo', campaignId: 'other' }
   const fight = { ...createEncounter('Goblins', 'doip'), id: 'f1', combatants: [combatantFromCharacter(boom)] }
   const note = { ...createNote('doip', 1000, 'npc', 'Harbin'), id: 'n1' }
+  const chapter = {
+    ...createChapter('doip', [], 1000), id: 'ch1', title: 'เหมืองดวอร์ฟ', published: true,
+    body: 'ปาร์ตี้มาถึงแฟนดูลิน\n\n![ทางเข้าเหมือง](img:p1)',
+    images: [{ id: 'p1', dataUrl: 'data:image/webp;base64,UklGRg==', width: 800, height: 600 }],
+  }
   return {
     campaigns: [camp, other],
     characters: [boom, solo],
     encounters: [fight],
     notes: [note],
+    chapters: [chapter, { ...createChapter('other', [], 1000), id: 'ch2' }],
     log: [
       { id: 'l1', characterId: 'boom', at: 1, text: 'Boom โดน 5 damage' },
       { id: 'l2', characterId: '', at: 2, text: 'รอบที่ 2', encounterId: 'f1', round: 2 },
@@ -44,6 +51,7 @@ describe('backup file', () => {
     expect(r.file.notes).toEqual(data.notes)
     expect(r.file.campaigns).toEqual(data.campaigns)
     expect(r.file.log).toEqual(data.log)
+    expect(r.file.chapters).toEqual(data.chapters)
     expect(r.file.currentCampaignId).toBe('doip')
     expect(r.file.deviceId).toBe('dm-1')
   })
@@ -53,6 +61,7 @@ describe('backup file', () => {
     expect(s.campaigns.map((c) => c.id)).toEqual(['doip'])
     expect(s.characters.map((c) => c.id)).toEqual(['boom'])
     expect(s.log.map((l) => l.id)).toEqual(['l1', 'l2'])
+    expect(s.chapters.map((c) => c.id)).toEqual(['ch1'])
     expect(makeBackup(sample(), { ...opts, campaignId: 'doip' }).campaignId).toBe('doip')
   })
 
@@ -77,6 +86,14 @@ describe('backup file', () => {
     expect(r.warnings.some((w) => w.includes('ข้าม 1'))).toBe(true)
   })
 
+  it('reads files from before the chronicle (no chapters) and skips bad pictures', () => {
+    const { chapters: _, ...old } = makeBackup(sample(), opts)
+    expect(parsed(JSON.stringify(old)).file.chapters).toEqual([])
+    const bad = sample()
+    bad.chapters[0].images.push({ id: 'evil', dataUrl: 'javascript:alert(1)', width: 1, height: 1 })
+    expect(parsed(JSON.stringify(makeBackup(bad, opts))).file.chapters[0].images.map((i) => i.id)).toEqual(['p1'])
+  })
+
   it('rejects other files', () => {
     expect(parseBackup('nope').ok).toBe(false)
     expect(parseBackup('{"format":"dnd-table-companion/character","version":1}').ok).toBe(false)
@@ -95,7 +112,7 @@ describe('planRestore', () => {
   const fileOf = (data: BackupData, campaignId: string | null = null) => makeBackup(data, { ...opts, campaignId })
 
   it('restores into an empty device', () => {
-    const empty: BackupData = { campaigns: [], characters: [], encounters: [], notes: [], log: [] }
+    const empty: BackupData = { campaigns: [], characters: [], encounters: [], notes: [], log: [], chapters: [] }
     const p = planRestore(fileOf(sample()), empty, 'merge', 'dm-1', false)
     expect(p.counts.characters).toEqual({ added: 2, updated: 0, kept: 0, deleted: 0 })
     expect(p.put.log).toHaveLength(3)
@@ -139,7 +156,7 @@ describe('planRestore', () => {
   })
 
   it('a new DM device can take over the campaigns of the old one', () => {
-    const empty: BackupData = { campaigns: [], characters: [], encounters: [], notes: [], log: [] }
+    const empty: BackupData = { campaigns: [], characters: [], encounters: [], notes: [], log: [], chapters: [] }
     expect(planRestore(fileOf(sample()), empty, 'merge', 'dm-2', true).put.campaigns.every((c) => c.ownerDeviceId === 'dm-2')).toBe(true)
     expect(planRestore(fileOf(sample()), empty, 'merge', 'dm-2', false).put.campaigns.every((c) => c.ownerDeviceId === 'dm-1')).toBe(true)
   })

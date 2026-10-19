@@ -8,6 +8,8 @@ export interface Campaign extends SyncMeta {
   /** The DM's device. */
   ownerDeviceId: string
   createdAt: number
+  /** The journey chronicle's share id in Firebase (sync/chronicleShare.ts), once the DM has shared it. */
+  chronicleId?: string
 }
 
 export function createCampaign(name: string, ownerDeviceId: string, now = Date.now()): Campaign {

@@ -8,8 +8,8 @@ import { currentDevice, deviceId, getSetting, setSetting } from './device'
 
 /** Everything this device keeps (as stored, with defaults filled in for older records). */
 export async function readAll(): Promise<BackupData> {
-  const [campaigns, characters, encounters, notes, log] = await Promise.all([
-    db.campaigns.toArray(), db.characters.toArray(), db.encounters.toArray(), db.notes.toArray(), db.log.toArray(),
+  const [campaigns, characters, encounters, notes, log, chapters] = await Promise.all([
+    db.campaigns.toArray(), db.characters.toArray(), db.encounters.toArray(), db.notes.toArray(), db.log.toArray(), db.chapters.toArray(),
   ])
   return {
     campaigns,
@@ -17,6 +17,7 @@ export async function readAll(): Promise<BackupData> {
     encounters: encounters.map(withEncounterDefaults),
     notes: notes.map(withNoteDefaults),
     log,
+    chapters,
   }
 }
 
