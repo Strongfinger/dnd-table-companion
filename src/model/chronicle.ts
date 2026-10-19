@@ -35,7 +35,7 @@ export interface Chapter extends SyncMeta {
 
 /** Limits that keep a chapter small enough to send and store (Firebase free plan, backups). */
 export const MAX_CHAPTER_TEXT = 100_000
-export const MAX_IMAGES_PER_CHAPTER = 12
+export const MAX_IMAGES_PER_CHAPTER = 24
 /** One picture as text (base64). Pictures are resized to ~200 KB; this only stops a wrong one. */
 export const MAX_IMAGE_CHARS = 1_500_000
 export const MAX_TITLE = 200

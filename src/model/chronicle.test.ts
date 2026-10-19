@@ -75,3 +75,10 @@ describe('story markdown', () => {
     expect(parseMarkdown(md).map((b) => b.kind)).toEqual(['p', 'p', 'p', 'p'])
   })
 })
+
+describe('picture limit', () => {
+  it('keeps a fully illustrated chapter (one picture per scene, e.g. 14)', () => {
+    const images = Array.from({ length: 14 }, (_, i) => ({ id: `p${i}`, dataUrl: 'data:image/jpeg;base64,/9j/4AAQ', width: 10, height: 10 }))
+    expect(parseChapter({ ...createChapter('doip', [], 1000), images })?.images).toHaveLength(14)
+  })
+})
