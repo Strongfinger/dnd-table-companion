@@ -4,6 +4,8 @@ import type { Character } from '../model/character'
 import type { Campaign } from '../model/campaign'
 import type { Encounter } from '../model/encounter'
 import type { Note } from '../model/note'
+import type { Chapter } from '../model/chronicle'
+import type { SharedBook } from '../sync/chronicleShare'
 
 export interface LogEntry {
   id: string
@@ -30,6 +32,10 @@ export const db = new Dexie('dnd-table-companion') as Dexie & {
   campaigns: EntityTable<Campaign, 'id'>
   /** The DM's session notes (never sent to players). */
   notes: EntityTable<Note, 'id'>
+  /** The journey chronicle's chapters written on this device (the DM's). */
+  chapters: EntityTable<Chapter, 'id'>
+  /** Players: shared chronicles downloaded for offline reading (by share id; not in backups, downloaded again). */
+  storyCache: EntityTable<SharedBook, 'shareId'>
   /** Per-device key/value settings (device identity, selected campaign). */
   settings: EntityTable<{ key: string; value: unknown }, 'key'>
 }
@@ -62,4 +68,14 @@ db.version(5).stores({
   campaigns: 'id, updatedAt',
   settings: 'key',
   notes: 'id, updatedAt, campaignId',
+})
+db.version(6).stores({
+  characters: 'id, name, updatedAt, campaignId',
+  log: 'id, characterId, encounterId, at',
+  encounters: 'id, updatedAt, campaignId',
+  campaigns: 'id, updatedAt',
+  settings: 'key',
+  notes: 'id, updatedAt, campaignId',
+  chapters: 'id, updatedAt, campaignId',
+  storyCache: 'shareId',
 })

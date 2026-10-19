@@ -12,11 +12,49 @@
         },
         "messages": {
           ".read": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid).exists()",
-          ".indexOn": ["at"],
+          ".indexOn": [
+            "at"
+          ],
           "$msg": {
             ".write": "auth != null && root.child('rooms/' + $code + '/members/' + auth.uid).exists() && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists() && data.child('at').val() < now - 3600000))",
             ".validate": "newData.child('fromUid').val() === auth.uid && newData.child('at').isNumber() && newData.child('json').isString() && newData.child('json').val().length < 64000"
           }
+        }
+      }
+    },
+    "chronicles": {
+      "$shareId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('owner').val() === auth.uid)",
+        ".validate": "$shareId.matches(/^[A-Za-z0-9]{20}$/) && newData.child('owner').val() === auth.uid",
+        "owner": {
+          ".validate": "newData.isString()"
+        },
+        "title": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "toc": {
+          "$chapterId": {
+            ".validate": "$chapterId.matches(/^[A-Za-z0-9_-]{1,64}$/) && newData.child('number').isNumber() && newData.child('updatedAt').isNumber() && newData.child('title').isString() && newData.child('title').val().length <= 200"
+          }
+        },
+        "chapters": {
+          "$chapterId": {
+            ".validate": "$chapterId.matches(/^[A-Za-z0-9_-]{1,64}$/) && newData.isString() && newData.val().length <= 150000"
+          }
+        },
+        "images": {
+          "$chapterId": {
+            "$imageId": {
+              ".validate": "$imageId.matches(/^[A-Za-z0-9_-]{1,64}$/) && newData.isString() && newData.val().length <= 1500000 && newData.val().beginsWith('data:image/')"
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
         }
       }
     }

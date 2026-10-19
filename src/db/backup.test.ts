@@ -10,7 +10,7 @@ import { db } from './db'
 import { getSetting } from './device'
 
 beforeEach(async () => {
-  await Promise.all([db.campaigns.clear(), db.characters.clear(), db.encounters.clear(), db.notes.clear(), db.log.clear(), db.settings.clear()])
+  await Promise.all([db.campaigns.clear(), db.characters.clear(), db.encounters.clear(), db.notes.clear(), db.log.clear(), db.chapters.clear(), db.settings.clear()])
 })
 
 async function seed() {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { getSetting } from '../db/device'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
-import { Section } from '../ui/kit'
+import { Button, Section } from '../ui/kit'
 import Generators from './Generators'
 import PartyRest from './PartyRest'
 import { NotebookList } from './Notebook'
@@ -28,6 +28,11 @@ export default function DmHome() {
 
       <Section title="🎲 เครื่องสุ่ม">
         <Generators campaignId={campaignId === ALL ? null : campaignId} />
+      </Section>
+
+      <Section title="📚 บันทึกการเดินทาง">
+        <p className="mb-2 text-sm text-stone-400">หลังจบเซสชัน เขียนเรื่องที่เกิดขึ้นเป็นบทใหม่ (ใส่รูปได้) แล้วส่งให้ผู้เล่นอ่านเหมือนนิยาย</p>
+        <Button className="w-full" onClick={() => go(campaignId === ALL ? '/story' : `/story/m/${campaignId}`)}>✏️ เขียน / จัดการบันทึก</Button>
       </Section>
 
       <Section title="📒 สมุดแคมเปญ" action={<span className="flex gap-3"><a href="#/dm/import" className="text-sm text-amber-400 underline">📦 นำเข้าแพ็ก</a><a href="#/backup" className="text-sm text-amber-400 underline">💾 สำรอง</a></span>}>

@@ -7,6 +7,7 @@
 // a bad record is skipped with a warning, the rest still loads.
 import type { Campaign } from './campaign'
 import type { Character } from './character'
+import { parseChapter, type Chapter } from './chronicle'
 import { withEncounterDefaults, type Combatant, type Encounter } from './encounter'
 import { parseCharacterRecord } from './io'
 import { NOTE_KINDS, withNoteDefaults, type Note, type NoteKind } from './note'
@@ -26,6 +27,8 @@ export interface BackupData {
   encounters: Encounter[]
   notes: Note[]
   log: LogEntry[]
+  /** The journey chronicle (missing in files made before it existed). */
+  chapters: Chapter[]
 }
 
 export interface BackupFile extends BackupData {
@@ -41,11 +44,11 @@ export interface BackupFile extends BackupData {
   currentCampaignId: string | null
 }
 
-export const TABLES = ['campaigns', 'characters', 'encounters', 'notes', 'log'] as const
+export const TABLES = ['campaigns', 'characters', 'encounters', 'notes', 'log', 'chapters'] as const
 export type Table = (typeof TABLES)[number]
 
 export const TABLE_LABEL: Record<Table, string> = {
-  campaigns: '🗺 แคมเปญ', characters: '📜 ตัวละคร', encounters: '⚔️ การต่อสู้', notes: '📒 หน้าสมุด/แผนเซสชัน', log: '📝 บันทึก (log)',
+  campaigns: '🗺 แคมเปญ', characters: '📜 ตัวละคร', encounters: '⚔️ การต่อสู้', notes: '📒 หน้าสมุด/แผนเซสชัน', log: '📝 บันทึก (log)', chapters: '📚 บันทึกการเดินทาง',
 }
 
 /** Only what belongs to one campaign: its characters, fights, pages, and their log lines. */
@@ -59,6 +62,7 @@ export function campaignSlice(all: BackupData, campaignId: string): BackupData {
     characters,
     encounters,
     notes: all.notes.filter((n) => n.campaignId === campaignId),
+    chapters: all.chapters.filter((c) => c.campaignId === campaignId),
     log: all.log.filter((l) => charIds.has(l.characterId) || (!!l.encounterId && fightIds.has(l.encounterId))),
   }
 }
@@ -107,6 +111,7 @@ function parseCampaign(raw: unknown, now: number): Campaign | null {
   return {
     id: raw.id, name: raw.name.trim().slice(0, 100), ownerDeviceId: str(raw.ownerDeviceId, 64),
     createdAt: time(raw.createdAt, now), ...meta(raw, now),
+    ...(typeof raw.chronicleId === 'string' && /^[A-Za-z0-9]{1,64}$/.test(raw.chronicleId) ? { chronicleId: raw.chronicleId } : {}),
   }
 }
 
@@ -205,7 +210,7 @@ function parseLog(raw: unknown): LogEntry | null {
 }
 
 /** Limits per table, so a broken file can't fill the device. */
-const MAX_ROWS: Record<Table, number> = { campaigns: 200, characters: 2000, encounters: 2000, notes: 10_000, log: 200_000 }
+const MAX_ROWS: Record<Table, number> = { campaigns: 200, characters: 2000, encounters: 2000, notes: 10_000, log: 200_000, chapters: 2000 }
 
 /** Read a backup file (or the older console dump) into clean records, not saved yet. */
 export function parseBackup(text: string, now = Date.now()): BackupResult {
@@ -272,6 +277,7 @@ export function parseBackup(text: string, now = Date.now()): BackupResult {
     encounters: table('encounters', (v) => parseEncounter(v, now)),
     notes: table('notes', (v) => parseNote(v, now)),
     log: table('log', parseLog),
+    chapters: table('chapters', (v) => parseChapter(v, now)),
   }
   if (TABLES.every((t) => file[t].length === 0)) return { ok: false, error: 'ไฟล์นี้ไม่มีข้อมูลเลย' }
   return { ok: true, file, warnings }

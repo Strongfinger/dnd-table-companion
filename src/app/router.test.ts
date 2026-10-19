@@ -32,6 +32,14 @@ describe('parseRoute', () => {
 })
 
 describe('backup route', () => {
+  it('opens the journey chronicle', () => {
+    expect(parseRoute('#/story')).toEqual({ name: 'stories' })
+    expect(parseRoute('#/story/c/doip')).toEqual({ name: 'book', source: 'local', id: 'doip', chapterId: null })
+    expect(parseRoute('#/story/s/AbCdEfGhIjKlMnOpQrSt/ch1')).toEqual({ name: 'book', source: 'shared', id: 'AbCdEfGhIjKlMnOpQrSt', chapterId: 'ch1' })
+    expect(parseRoute('#/story/m/doip')).toEqual({ name: 'storyManage', campaignId: 'doip' })
+    expect(parseRoute('#/story/edit/ch1')).toEqual({ name: 'chapterEdit', id: 'ch1' })
+  })
+
   it('opens the backup page', () => {
     expect(parseRoute('#/backup')).toEqual({ name: 'backup' })
   })

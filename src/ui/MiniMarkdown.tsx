@@ -1,7 +1,7 @@
 // Shows simple markdown (see model/miniMarkdown.ts) as React elements. Text is always text: no raw HTML.
 import { parseMarkdown, type Line } from '../model/miniMarkdown'
 
-function Spans({ line }: { line: Line }) {
+export function Spans({ line }: { line: Line }) {
   return line.map((s, i) => {
     const t = s.bold && s.italic ? <b><i>{s.text}</i></b> : s.bold ? <b>{s.text}</b> : s.italic ? <i>{s.text}</i> : s.text
     return <span key={i}>{t}</span>
@@ -22,6 +22,7 @@ export default function MiniMarkdown({ text }: { text: string }) {
         </div>
       )
     }
+    if (b.kind !== 'p') return null // story-only blocks (see StoryText)
     return <p key={i}>{b.lines.map((l, j) => <span key={j}>{j > 0 && <br />}<Spans line={l} /></span>)}</p>
   })
 }

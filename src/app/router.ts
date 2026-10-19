@@ -24,11 +24,22 @@ export type Route =
   | { name: 'monster'; id: string }
   | { name: 'spell'; id: string }
   | { name: 'fight'; id: string }
+  /** The journey chronicle: the shelf of books (#/story). */
+  | { name: 'stories' }
+  /**
+   * Reading a book: `local` = written on this device, by campaign (#/story/c/<campaignId>[/<chapterId>], "none" =
+   * no campaign); `shared` = downloaded from the DM's link (#/story/s/<shareId>[/<chapterId>]). No chapter = contents.
+   */
+  | { name: 'book'; source: 'local' | 'shared'; id: string; chapterId: string | null }
+  /** DM: the chapters of a campaign's chronicle, sharing (#/story/m/<campaignId>). */
+  | { name: 'storyManage'; campaignId: string }
+  /** DM: write a chapter (#/story/edit/<chapterId>). */
+  | { name: 'chapterEdit'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
 
 export function parseRoute(hash: string): Route {
-  const [first, id, action] = hash.replace(/^#\/?/, '').split('/')
+  const [first, id, action, extra] = hash.replace(/^#\/?/, '').split('/')
   if (first === 'new') return { name: 'new' }
   if (first === 'import') return { name: 'import' }
   if (first === 'fights') return { name: 'fights' }
@@ -47,6 +58,12 @@ export function parseRoute(hash: string): Route {
     return id === 'import' ? { name: 'packImport' } : { name: 'dm' }
   }
   if (first === 'fight' && id) return { name: 'fight', id }
+  if (first === 'story') {
+    if ((id === 'c' || id === 's') && action) return { name: 'book', source: id === 'c' ? 'local' : 'shared', id: action, chapterId: extra || null }
+    if (id === 'm' && action) return { name: 'storyManage', campaignId: action }
+    if (id === 'edit' && action) return { name: 'chapterEdit', id: action }
+    return { name: 'stories' }
+  }
   if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
   return { name: 'list' }
 }
