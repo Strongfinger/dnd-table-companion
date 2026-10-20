@@ -3,6 +3,7 @@
 // off hand, back; model/inventory.ts); "+ เพิ่มของ" picks SRD 5.2.1 equipment (a pack adds what's inside)
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
 // Tap an item in the pack to use one, rename it, change how many, or throw it away.
+// A bar shows the weight carried against Carrying Capacity (Str × 15 lb, model/carrying.ts).
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
@@ -16,6 +17,8 @@ import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
 import { useShowItemImages } from '../ui/useShowItemImages'
 import { MAX_ITEM_IMAGES, countItemImages, setItemImage } from '../model/itemImage'
+import { characterLoad, formatLb, hasTypedWeight, itemUnitWeight, MAX_ITEM_WEIGHT, setItemWeight } from '../model/carrying'
+import { OVER_CAPACITY_SPEED } from '../rules'
 import { compressItemImage } from '../ui/imageResize'
 
 type Change = (fn: (latest: Character) => Character) => void
@@ -41,9 +44,15 @@ export default function Inventory({ c }: { c: Character }) {
         title="ของในกระเป๋า (Inventory)"
         action={<Button variant="primary" className="text-sm" onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : '+ เพิ่มของ'}</Button>}
       >
+        <LoadBar c={shown} data={data ?? undefined} />
         {adding && (
           <ItemPicker data={data} onAdd={(item) => data && change((latest) => addSrdItem(latest, item, data))}
-            onAddCustom={(name, qty, wear) => change((latest) => addPlainItem(latest, name, qty, wear))} />
+            onAddCustom={(name, qty, wear, weight) => change((latest) => {
+              const next = addPlainItem(latest, name, qty, wear)
+              // The new item is the one the old inventory didn't have (a same-named one may have stacked instead).
+              const added = next.inventory.find((i) => !latest.inventory.some((o) => o.id === i.id))
+              return added && weight ? setItemWeight(next, added.id, weight) : next
+            })} />
         )}
         {data && <SlotGrid slots={slots} data={data} onTakeOff={(id) => change((latest) => unequipItem(latest, id, data))} />}
         {pack.length === 0 && !adding && <p className="text-sm text-stone-500">ไม่มีของในเป้ กด "+ เพิ่มของ" เพื่อเลือกจาก SRD 5.2.1 หรือพิมพ์ชื่อของเอง</p>}
@@ -191,6 +200,7 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
           {item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
           {item.wear && <span className="ml-1 text-xs text-stone-500">({SLOT_LABEL[item.wear]})</span>}
+          {itemUnitWeight(item, srd) > 0 && <span className="ml-1 text-xs font-normal text-stone-500">{formatLb(item.qty * itemUnitWeight(item, srd))}</span>}
           <span className="ml-1 text-xs font-normal text-stone-500">{srd ? 'ⓘ' : '✎'}</span>
         </button>
         {fits.length > 0 && (
@@ -210,7 +220,7 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
           ))}
         </div>
       )}
-      {open && <ItemActions item={item} change={change} />}
+      {open && <ItemActions item={item} srd={srd} change={change} />}
       {open && srd && <ItemDetails srd={srd} item={item} />}
       {open && !srd && <ItemPictureField item={item} change={change} />}
     </li>
@@ -218,10 +228,12 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
 }
 
 /** Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up). */
-function ItemActions({ item, change }: { item: InventoryItem; change: Change }) {
+function ItemActions({ item, srd, change }: { item: InventoryItem; srd: SrdItem | undefined; change: Change }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(item.name)
   const [qty, setQty] = useState(String(item.qty))
+  const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
+  const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pill = 'rounded-full border px-3 py-1 text-sm'
 
@@ -235,11 +247,15 @@ function ItemActions({ item, change }: { item: InventoryItem; change: Change }) 
         </div>
         <div className="flex gap-2">
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
-            change((latest) => editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty)))
+            change((latest) => {
+              const next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
+              return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
+            })
             setEditing(false)
           }}>บันทึก</Button>
-          <Button className="px-3 text-sm" onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(false) }}>ยกเลิก</Button>
+          <Button className="px-3 text-sm" onClick={() => { setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : ''); setEditing(false) }}>ยกเลิก</Button>
         </div>
+        {typed && <WeightField value={weight} onChange={setWeight} />}
         {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
       </div>
     )
@@ -334,7 +350,7 @@ function ItemPictureField({ item, change }: { item: InventoryItem; change: Chang
 function ItemPicker({ data, onAdd, onAddCustom }: {
   data: SrdEquipment | null
   onAdd: (item: SrdItem) => void
-  onAddCustom: (name: string, qty: number, wear: EquipSlot | undefined) => void
+  onAddCustom: AddCustom
 }) {
   const thai = useEquipmentTh().items
   const [query, setQuery] = useState('')
@@ -382,18 +398,20 @@ const WEAR_OPTIONS: { value: EquipSlot | ''; label: string }[] = [
 ]
 
 /** A custom item the SRD list doesn't have (a quest item, a reward from the DM…). */
-function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: (name: string, qty: number, wear: EquipSlot | undefined) => void }) {
+function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: AddCustom }) {
   const [name, setName] = useState(initialName)
   const [qty, setQty] = useState('1')
+  const [weight, setWeight] = useState('')
   const [wear, setWear] = useState<EquipSlot | ''>('')
   const [added, setAdded] = useState<string | null>(null)
   const n = Math.max(1, Math.min(9999, Math.floor(Number(qty)) || 1))
   function add() {
     if (!name.trim()) return
-    onAdd(name, n, wear || undefined)
+    onAdd(name, n, wear || undefined, weight === '' ? undefined : Number(weight))
     setAdded(name.trim())
     setName('')
     setQty('1')
+    setWeight('')
     setWear('')
   }
   return (
@@ -408,6 +426,7 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: (n
         <div className="min-w-0 flex-1"><Select value={wear} options={WEAR_OPTIONS} onChange={setWear} /></div>
         <Button className="px-3 text-sm" onClick={add}>+ เพิ่ม</Button>
       </div>
+      <WeightField value={weight} onChange={setWeight} />
       {added && <p className="text-xs text-emerald-400">✓ เพิ่ม {added} แล้ว</p>}
     </div>
   )
@@ -418,4 +437,58 @@ function pickerLine(i: SrdItem): string {
   if (i.armor) return `AC ${armorClassLine(i.armor)} · ${i.armor.category} · ${costLine(i.cost)}`
   if (i.kind === 'pack') return `ใส่ของข้างในทั้งหมด (${i.contents?.length ?? 0} อย่าง) · ${costLine(i.cost)}`
   return costLine(i.cost)
+}
+
+type AddCustom = (name: string, qty: number, wear: EquipSlot | undefined, weight: number | undefined) => void
+
+/** Weight of one piece, for items the SRD list has no weight for (blank = not counted). */
+function WeightField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-stone-400">
+      น้ำหนักต่อชิ้น
+      <input className="w-20 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1.5 text-center text-stone-100" inputMode="decimal" placeholder="0"
+        value={value} onChange={(e) => {
+          const v = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').slice(0, 7)
+          if (v === '' || Number(v) <= MAX_ITEM_WEIGHT) onChange(v)
+        }} />
+      lb
+    </label>
+  )
+}
+
+/**
+ * Weight carried against Carrying Capacity (Strength × 15 lb, × 30 for a Goliath). Over it, the character can only drag, lift or push
+ * (up to twice the capacity) with Speed no more than 5 ft; past that they can't move it at all.
+ */
+function LoadBar({ c, data }: { c: Character; data: SrdEquipment | undefined }) {
+  const load = characterLoad(c, data)
+  const pct = load.capacity > 0 ? Math.min(100, (load.total / load.capacity) * 100) : 100
+  const color = load.state !== 'ok' ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+  return (
+    <div className="mb-3 space-y-1">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="font-bold">น้ำหนักที่แบก</span>
+        <span className={load.state === 'ok' ? 'text-stone-300' : 'font-bold text-red-300'}>
+          {formatLb(load.total)} / {formatLb(load.capacity)}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-stone-800" role="meter" aria-label="น้ำหนักที่แบก"
+        aria-valuemin={0} aria-valuemax={load.capacity} aria-valuenow={Math.round(load.total * 10) / 10}>
+        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-xs text-stone-500">
+        ของ {formatLb(load.items)}{load.coins > 0 && ` · เหรียญ ${formatLb(load.coins)} (50 เหรียญ = 1 lb)`} · แบกได้ STR {c.scores.str} × {load.capacity / Math.max(1, c.scores.str)} lb
+      </p>
+      {load.state === 'over' && (
+        <p className="rounded-lg bg-red-950 p-2 text-xs text-red-200">
+          เกิน Carrying Capacity: ลาก ยก หรือดันได้ถึง {formatLb(load.limit)} แต่ Speed ไม่เกิน {OVER_CAPACITY_SPEED} ft
+        </p>
+      )}
+      {load.state === 'tooHeavy' && (
+        <p className="rounded-lg bg-red-950 p-2 text-xs text-red-200">
+          หนักเกินกว่าจะขยับได้ (เกิน {formatLb(load.limit)}) ต้องทิ้งของบางอย่าง
+        </p>
+      )}
+    </div>
+  )
 }
