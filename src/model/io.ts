@@ -6,6 +6,7 @@ import {
 } from '../rules'
 import { createCharacter, EQUIP_SLOTS, newId, type Character, type EquipSlot } from './character'
 import { parseBuff } from './characterActions'
+import { isItemImage } from './itemImage'
 
 export const EXPORT_FORMAT = 'dnd-table-companion/character'
 export const EXPORT_VERSION = 1
@@ -255,6 +256,7 @@ function item(v: unknown): Character['inventory'][number] | undefined {
   if (v.equipped === true) out.equipped = true
   if (isSlot(v.slot)) out.slot = v.slot
   if (isSlot(v.wear)) out.wear = v.wear
+  if (isItemImage(v.image)) out.image = v.image
   return out
 }
 

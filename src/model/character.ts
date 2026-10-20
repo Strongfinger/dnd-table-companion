@@ -108,6 +108,8 @@ export interface InventoryItem {
   slot?: EquipSlot
   /** For items that aren't SRD weapons or armor (e.g. a custom cloak): the slot they can be worn in. */
   wear?: EquipSlot
+  /** A custom item's own small picture (data: URL), chosen by the player. See model/itemImage.ts. */
+  image?: string
 }
 
 export function newId(): string {

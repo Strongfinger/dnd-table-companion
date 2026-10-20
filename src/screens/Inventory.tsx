@@ -3,7 +3,7 @@
 // off hand, back; model/inventory.ts); "+ เพิ่มของ" picks SRD 5.2.1 equipment (a pack adds what's inside)
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
 // Tap an item in the pack to use one, rename it, change how many, or throw it away.
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
@@ -13,6 +13,10 @@ import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '..
 import { Button, Section, Select, TextInput } from '../ui/kit'
 import { useEquipment, useEquipmentTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
+import { ItemImage } from '../ui/ItemImage'
+import { useShowItemImages } from '../ui/useShowItemImages'
+import { MAX_ITEM_IMAGES, countItemImages, setItemImage } from '../model/itemImage'
+import { compressItemImage } from '../ui/imageResize'
 
 type Change = (fn: (latest: Character) => Character) => void
 
@@ -52,9 +56,23 @@ export default function Inventory({ c }: { c: Character }) {
             )
           })}
         </ul>
+        <ItemImageSwitch count={countItemImages(shown)} />
         <p className="mt-2 text-xs text-stone-500">ใส่ได้ช่องละ 1 ชิ้น · อาวุธสองมือใช้ทั้งมือหลักและมือรอง · สวม/ถอดเกราะหรือ Shield แล้ว AC คำนวณให้เอง (ปิดได้ในหน้าแก้ไข)</p>
       </Section>
     </>
+  )
+}
+
+/** Turn every item picture off (or on again) on this device. */
+function ItemImageSwitch({ count }: { count: number }) {
+  const [show, setShow] = useShowItemImages()
+  return (
+    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-stone-500">
+      <span>{count > 0 && `รูปของตัวเอง ${count}/${MAX_ITEM_IMAGES} ชิ้น`}</span>
+      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="rounded-full border border-stone-700 px-3 py-1 text-stone-400">
+        {show ? '🖼 ซ่อนรูปไอเทม' : '🖼 แสดงรูปไอเทม'}
+      </button>
+    </div>
   )
 }
 
@@ -140,6 +158,7 @@ function SlotRow({ slot, item, both, srd, onTakeOff }: {
         <span className="w-20 shrink-0 text-xs text-stone-400">{SLOT_LABEL[slot]}</span>
         {!item && <span className="flex-1 text-stone-600">—</span>}
         {item && both && <span className="min-w-0 flex-1 truncate text-stone-500">({item.name} ใช้สองมือ)</span>}
+        {item && !both && <ItemImage item={item} srd={srd} size={28} />}
         {item && !both && (
           <button type="button" className="min-w-0 flex-1 truncate text-left font-bold text-amber-300" onClick={() => setOpen(!open)} disabled={!srd} aria-expanded={open}>
             {item.name}{srd && <span className="ml-1 text-xs font-normal text-stone-500">ⓘ</span>}
@@ -168,6 +187,7 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
   return (
     <li className="py-1.5">
       <div className="flex items-center gap-2">
+        <ItemImage item={item} srd={srd} />
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
           {item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
           {item.wear && <span className="ml-1 text-xs text-stone-500">({SLOT_LABEL[item.wear]})</span>}
@@ -191,7 +211,8 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
         </div>
       )}
       {open && <ItemActions item={item} change={change} />}
-      {open && srd && <ItemDetails srd={srd} />}
+      {open && srd && <ItemDetails srd={srd} item={item} />}
+      {open && !srd && <ItemPictureField item={item} change={change} />}
     </li>
   )
 }
@@ -241,13 +262,18 @@ function ItemActions({ item, change }: { item: InventoryItem; change: Change }) 
  * An SRD item's stats and text; the text (and a tool's uses) in Thai with the ไทย/EN switch when DND-TH has it.
  * The Thai name shows here unless the list row above already has it (`rowHasThaiName`).
  */
-export function ItemDetails({ srd, rowHasThaiName = false }: { srd: SrdItem; rowHasThaiName?: boolean }) {
+export function ItemDetails({ srd, item, rowHasThaiName = false }: { srd: SrdItem; item?: InventoryItem; rowHasThaiName?: boolean }) {
   const thai = useEquipmentTh()
+  const [big, setBig] = useState(false)
   const th = thai.items[srd.id]
   const thText = [th?.utilize && `**ใช้งาน:** ${th.utilize}`, th?.text].filter(Boolean).join('\n\n')
   const mastery = srd.weapon && thai.masteries[srd.weapon.mastery]
   return (
     <div className="mt-1 space-y-1 rounded-lg bg-stone-900 p-2 text-sm text-stone-300">
+      {/* The picture floats beside the text, so short text doesn't leave a tall gap; tap it to see it bigger. */}
+      <button type="button" className="float-right ml-2 mb-1" onClick={() => setBig(!big)} aria-label={big ? 'ย่อรูป' : 'ดูรูปใหญ่'}>
+        <ItemImage item={item ?? { srdId: srd.id }} srd={srd} size={big ? 224 : 112} />
+      </button>
       {th && !rowHasThaiName && <p className="text-amber-200">{th.name}</p>}
       {srd.weapon && <p>{srd.weapon.category} {srd.weapon.type} · {srd.weapon.dice} {srd.weapon.damageType}{srd.weapon.properties.length > 0 && ` · ${weaponPropertiesLine(srd.weapon)}`} · Mastery: {srd.weapon.mastery}{mastery && ` (${mastery.name})`}</p>}
       {srd.armor && (
@@ -262,6 +288,45 @@ export function ItemDetails({ srd, rowHasThaiName = false }: { srd: SrdItem; row
         {srd.text && <p className="whitespace-pre-wrap">{srd.text}</p>}
       </WithThai>
       <p className="text-xs text-stone-500">{costLine(srd.cost)}{srd.weight ? ` · ${srd.weight} lb.` : ''}</p>
+      <div className="clear-both" />
+    </div>
+  )
+}
+
+/** A custom item's own picture: pick one from the phone (shrunk to a thumbnail) or take it off again. */
+function ItemPictureField({ item, change }: { item: InventoryItem; change: Change }) {
+  const file = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function pick(files: FileList | null) {
+    const chosen = files?.[0]
+    if (!chosen) return
+    setError(null)
+    try {
+      const dataUrl = await compressItemImage(chosen)
+      change((latest) => {
+        const next = setItemImage(latest, item.id, dataUrl)
+        if (next === latest) setError(`ใส่รูปได้ไม่เกิน ${MAX_ITEM_IMAGES} ชิ้นต่อตัวละคร (เอารูปของชิ้นอื่นออกก่อน)`)
+        return next
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'ใส่รูปนี้ไม่ได้')
+    }
+  }
+
+  return (
+    <div className="mt-1 flex items-center gap-2 text-xs text-stone-400">
+      <ItemImage item={item} size={40} />
+      <button type="button" className="rounded-full border border-stone-600 px-3 py-1 text-sm text-stone-300" onClick={() => file.current?.click()}>
+        {item.image ? '🖼 เปลี่ยนรูป' : '🖼 ใส่รูป'}
+      </button>
+      {item.image && (
+        <button type="button" className="rounded-full border border-stone-700 px-3 py-1 text-sm text-stone-400" onClick={() => change((latest) => setItemImage(latest, item.id, undefined))}>
+          เอารูปออก
+        </button>
+      )}
+      <input ref={file} type="file" accept="image/*" hidden onChange={(e) => { void pick(e.target.files); e.target.value = '' }} />
+      <span className={error ? 'text-red-400' : ''}>{error ?? 'รูปเล็กๆ ใช้ได้ทุกเครื่องในห้อง'}</span>
     </div>
   )
 }
