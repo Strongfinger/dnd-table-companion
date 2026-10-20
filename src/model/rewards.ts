@@ -7,7 +7,7 @@ import { gainCoins, spendCoins, type Coin } from '../rules'
 import { canManageCampaign, type Campaign } from './campaign'
 import { newId, type Character, type EquipSlot, type InventoryItem } from './character'
 import { findItem, type SrdEquipment } from './equipment'
-import { addPlainItem, addSrdItem } from './inventory'
+import { addPlainItem, addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails } from './inventory'
 import { setItemWeight } from './carrying'
 
 /** One kind of item waiting in the pool: an SRD item (by id) or a custom one (name, wear slot, weight). */
@@ -18,6 +18,9 @@ export interface PoolItem {
   srdId?: string
   wear?: EquipSlot
   weight?: number
+  /** A custom item's text, e.g. a magic item's effect. */
+  description?: string
+  magic?: true
 }
 
 /** Most kinds of item in the pool at once (keeps the room message small). */
@@ -29,10 +32,16 @@ export function addToPool(pool: PoolItem[], item: Omit<PoolItem, 'id'>): PoolIte
   const name = item.name.trim().slice(0, 200)
   const qty = Math.min(MAX_QTY, Math.floor(item.qty))
   if (!name || !(qty >= 1)) return pool
-  const same = pool.find((p) => p.srdId === item.srdId && (item.srdId ? true : p.name === name && p.wear === item.wear && p.weight === item.weight))
+  const description = item.srdId ? undefined : item.description?.trim().slice(0, MAX_ITEM_DESCRIPTION) || undefined
+  const magic = !item.srdId && item.magic ? (true as const) : undefined
+  const same = pool.find((p) => p.srdId === item.srdId &&
+    (item.srdId ? true : p.name === name && p.wear === item.wear && p.weight === item.weight && p.description === description && p.magic === magic))
   if (same) return pool.map((p) => (p === same ? { ...p, qty: Math.min(MAX_QTY, p.qty + qty) } : p))
   if (pool.length >= MAX_POOL_ITEMS) return pool
-  const extra = { ...(item.srdId ? { srdId: item.srdId } : {}), ...(item.wear ? { wear: item.wear } : {}), ...(item.weight ? { weight: item.weight } : {}) }
+  const extra = {
+    ...(item.srdId ? { srdId: item.srdId } : {}), ...(item.wear ? { wear: item.wear } : {}), ...(item.weight ? { weight: item.weight } : {}),
+    ...(description ? { description } : {}), ...(magic ? { magic } : {}),
+  }
   return [...pool, { id: newId(), name, qty, ...extra }]
 }
 
@@ -63,14 +72,32 @@ export function receivePoolItem(c: Character, item: PoolItem, data: SrdEquipment
     for (let i = 0; i < item.qty; i++) next = addSrdItem(next, srd, data)
     return next
   }
-  return addCustomItem(c, item.name, item.qty, item.wear, item.weight)
+  return addCustomItem(c, item)
 }
 
-/** A custom item by name (and its weight on the new entry; a same-named one may have stacked instead). */
-export function addCustomItem(c: Character, name: string, qty: number, wear?: EquipSlot, weight?: number): Character {
-  const next = addPlainItem(c, name, qty, wear)
+/** What a custom item is made from: the sheet's custom form, or a custom item taken from the pool. */
+export interface CustomItem {
+  name: string
+  qty: number
+  wear?: EquipSlot
+  weight?: number
+  description?: string
+  magic?: boolean
+}
+
+/**
+ * A custom item by name, with its weight, text and magic mark on the new entry. A same-named one may stack instead;
+ * it gets the text only if it had none.
+ */
+export function addCustomItem(c: Character, item: CustomItem): Character {
+  let next = addPlainItem(c, item.name, item.qty, item.wear)
   const added = next.inventory.find((i) => !c.inventory.some((o) => o.id === i.id))
-  return added && weight ? setItemWeight(next, added.id, weight) : next
+  if (added && item.weight) next = setItemWeight(next, added.id, item.weight)
+  const target = added ?? next.inventory.find((i, n) => i.qty !== c.inventory[n]?.qty)
+  if (target && !target.description && (item.description?.trim() || item.magic)) {
+    next = setItemDetails(next, target.id, { description: item.description, magic: item.magic || target.magic })
+  }
+  return next
 }
 
 /** A pool list from the network (players get it from the DM). Null = invalid. */
@@ -87,6 +114,8 @@ export function parsePool(body: unknown): PoolItem[] | null {
       ...(shortText(p.srdId, 64) ? { srdId: p.srdId as string } : {}),
       ...(typeof p.wear === 'string' ? { wear: p.wear as EquipSlot } : {}),
       ...(typeof p.weight === 'number' && p.weight > 0 ? { weight: p.weight } : {}),
+      ...(typeof p.description === 'string' && p.description ? { description: p.description.slice(0, MAX_ITEM_DESCRIPTION) } : {}),
+      ...(p.magic === true ? { magic: true as const } : {}),
     })
   }
   return items

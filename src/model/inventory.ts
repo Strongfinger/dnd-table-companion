@@ -68,6 +68,24 @@ function setItemQty(c: Character, itemId: string, qty: number): Character {
   return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? { ...i, qty } : i)) }
 }
 
+/** Longest custom item text (a magic item's effect), so sheets stay small for room messages and backups. */
+export const MAX_ITEM_DESCRIPTION = 2000
+
+/**
+ * A custom item's own text (e.g. a magic item's effect) and whether it is a magic item. Empty text removes it.
+ * SRD items keep the SRD text instead.
+ */
+export function setItemDetails(c: Character, itemId: string, details: { description?: string; magic?: boolean }): Character {
+  const item = c.inventory.find((i) => i.id === itemId)
+  if (!item || item.srdId) return c
+  const description = details.description?.trim().slice(0, MAX_ITEM_DESCRIPTION) || undefined
+  const magic = details.magic ? (true as const) : undefined
+  if (description === item.description && magic === item.magic) return c
+  const { description: _d, magic: _m, ...rest } = item
+  const next: InventoryItem = { ...rest, ...(description ? { description } : {}), ...(magic ? { magic } : {}) }
+  return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? next : i)) }
+}
+
 /** Throw an item away. */
 export function removeItem(c: Character, itemId: string): Character {
   if (!c.inventory.some((i) => i.id === itemId)) return c

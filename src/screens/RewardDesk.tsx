@@ -29,14 +29,14 @@ export function RewardPool() {
       {adding && (
         <ItemPicker data={data}
           onAdd={(item) => void updatePool((p) => addToPool(p, { name: item.name, srdId: item.id, qty: item.kind === 'pack' ? 1 : item.qty ?? 1 }))}
-          onAddCustom={(name, qty, wear, weight) => void updatePool((p) => addToPool(p, { name, qty, wear, weight }))} />
+          onAddCustom={({ magic, ...item }) => void updatePool((p) => addToPool(p, { ...item, ...(magic ? { magic: true as const } : {}) }))} />
       )}
       {pool.length === 0 && !adding && <p className="text-sm text-stone-500">คลังว่าง กด "+ ของรางวัล" เพื่อใส่ของจาก SRD หรือพิมพ์ชื่อของเอง</p>}
       <ul className="divide-y divide-stone-800">
         {pool.map((p) => (
           <li key={p.id} className="flex items-center gap-2 py-1.5 text-sm">
             <ItemImage item={p} size={28} />
-            <span className="min-w-0 flex-1 truncate"><span className="font-bold">{p.name}</span><span className="text-stone-400"> ×{p.qty}</span></span>
+            <span className="min-w-0 flex-1 truncate" title={p.description}>{p.magic && '✨ '}<span className="font-bold">{p.name}</span><span className="text-stone-400"> ×{p.qty}</span></span>
             <button type="button" className="rounded-full border border-stone-600 px-2.5 py-0.5 text-stone-300" aria-label={`เพิ่ม ${p.name}`}
               onClick={() => void updatePool((list) => setPoolQty(list, p.id, p.qty + 1))}>+1</button>
             <button type="button" className="rounded-full border border-stone-600 px-2.5 py-0.5 text-stone-300" aria-label={`ลด ${p.name}`}

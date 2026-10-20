@@ -157,3 +157,11 @@ describe('level lock in files and network sheets', () => {
     expect(importOk(exportCharacter({ ...c, levelLock: undefined })).character.levelLock).toBeUndefined()
   })
 })
+
+describe('custom item text', () => {
+  it('keeps a magic item\'s effect text through export and import', () => {
+    const c = createCharacter({ name: 'Mira', inventory: [{ id: 'r', name: 'Ring of the Old King', qty: 1, description: '+1 AC while worn', magic: true }] })
+    const r = parseCharacterImport(exportCharacter(c))
+    expect(r.ok && r.character.inventory[0]).toMatchObject({ description: '+1 AC while worn', magic: true })
+  })
+})

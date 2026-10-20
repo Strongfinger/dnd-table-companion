@@ -9,13 +9,14 @@
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { useDmRunsEconomy } from '../app/useRunsCampaign'
-import { addCustomItem, coinRequestLabel, type PoolItem } from '../model/rewards'
+import { addCustomItem, coinRequestLabel, type CustomItem, type PoolItem } from '../model/rewards'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addSrdItem, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
-import { Button, Section, Select, TextInput } from '../ui/kit'
+import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
+import MiniMarkdown from '../ui/MiniMarkdown'
 import { useEquipment, useEquipmentTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
@@ -53,7 +54,7 @@ export default function Inventory({ c }: { c: Character }) {
         {adding && dmRuns && <PoolPicker c={c} />}
         {adding && !dmRuns && (
           <ItemPicker data={data} onAdd={(item) => data && change((latest) => addSrdItem(latest, item, data))}
-            onAddCustom={(name, qty, wear, weight) => change((latest) => addCustomItem(latest, name, qty, wear, weight))} />
+            onAddCustom={(item) => change((latest) => addCustomItem(latest, item))} />
         )}
         {data && <SlotGrid slots={slots} data={data} onTakeOff={(id) => change((latest) => unequipItem(latest, id, data))} />}
         {pack.length === 0 && !adding && (
@@ -232,7 +233,10 @@ function PoolRow({ item, asked, onTake }: { item: PoolItem; asked: boolean; onTa
   return (
     <li className="flex items-center gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
       <ItemImage item={item} size={28} />
-      <span className="min-w-0 flex-1"><span className="font-bold">{item.name}</span><span className="text-stone-400"> · เหลือ {item.qty}</span></span>
+      <span className="min-w-0 flex-1">
+        {item.magic && '✨ '}<span className="font-bold">{item.name}</span><span className="text-stone-400"> · เหลือ {item.qty}</span>
+        {item.description && <span className="block whitespace-pre-wrap text-xs text-stone-400">{item.description}</span>}
+      </span>
       {item.qty > 1 && (
         <input className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-1 py-1 text-center" inputMode="numeric" aria-label="จำนวนที่หยิบ"
           value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
@@ -307,7 +311,7 @@ function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
       <div className="flex items-center gap-2">
         <ItemImage item={item} srd={srd} />
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
+          {item.magic && <span className="mr-1" title="Magic Item">✨</span>}{item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
           {item.wear && <span className="ml-1 text-xs text-stone-500">({SLOT_LABEL[item.wear]})</span>}
           {itemUnitWeight(item, srd) > 0 && <span className="ml-1 text-xs font-normal text-stone-500">{formatLb(item.qty * itemUnitWeight(item, srd))}</span>}
           <span className="ml-1 text-xs font-normal text-stone-500">{srd ? 'ⓘ' : '✎'}</span>
@@ -331,6 +335,7 @@ function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
       )}
       {open && <ItemActions item={item} srd={srd} wearable={fits.length > 0} change={change} noMore={noMore} />}
       {open && srd && <ItemDetails srd={srd} item={item} />}
+      {open && !srd && item.description && <CustomItemText item={item} />}
       {open && !srd && <ItemPictureField item={item} change={change} />}
     </li>
   )
@@ -345,6 +350,8 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   const [name, setName] = useState(item.name)
   const [qty, setQty] = useState(String(item.qty))
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
+  const [description, setDescription] = useState(item.description ?? '')
+  const [magic, setMagic] = useState(!!item.magic)
   const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pill = 'rounded-full border px-3 py-1 text-sm'
@@ -364,14 +371,19 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
         <div className="flex gap-2">
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
             change((latest) => {
-              const next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
+              let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
+              if (!srd) next = setItemDetails(next, item.id, { description, magic })
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
           }}>บันทึก</Button>
-          <Button className="px-3 text-sm" onClick={() => { setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : ''); setEditing(false) }}>ยกเลิก</Button>
+          <Button className="px-3 text-sm" onClick={() => {
+            setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : '')
+            setDescription(item.description ?? ''); setMagic(!!item.magic); setEditing(false)
+          }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
+        {!srd && <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />}
         {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
       </div>
     )
@@ -522,16 +534,20 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
   const [qty, setQty] = useState('1')
   const [weight, setWeight] = useState('')
   const [wear, setWear] = useState<EquipSlot | ''>('')
+  const [description, setDescription] = useState('')
+  const [magic, setMagic] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
   const n = Math.max(1, Math.min(9999, Math.floor(Number(qty)) || 1))
   function add() {
     if (!name.trim()) return
-    onAdd(name, n, wear || undefined, weight === '' ? undefined : Number(weight))
+    onAdd({ name, qty: n, wear: wear || undefined, weight: weight === '' ? undefined : Number(weight), description, magic })
     setAdded(name.trim())
     setName('')
     setQty('1')
     setWeight('')
     setWear('')
+    setDescription('')
+    setMagic(false)
   }
   return (
     <div className="mb-3 space-y-2 rounded-lg border border-stone-700 p-2">
@@ -546,6 +562,7 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
         <Button className="px-3 text-sm" onClick={add}>+ เพิ่ม</Button>
       </div>
       <WeightField value={weight} onChange={setWeight} />
+      <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />
       {added && <p className="text-xs text-emerald-400">✓ เพิ่ม {added} แล้ว</p>}
     </div>
   )
@@ -558,7 +575,33 @@ function pickerLine(i: SrdItem): string {
   return costLine(i.cost)
 }
 
-export type AddCustom = (name: string, qty: number, wear: EquipSlot | undefined, weight: number | undefined) => void
+export type AddCustom = (item: CustomItem) => void
+
+/** A custom item's own text, e.g. a magic item's effect: **bold**, *italic* and lists work. */
+function CustomItemText({ item }: { item: InventoryItem }) {
+  return (
+    <div className="mt-1 rounded-lg bg-stone-900 p-2 text-sm text-stone-300">
+      {item.magic && <p className="mb-1 text-xs font-bold text-violet-300">✨ Magic Item</p>}
+      <MiniMarkdown text={item.description ?? ''} />
+    </div>
+  )
+}
+
+/** A custom item's effect text and the Magic Item mark (the custom form and the edit box). */
+function DetailsFields({ description, magic, onDescription, onMagic }: {
+  description: string
+  magic: boolean
+  onDescription: (v: string) => void
+  onMagic: (v: boolean) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Checkbox checked={magic} onChange={onMagic} label="✨ Magic Item" />
+      <p className="text-xs text-stone-400">คำอธิบาย / Effect (ไม่บังคับ) เช่น +1 AC ขณะสวม, ใช้ได้ 1 ครั้งต่อ Long Rest</p>
+      <TextArea value={description} rows={3} onChange={(v) => onDescription(v.slice(0, MAX_ITEM_DESCRIPTION))} />
+    </div>
+  )
+}
 
 /** Weight of one piece, for items the SRD list has no weight for (blank = not counted). */
 function WeightField({ value, onChange }: { value: string; onChange: (v: string) => void }) {

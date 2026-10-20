@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { loadSrdEquipment } from './equipment'
 import {
-  addCoinRequest, addToPool, applyCoinRequest, coinRequestLabel, decideCoinRequest, dmRunsEconomy, keepDmEconomy, KEEP_DECIDED, parseCoinRequestBody,
+  addCustomItem, addCoinRequest, addToPool, applyCoinRequest, coinRequestLabel, decideCoinRequest, dmRunsEconomy, keepDmEconomy, KEEP_DECIDED, parseCoinRequestBody,
   parseCoinRequests, parsePool, parseTake, receivePoolItem, setPoolQty, takeFromPool, type CoinRequest,
 } from './rewards'
 
@@ -51,6 +51,18 @@ describe('reward pool', () => {
     expect(c.inventory.at(-1)).toMatchObject({ name: 'Ring of the Old King', qty: 1, wear: 'ring1', weight: 0.5 })
   })
 
+  it('keeps a custom magic item\'s effect text from the pool to the sheet', async () => {
+    const data = await loadSrdEquipment()
+    let pool = addToPool([], { name: 'Cloak of Embers', qty: 1, wear: 'cloak', description: '  Resistance to Fire  ', magic: true })
+    // Same name, different text: another item.
+    pool = addToPool(pool, { name: 'Cloak of Embers', qty: 1, wear: 'cloak' })
+    expect(pool).toHaveLength(2)
+    expect(pool[0]).toMatchObject({ description: 'Resistance to Fire', magic: true })
+    expect(parsePool(JSON.parse(JSON.stringify({ items: pool })))).toEqual(pool)
+    const c = receivePoolItem(hero(), pool[0], data)
+    expect(c.inventory[0]).toMatchObject({ name: 'Cloak of Embers', wear: 'cloak', description: 'Resistance to Fire', magic: true })
+  })
+
   it('checks pool and take messages from the network', () => {
     const pool = addToPool([], { name: 'Dagger', srdId: 'dagger', qty: 2 })
     expect(parsePool(JSON.parse(JSON.stringify({ items: pool })))).toEqual(pool)
@@ -59,6 +71,17 @@ describe('reward pool', () => {
     expect(parseTake({ characterId: 'c', itemId: 'p', qty: 2 })).toEqual({ characterId: 'c', itemId: 'p', qty: 2 })
     expect(parseTake({ characterId: 'c', itemId: 'p', qty: 1.5 })).toBeNull()
     expect(parseTake({ characterId: 'c', itemId: 'p', qty: 0 })).toBeNull()
+  })
+})
+
+describe('addCustomItem', () => {
+  it('adds the text to a new item, or to a stacked one that had none', () => {
+    let c = addCustomItem(hero(), { name: 'Strange Coin', qty: 1 })
+    c = addCustomItem(c, { name: 'Strange Coin', qty: 1, description: 'Glows near undead', magic: true })
+    expect(c.inventory).toEqual([expect.objectContaining({ qty: 2, description: 'Glows near undead', magic: true })])
+    // Already has text: kept.
+    c = addCustomItem(c, { name: 'Strange Coin', qty: 1, description: 'Something else' })
+    expect(c.inventory[0]).toMatchObject({ qty: 3, description: 'Glows near undead' })
   })
 })
 
