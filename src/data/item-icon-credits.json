@@ -1,0 +1,470 @@
+{
+  "acid": {
+    "icon": "acid-blob",
+    "author": "lorc"
+  },
+  "alchemists-fire": {
+    "icon": "fire-bottle",
+    "author": "lorc"
+  },
+  "alchemists-supplies": {
+    "icon": "test-tubes",
+    "author": "lorc"
+  },
+  "amulet": {
+    "icon": "gem-pendant",
+    "author": "lorc"
+  },
+  "antitoxin": {
+    "icon": "corked-tube",
+    "author": "lorc"
+  },
+  "assassins-blood": {
+    "icon": "blood",
+    "author": "skoll"
+  },
+  "bagpipes": {
+    "icon": "bagpipes",
+    "author": "delapouite"
+  },
+  "barrel": {
+    "icon": "barrel",
+    "author": "delapouite"
+  },
+  "basket": {
+    "icon": "basket",
+    "author": "delapouite"
+  },
+  "block-and-tackle": {
+    "icon": "pulley-hook",
+    "author": "delapouite"
+  },
+  "bolts": {
+    "icon": "arrowhead",
+    "author": "lorc"
+  },
+  "bottle-glass": {
+    "icon": "wine-bottle",
+    "author": "delapouite"
+  },
+  "brewers-supplies": {
+    "icon": "beer-stein",
+    "author": "lorc"
+  },
+  "bucket": {
+    "icon": "full-wood-bucket",
+    "author": "delapouite"
+  },
+  "bullets-firearm": {
+    "icon": "bullets",
+    "author": "lorc"
+  },
+  "bullets-sling": {
+    "icon": "stone-pile",
+    "author": "delapouite"
+  },
+  "burglars-pack": {
+    "icon": "robber-mask",
+    "author": "delapouite"
+  },
+  "burnt-othur-fumes": {
+    "icon": "poison-gas",
+    "author": "lorc"
+  },
+  "carpenters-tools": {
+    "icon": "hand-saw",
+    "author": "delapouite"
+  },
+  "cartographer-tools": {
+    "icon": "compass",
+    "author": "lorc"
+  },
+  "case-crossbow-bolt": {
+    "icon": "quiver",
+    "author": "delapouite"
+  },
+  "case-map-or-scroll": {
+    "icon": "tied-scroll",
+    "author": "lorc"
+  },
+  "chain": {
+    "icon": "crossed-chains",
+    "author": "lorc"
+  },
+  "chest": {
+    "icon": "chest",
+    "author": "delapouite"
+  },
+  "climbers-kit": {
+    "icon": "carabiner",
+    "author": "delapouite"
+  },
+  "clothes-fine": {
+    "icon": "large-dress",
+    "author": "delapouite"
+  },
+  "cobblers-tools": {
+    "icon": "leather-boot",
+    "author": "lorc"
+  },
+  "component-pouch": {
+    "icon": "pouch-with-beads",
+    "author": "seregacthtuf"
+  },
+  "cooks-utensils": {
+    "icon": "fork-knife-spoon",
+    "author": "delapouite"
+  },
+  "costume": {
+    "icon": "carnival-mask",
+    "author": "delapouite"
+  },
+  "crawler-mucus": {
+    "icon": "dripping-goo",
+    "author": "lorc"
+  },
+  "crystal": {
+    "icon": "crystal-cluster",
+    "author": "lorc"
+  },
+  "dice": {
+    "icon": "rolling-dice-cup",
+    "author": "delapouite"
+  },
+  "diplomat-pack": {
+    "icon": "envelope",
+    "author": "lorc"
+  },
+  "disguise-kit": {
+    "icon": "drama-masks",
+    "author": "lorc"
+  },
+  "dragonchess": {
+    "icon": "chess-knight",
+    "author": "skoll"
+  },
+  "drum": {
+    "icon": "drum",
+    "author": "delapouite"
+  },
+  "dulcimer": {
+    "icon": "harp",
+    "author": "delapouite"
+  },
+  "dungeoneer-pack": {
+    "icon": "light-backpack",
+    "author": "delapouite"
+  },
+  "emblem": {
+    "icon": "holy-symbol",
+    "author": "lorc"
+  },
+  "entertainers-pack": {
+    "icon": "jester-hat",
+    "author": "delapouite"
+  },
+  "essence-of-ether": {
+    "icon": "bottle-vapors",
+    "author": "lorc"
+  },
+  "explorers-pack": {
+    "icon": "knapsack",
+    "author": "lorc"
+  },
+  "flask": {
+    "icon": "round-bottom-flask",
+    "author": "lorc"
+  },
+  "flute": {
+    "icon": "flute",
+    "author": "delapouite"
+  },
+  "forgery-kit": {
+    "icon": "stamper",
+    "author": "delapouite"
+  },
+  "glassblowers-tools": {
+    "icon": "bellows",
+    "author": "delapouite"
+  },
+  "grappling-hook": {
+    "icon": "grapple",
+    "author": "lorc"
+  },
+  "herbalism-kit": {
+    "icon": "herbs-bundle",
+    "author": "delapouite"
+  },
+  "horn": {
+    "icon": "hunting-horn",
+    "author": "lorc"
+  },
+  "hunting-trap": {
+    "icon": "wolf-trap",
+    "author": "lorc"
+  },
+  "ink": {
+    "icon": "quill-ink",
+    "author": "lorc"
+  },
+  "ink-pen": {
+    "icon": "quill",
+    "author": "lorc"
+  },
+  "jewelers-tools": {
+    "icon": "cut-diamond",
+    "author": "lorc"
+  },
+  "jug": {
+    "icon": "jug",
+    "author": "delapouite"
+  },
+  "ladder": {
+    "icon": "ladder",
+    "author": "delapouite"
+  },
+  "lantern-bullseye": {
+    "icon": "lantern-flame",
+    "author": "lorc"
+  },
+  "leatherworkers-tools": {
+    "icon": "sewing-needle",
+    "author": "lorc"
+  },
+  "lock": {
+    "icon": "padlock",
+    "author": "lorc"
+  },
+  "lute": {
+    "icon": "banjo",
+    "author": "delapouite"
+  },
+  "lyre": {
+    "icon": "lyre",
+    "author": "lorc"
+  },
+  "magnifying-glass": {
+    "icon": "magnifying-glass",
+    "author": "lorc"
+  },
+  "malice": {
+    "icon": "evil-eyes",
+    "author": "skoll"
+  },
+  "manacles": {
+    "icon": "manacles",
+    "author": "lorc"
+  },
+  "map": {
+    "icon": "treasure-map",
+    "author": "lorc"
+  },
+  "masons-tools": {
+    "icon": "trowel",
+    "author": "delapouite"
+  },
+  "midnight-tears": {
+    "icon": "tear-tracks",
+    "author": "lorc"
+  },
+  "mirror": {
+    "icon": "mirror-mirror",
+    "author": "lorc"
+  },
+  "navigators-tools": {
+    "icon": "sextant",
+    "author": "delapouite"
+  },
+  "needles": {
+    "icon": "triple-needle",
+    "author": "lorc"
+  },
+  "net": {
+    "icon": "fishing-net",
+    "author": "lorc"
+  },
+  "oil-of-taggit": {
+    "icon": "chemical-drop",
+    "author": "lorc"
+  },
+  "orb": {
+    "icon": "crystal-ball",
+    "author": "lorc"
+  },
+  "painters-supplies": {
+    "icon": "palette",
+    "author": "delapouite"
+  },
+  "pale-tincture": {
+    "icon": "round-potion",
+    "author": "caro-asercion"
+  },
+  "pan-flute": {
+    "icon": "pan-flute",
+    "author": "delapouite"
+  },
+  "paper": {
+    "icon": "papers",
+    "author": "lorc"
+  },
+  "perfume": {
+    "icon": "perfume-bottle",
+    "author": "lorc"
+  },
+  "playing-cards": {
+    "icon": "poker-hand",
+    "author": "lorc"
+  },
+  "poison-basic": {
+    "icon": "poison-bottle",
+    "author": "lorc"
+  },
+  "poisoners-kit": {
+    "icon": "dripping-tube",
+    "author": "lorc"
+  },
+  "pole": {
+    "icon": "wood-stick",
+    "author": "delapouite"
+  },
+  "pot-iron": {
+    "icon": "cooking-pot",
+    "author": "delapouite"
+  },
+  "potion-of-healing": {
+    "icon": "health-potion",
+    "author": "delapouite"
+  },
+  "potters-tools": {
+    "icon": "painted-pottery",
+    "author": "delapouite"
+  },
+  "priests-pack": {
+    "icon": "prayer-beads",
+    "author": "delapouite"
+  },
+  "purple-worm-poison": {
+    "icon": "worm-mouth",
+    "author": "lorc"
+  },
+  "ram-portable": {
+    "icon": "siege-ram",
+    "author": "skoll"
+  },
+  "reliquary": {
+    "icon": "locked-box",
+    "author": "delapouite"
+  },
+  "rod": {
+    "icon": "winged-scepter",
+    "author": "delapouite"
+  },
+  "sack": {
+    "icon": "powder-bag",
+    "author": "delapouite"
+  },
+  "scholars-pack": {
+    "icon": "book-pile",
+    "author": "delapouite"
+  },
+  "serpent-venom": {
+    "icon": "snake-bite",
+    "author": "lorc"
+  },
+  "shawm": {
+    "icon": "clarinet",
+    "author": "caro-asercion"
+  },
+  "shovel": {
+    "icon": "spade",
+    "author": "lorc"
+  },
+  "signal-whistle": {
+    "icon": "whistle",
+    "author": "delapouite"
+  },
+  "smiths-tools": {
+    "icon": "anvil",
+    "author": "lorc"
+  },
+  "spell-scroll-cantrip": {
+    "icon": "scroll-unfurled",
+    "author": "lorc"
+  },
+  "spell-scroll-level-1": {
+    "icon": "scroll-quill",
+    "author": "delapouite"
+  },
+  "spellbook": {
+    "icon": "spell-book",
+    "author": "delapouite"
+  },
+  "spiders-sting": {
+    "icon": "hanging-spider",
+    "author": "lorc"
+  },
+  "spikes-iron": {
+    "icon": "coiled-nail",
+    "author": "delapouite"
+  },
+  "spyglass": {
+    "icon": "spyglass",
+    "author": "lorc"
+  },
+  "staff": {
+    "icon": "wizard-staff",
+    "author": "lorc"
+  },
+  "string": {
+    "icon": "sewing-string",
+    "author": "delapouite"
+  },
+  "tent": {
+    "icon": "camping-tent",
+    "author": "delapouite"
+  },
+  "three-dragon-ante": {
+    "icon": "card-random",
+    "author": "faithtoken"
+  },
+  "tinkers-tools": {
+    "icon": "gears",
+    "author": "lorc"
+  },
+  "torpor": {
+    "icon": "sleepy",
+    "author": "lorc"
+  },
+  "truth-serum": {
+    "icon": "brain",
+    "author": "lorc"
+  },
+  "vial": {
+    "icon": "vial",
+    "author": "sbed"
+  },
+  "viol": {
+    "icon": "violin",
+    "author": "zajkonur"
+  },
+  "wand": {
+    "icon": "fairy-wand",
+    "author": "lorc"
+  },
+  "weavers-tools": {
+    "icon": "spinning-wheel",
+    "author": "caro-asercion"
+  },
+  "woodcarvers-tools": {
+    "icon": "chisel",
+    "author": "delapouite"
+  },
+  "wyvern-poison": {
+    "icon": "wyvern",
+    "author": "lorc"
+  },
+  "yew-wand": {
+    "icon": "tree-branch",
+    "author": "lorc"
+  }
+}
