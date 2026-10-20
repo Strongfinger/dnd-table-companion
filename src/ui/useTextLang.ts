@@ -14,7 +14,7 @@ function stored(): TextLang {
 
 /**
  * Thai or English rules text (spells, feats, monsters, items…): the reader's choice, remembered on this device
- * (Thai first). One choice for the whole app, changed with the ไทย/EN button in the top bar.
+ * (Thai first). One choice for the whole app, changed with the ไทย/English switch on the room tab (🌐 ห้อง).
  */
 export function useTextLang(): [TextLang, (lang: TextLang) => void] {
   const [lang, setLang] = useState(stored)

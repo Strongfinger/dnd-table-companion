@@ -2,7 +2,6 @@ import { lazy, Suspense, useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
 import PullToRefresh from './ui/PullToRefresh'
 import { HelpProvider } from './ui/help'
-import { useTextLang } from './ui/useTextLang'
 import { LobbyProvider } from './app/lobby'
 import { useLobby } from './app/useLobby'
 import { useRoute, type Route } from './app/router'
@@ -106,22 +105,6 @@ function FightRoute({ id }: { id: string }) {
   return playingInRoom(lobby) ? <PlayerFight id={id} /> : <Tracker id={id} />
 }
 
-/**
- * The one ไทย/EN switch for rules text (spells, monsters, items, features). It sits at the end of the top bar so it
- * is the same on every screen; tapping flips the language and every open card follows.
- */
-function LangToggle() {
-  const [lang, setLang] = useTextLang()
-  const next = lang === 'th' ? 'en' : 'th'
-  return (
-    <button type="button" onClick={() => setLang(next)} aria-label={`ภาษาของคำอธิบาย: ${lang === 'th' ? 'ไทย' : 'English'} (แตะเพื่อเปลี่ยน)`}
-      className="flex shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2 text-xs font-bold text-stone-400 sm:flex-row sm:gap-1 sm:px-3 sm:text-base">
-      <span className="rounded border border-stone-600 px-1 text-[0.65rem] leading-tight text-amber-400 sm:text-xs">{lang === 'th' ? 'ไทย' : 'EN'}</span>
-      <span>ภาษา</span>
-    </button>
-  )
-}
-
 /** Top tabs. The DM tab (notes, tools) is hidden on a player's phone in a live room. */
 function NavBar({ route }: { route: Route }) {
   const lobby = useLobby()
@@ -140,7 +123,6 @@ function NavBar({ route }: { route: Route }) {
         <a href="#/lookup" className={tab(inLookup)}><span className="text-base leading-none">📖</span><span>ค้นหา</span></a>
         {!isPlayer && <a href="#/dm" className={tab(inDm)}><span className="text-base leading-none">🧙</span><span>DM</span></a>}
         <a href="#/lobby" className={tab(route.name === 'lobby')}><span className="text-base leading-none">🌐</span><span>ห้อง <LobbyDot /></span></a>
-        <LangToggle />
       </div>
       <LiveFightBar />
       {lobby.session?.role === 'player' && lobby.shortRestSince && (
