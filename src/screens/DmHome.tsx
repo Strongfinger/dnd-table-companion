@@ -1,4 +1,4 @@
-// The DM's tools: party rest for the live room, players' coin requests, the reward pool, generators and the campaign notebook. Everything here stays on
+// The DM's tools, in Tan's order: campaign notebook, party rest, players' coin requests, the reward pool, generators, journey chronicle. Everything here stays on
 // the DM's device. The SRD lookup has its own tab (📖 ค้นหา).
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
@@ -20,16 +20,21 @@ export default function DmHome() {
     <div className="space-y-4">
       <header>
         <h1 className="text-3xl font-bold text-amber-400">🧙 ผู้ช่วย DM</h1>
-        <p className="text-stone-400">พักทั้งปาร์ตี้ คำขอเงิน คลังของรางวัล เครื่องสุ่ม และสมุดแคมเปญ (เก็บในเครื่องนี้)</p>
+        <p className="text-stone-400">สมุดแคมเปญ พักทั้งปาร์ตี้ คำขอเงิน คลังของรางวัล เครื่องสุ่ม และบันทึกการเดินทาง (เก็บในเครื่องนี้)</p>
       </header>
+
+      {/* The campaign picker sets which campaign the notebook, generators and chronicle use. */}
+      <CampaignPicker value={campaignId} onChange={setCampaignId} />
+
+      <Section title="📒 สมุดแคมเปญ" action={<span className="flex gap-3"><a href="#/dm/import" className="text-sm text-amber-400 underline">📦 นำเข้าแพ็ก</a><a href="#/backup" className="text-sm text-amber-400 underline">💾 สำรอง</a></span>}>
+        <NotebookList campaignId={campaignId === ALL ? null : campaignId} onOpen={(id) => go(`/dm/note/${id}`)} />
+      </Section>
 
       <PartyRest />
 
       <CoinRequests />
 
       <RewardPool />
-
-      <CampaignPicker value={campaignId} onChange={setCampaignId} />
 
       <Section title="🎲 เครื่องสุ่ม">
         <Generators campaignId={campaignId === ALL ? null : campaignId} />
@@ -38,10 +43,6 @@ export default function DmHome() {
       <Section title="📚 บันทึกการเดินทาง">
         <p className="mb-2 text-sm text-stone-400">หลังจบเซสชัน เขียนเรื่องที่เกิดขึ้นเป็นบทใหม่ (ใส่รูปได้) แล้วส่งให้ผู้เล่นอ่านเหมือนนิยาย</p>
         <Button className="w-full" onClick={() => go(campaignId === ALL ? '/story' : `/story/m/${campaignId}`)}>✏️ เขียน / จัดการบันทึก</Button>
-      </Section>
-
-      <Section title="📒 สมุดแคมเปญ" action={<span className="flex gap-3"><a href="#/dm/import" className="text-sm text-amber-400 underline">📦 นำเข้าแพ็ก</a><a href="#/backup" className="text-sm text-amber-400 underline">💾 สำรอง</a></span>}>
-        <NotebookList campaignId={campaignId === ALL ? null : campaignId} onOpen={(id) => go(`/dm/note/${id}`)} />
       </Section>
     </div>
   )
