@@ -12,7 +12,9 @@ RAW = os.environ.get("RAW")
 MODEL = os.environ.get("MODEL", "gemini-3-pro-image")
 STYLE = ("A single fantasy RPG inventory icon: the object alone, centered, filling most of the square, slight three-quarter view, "
          "painterly digital art, rich textures, warm rim light, soft shadow, on a plain very dark charcoal background "
-         "with a subtle vignette, no hands, no people, no text, no letters, no frame, no border, no watermark.")
+         "with a subtle vignette, no hands, no people, no text, no letters, no frame, no border, no watermark. "
+         "The object fills the image edge to edge on the dark background: no framed picture, no inner panel, "
+         "no inset square, no white background.")
 
 # Items the party carries, plus every weapon, armor and shield. Extra words where the SRD name alone is unclear.
 HINTS = {
@@ -38,10 +40,12 @@ HINTS = {
     "rope": "a coiled hempen rope",
     "sprig-of-mistletoe": "a sprig of green mistletoe with white berries tied with twine, a druidic focus",
     "thieves-tools": "thieves' tools: a small leather roll of lockpicks, a file and a tiny mirror",
-    "tinderbox": "a small tinderbox with flint and steel",
+    "tinderbox": "a small open tin tinderbox holding a flint, a steel striker and tinder",
     "torch": "a wooden torch with burning flame",
     "waterskin": "a leather waterskin with a stopper",
-    "musket": "a fantasy flintlock musket", "pistol": "a fantasy flintlock pistol",
+    "musket": "a long fantasy flintlock musket rifle with a full wooden stock", "pistol": "a fantasy flintlock pistol",
+    "warhammer": "a war hammer: a heavy square steel hammer head on a long handle (not an axe)",
+    "light-hammer": "a small one-handed throwing war hammer",
     "padded-armor": "a quilted padded cloth armor vest", "shield": "a round wooden shield with an iron rim and boss",
     "blowgun": "a long wooden blowgun with a few small needles", "sling": "a leather sling with a few round stones",
     "whip": "a coiled leather whip", "lance": "a long cavalry lance",
@@ -57,7 +61,7 @@ KIND = {
     "kind-item": "a small closed wooden treasure chest with iron bands",
     "wear-head": "a steel helmet", "wear-neck": "a gold amulet with a gemstone on a chain", "wear-hands": "a pair of leather gloves",
     "wear-ring": "a gold ring with a gemstone", "wear-cloak": "a folded dark green cloak with a brooch", "wear-body": "a cloth tunic",
-    "wear-legs": "a pair of leather greaves", "wear-feet": "a pair of leather boots", "wear-back": "a leather backpack",
+    "wear-legs": "a pair of leather thigh and shin guards (leg armor, not boots)", "wear-feet": "a pair of leather boots", "wear-back": "a leather backpack",
 }
 
 def items():
