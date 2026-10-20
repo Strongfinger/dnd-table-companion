@@ -96,3 +96,4 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [ ] ~~Minimap / battle map~~ → use an outside tool (e.g. Owlbear Rodeo) next to the app (decided 2026-10-12)
 - [ ] ~~Claude API DM helper~~ → no AI (decided 2026-10-12)
 - [ ] QR code export/import of a character (optional)
+- [ ] Item and equipment pictures (small thumbnails in inventory, slots and item details): planned 2026-10-20, waiting for approval, see [ITEM-IMAGES.md](ITEM-IMAGES.md)
