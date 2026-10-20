@@ -7,6 +7,8 @@
 // source of truth: it applies players' actions and sends its copy of every played character back.
 // The running fight is sent to players too, as the secret-free player view ('fight' messages).
 // Dice rolls are shared with everyone in the room; the DM device writes them into the fight log.
+// The DM's reward pool (คลังกลาง) and coin requests go to players too; players take items and ask for coins through
+// the DM's device (model/rewards.ts, db/rewards.ts).
 //
 // Nothing gets lost or applied twice (4.5): a player's changes wait in a saved outbox until the DM's
 // device confirms them ('ack'), and are re-sent until then; the DM's device saves the ids it has
@@ -35,6 +37,8 @@ import {
 } from '../sync/fights'
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
+import { givePoolItem, receiveCoinRequest, watchCoinRequests, watchPool } from '../db/rewards'
+import { keepDmEconomy, parseCoinRequestBody, parseCoinRequests, parsePool, parseTake, type CoinRequest, type PoolItem } from '../model/rewards'
 import {
   isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet, takenBack,
 } from '../sync/sheets'
@@ -91,6 +95,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [fight, setFightState] = useState<PlayerEncounterView | null>(null)
   /** Player: the short rest the DM started (from 'rest' messages). The DM keeps it in the session. */
   const [restSince, setRestSince] = useState<number | null>(null)
+  /** Player: the DM's reward pool and coin requests (null pool = nothing heard from the DM yet). DM: the last sent, as JSON. */
+  const [pool, setPool] = useState<PoolItem[] | null>(null)
+  const [coinRequests, setCoinRequests] = useState<CoinRequest[]>([])
+  const lastPool = useRef<string | null>(null)
+  const lastRequests = useRef<string | null>(null)
   const fightRef = useRef<PlayerEncounterView | null>(null)
   const setFight = (f: PlayerEncounterView | null) => {
     fightRef.current = f
@@ -166,6 +175,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     setParty([])
     setControlled([])
     setRestSince(null)
+    setPool(null)
+    setCoinRequests([])
   }
 
   function onMessage(e: Envelope) {
@@ -231,6 +242,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (target.kind === 'fight' || target.id === theirCharacter || handedToThem.includes(target.id)) send('log', { ...logKey(target), ...fullLog(entries) })
     }
     if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
+    if (lastPool.current !== null) send('pool', { items: JSON.parse(lastPool.current) })
+    if (lastRequests.current !== null) send('coinRequests', { requests: JSON.parse(lastRequests.current) })
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
     if (campaign) send('campaign', campaignMessage(campaign))
@@ -284,6 +297,12 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     } else if (e.kind === 'party') {
       const cards = parseParty(e.body)
       if (cards) setParty(cards)
+    } else if (e.kind === 'pool') {
+      const items = parsePool(e.body)
+      if (items) setPool(items)
+    } else if (e.kind === 'coinRequests') {
+      const list = parseCoinRequests(e.body)
+      if (list) setCoinRequests(list)
     } else if (e.kind === 'rest') {
       const since = (e.body as { since?: unknown } | null)?.since
       setRestSince(Number.isFinite(since) ? (since as number) : null)
@@ -409,7 +428,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     } else if (s.role === 'dm' && e.kind === 'hello') {
       const c = parseSheetBody(e.body)
       if (!c || !(await allowed(e.from, c.id))) return
-      const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId, (x, stored) => checkIncomingLevel(stored, x))
+      // Coins and new items stay the DM's (players take items from the pool and ask for coins).
+      const r = await saveReceivedCharacter(c, (stored) => takeIncomingSheet(stored, c), s.campaignId, (x, stored) => {
+        const checked = checkIncomingLevel(stored, x)
+        return checked && stored ? keepDmEconomy(stored, checked) : checked
+      })
       // Taken: the watcher below sends it to the room. Kept ours: send it so the player catches up,
       // with the level lock on it if it had none yet (a character from before the lock, now played in a room).
       if (!r.saved && !r.stored.levelLock) await updateCharacter(c.id, (dm) => ({ character: lockLevel(dm), text: '' }))
@@ -426,6 +449,18 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
           if (c) sendState(c) // the phone goes back to the DM's copy
         } else if (r.text) await logCharacterEvent(a.characterId, r.text)
       }
+      send('ack', { ids: [e.id] })
+    } else if (s.role === 'dm' && e.kind === 'take') {
+      // A player takes items from the reward pool (whatever is left of it when this arrives).
+      const t = parseTake(e.body)
+      if (!t || !(await allowed(e.from, t.characterId))) return
+      if (markApplied(e.id, s)) await givePoolItem(t.characterId, t.itemId, t.qty)
+      send('ack', { ids: [e.id] })
+    } else if (s.role === 'dm' && e.kind === 'coinRequest') {
+      // A player asks for a coin change: listed for the DM to approve (the DM tab).
+      const r = parseCoinRequestBody(e.body)
+      if (!r || !(await allowed(e.from, r.characterId))) return
+      if (markApplied(e.id, s)) await receiveCoinRequest({ ...r, id: e.id, at: e.at })
       send('ack', { ids: [e.id] })
     } else if (s.role === 'dm' && e.kind === 'endTurn') {
       // A player ends their own turn: only if it really is their character's turn right now.
@@ -449,6 +484,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     lastSent.current.clear()
     lastFight.current = null
     lastParty.current = null
+    lastPool.current = null
+    lastRequests.current = null
     sentFights.current = null
     sentLogs.current = new Map()
     roomCampaign.current = null
@@ -570,6 +607,29 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   }, [played])
 
   const dmCampaign = session?.role === 'dm' ? session.campaignId ?? '' : null
+  const hostingRoom = session?.role === 'dm' ? session.code : null
+
+  // DM: the reward pool and the coin requests go to the room whenever they change.
+  useEffect(() => {
+    if (!hostingRoom) return
+    const stopPool = watchPool((items) => {
+      const json = JSON.stringify(items)
+      if (json === lastPool.current) return
+      lastPool.current = json
+      send('pool', { items })
+    })
+    const stopRequests = watchCoinRequests((requests) => {
+      const json = JSON.stringify(requests)
+      if (json === lastRequests.current) return
+      lastRequests.current = json
+      send('coinRequests', { requests })
+    })
+    return () => {
+      stopPool()
+      stopRequests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
+  }, [hostingRoom])
 
   // DM: send the list of started fights and their new player-safe log lines whenever they change.
   useEffect(() => {
@@ -650,6 +710,14 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     fightList,
     fightLogs,
     party,
+    pool,
+    coinRequests,
+    takeFromPool: (characterId, itemId, qty) => {
+      if (sessionRef.current?.role === 'player' && mine(characterId)) queue('take', { characterId, itemId, qty })
+    },
+    requestCoins: (characterId, request) => {
+      if (sessionRef.current?.role === 'player' && mine(characterId)) queue('coinRequest', { characterId, ...request })
+    },
     myCharacterIds: session?.role === 'player' ? [...(session.characterId ? [session.characterId] : []), ...controlled] : [],
     grant: (characterId, deviceId) => {
       const s = sessionRef.current

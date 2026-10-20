@@ -86,6 +86,17 @@ describe('mergeEdit', () => {
     expect(m.features[0].used).toBe(1)
   })
 
+  it('keeps the DM\'s coins and refuses items the DM\'s copy does not have', () => {
+    const rope = { id: 'r', name: 'Rope', qty: 1 }
+    const dmCopy = { ...dm, coins: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 }, inventory: [rope, { id: 't', name: 'Torch', qty: 3 }] }
+    // Used a torch and renamed the rope: taken. Coins typed on the edit page: not.
+    const used = mergeEdit(dmCopy, { ...edit, coins: { cp: 0, sp: 0, ep: 0, gp: 999, pp: 0 }, inventory: [{ ...rope, name: 'Silk Rope' }, { id: 't', name: 'Torch', qty: 2 }] })
+    expect(used.coins.gp).toBe(10)
+    expect(used.inventory.map((i) => [i.name, i.qty])).toEqual([['Silk Rope', 1], ['Torch', 2]])
+    // More than the DM's copy has (a new item, or more torches): the DM's items stay.
+    expect(mergeEdit(dmCopy, { ...edit, inventory: [rope, { id: 't', name: 'Torch', qty: 9 }] }).inventory).toEqual(dmCopy.inventory)
+  })
+
   it('keeps current HP within a lowered max', () => {
     expect(mergeEdit({ ...dm, hp: { max: 20, current: 20, temp: 0 } }, { ...edit, hp: { max: 15, current: 15, temp: 0 } }).hp.current).toBe(15)
   })

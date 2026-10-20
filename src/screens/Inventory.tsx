@@ -2,16 +2,21 @@
 // breaks bigger coins and gives change, src/rules/coins.ts). Items: one per slot (head, neck, two rings, … main hand,
 // off hand, back; model/inventory.ts); "+ เพิ่มของ" picks SRD 5.2.1 equipment (a pack adds what's inside)
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
+// A character run by a DM on another device (useDmRunsEconomy) can't add items or change coins: "+ หยิบจากคลังกลาง"
+// takes what the DM put in the reward pool, and coins are asked for (the DM approves on the DM tab, model/rewards.ts).
 // Tap an item in the pack to use one, rename it, change how many, or throw it away.
 // A bar shows the weight carried against Carrying Capacity (Str × 15 lb, model/carrying.ts).
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
+import { useDmRunsEconomy } from '../app/useRunsCampaign'
+import { addCustomItem, coinRequestLabel, type CustomItem, type PoolItem } from '../model/rewards'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addPlainItem, addSrdItem, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
-import { Button, Section, Select, TextInput } from '../ui/kit'
+import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
+import MiniMarkdown from '../ui/MiniMarkdown'
 import { useEquipment, useEquipmentTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
@@ -27,6 +32,7 @@ export default function Inventory({ c }: { c: Character }) {
   const lobby = useLobby()
   const data = useEquipment()
   const [adding, setAdding] = useState(false)
+  const dmRuns = useDmRunsEconomy(c)
 
   async function change(fn: (latest: Character) => Character) {
     await updateCharacter(c.id, (latest) => ({ character: fn(latest), text: '' }))
@@ -39,29 +45,27 @@ export default function Inventory({ c }: { c: Character }) {
   const pack = shown.inventory.filter((i) => !i.slot)
   return (
     <>
-      <CoinPurse c={c} change={change} />
+      {dmRuns ? <CoinRequestForm c={c} /> : <CoinPurse c={c} change={change} />}
       <Section
         title="ของในกระเป๋า (Inventory)"
-        action={<Button variant="primary" className="text-sm" onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : '+ เพิ่มของ'}</Button>}
+        action={<Button variant="primary" className="text-sm" onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : dmRuns ? '+ หยิบจากคลังกลาง' : '+ เพิ่มของ'}</Button>}
       >
         <LoadBar c={shown} data={data ?? undefined} />
-        {adding && (
+        {adding && dmRuns && <PoolPicker c={c} />}
+        {adding && !dmRuns && (
           <ItemPicker data={data} onAdd={(item) => data && change((latest) => addSrdItem(latest, item, data))}
-            onAddCustom={(name, qty, wear, weight) => change((latest) => {
-              const next = addPlainItem(latest, name, qty, wear)
-              // The new item is the one the old inventory didn't have (a same-named one may have stacked instead).
-              const added = next.inventory.find((i) => !latest.inventory.some((o) => o.id === i.id))
-              return added && weight ? setItemWeight(next, added.id, weight) : next
-            })} />
+            onAddCustom={(item) => change((latest) => addCustomItem(latest, item))} />
         )}
         {data && <SlotGrid slots={slots} data={data} onTakeOff={(id) => change((latest) => unequipItem(latest, id, data))} />}
-        {pack.length === 0 && !adding && <p className="text-sm text-stone-500">ไม่มีของในเป้ กด "+ เพิ่มของ" เพื่อเลือกจาก SRD 5.2.1 หรือพิมพ์ชื่อของเอง</p>}
+        {pack.length === 0 && !adding && (
+          <p className="text-sm text-stone-500">{dmRuns ? 'ไม่มีของในเป้ กด "+ หยิบจากคลังกลาง" เพื่อรับของที่ DM ใส่ไว้' : 'ไม่มีของในเป้ กด "+ เพิ่มของ" เพื่อเลือกจาก SRD 5.2.1 หรือพิมพ์ชื่อของเอง'}</p>
+        )}
         <ul className="divide-y divide-stone-800">
           {pack.map((item) => {
             const srd = data && item.srdId ? findItem(data, item.srdId) : undefined
             return (
               <ItemRow key={item.id} item={item} srd={srd} slots={slots}
-                onEquip={(slot) => data && change((latest) => equipItem(latest, item.id, slot, data))} change={change} />
+                onEquip={(slot) => data && change((latest) => equipItem(latest, item.id, slot, data))} change={change} noMore={dmRuns} />
             )
           })}
         </ul>
@@ -135,6 +139,113 @@ function CoinPurse({ c, change }: { c: Character; change: Change }) {
   )
 }
 
+/**
+ * Coins of a character the DM runs: the player can't change them, only ask. The request goes to the DM's device and
+ * shows on the DM tab; the coins change when the DM approves it.
+ */
+function CoinRequestForm({ c }: { c: Character }) {
+  const lobby = useLobby()
+  const [coin, setCoin] = useState<Coin>('gp')
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const n = Math.floor(Number(amount))
+  const valid = amount.trim() !== '' && Number.isFinite(n) && n > 0
+  const inRoom = lobby.myCharacterIds.includes(c.id)
+  const mine = lobby.coinRequests.filter((r) => r.characterId === c.id).slice().reverse()
+
+  function ask(kind: 'gain' | 'spend') {
+    if (!valid) return
+    if (!inRoom) {
+      setMessage({ ok: false, text: 'ต้องเข้าห้องออนไลน์ของ DM ก่อน (แท็บ 🌐 ห้อง) จึงจะส่งคำขอได้' })
+      return
+    }
+    lobby.requestCoins(c.id, { kind, coin, amount: n, note: note.trim().slice(0, 120) })
+    setMessage({ ok: true, text: `ส่งคำขอ${coinRequestLabel({ kind, coin, amount: n })} แล้ว รอ DM อนุมัติ` })
+    setAmount('')
+    setNote('')
+  }
+
+  const gp = totalCopper(c.coins) / COIN_VALUE_CP.gp
+  return (
+    <Section title="กระเป๋าเงิน (Coins)">
+      <div className="grid grid-cols-5 gap-1.5">
+        {COIN_ORDER.map((k) => (
+          <button key={k} type="button" onClick={() => { setCoin(k); setMessage(null) }} aria-pressed={k === coin}
+            className={`rounded-lg border px-1 py-1.5 text-center ${k === coin ? 'border-amber-400 bg-amber-900/60' : 'border-stone-700 bg-stone-900'}`}>
+            <span className="block text-lg font-bold tabular-nums">{c.coins[k].toLocaleString('en-US')}</span>
+            <span className="block text-xs text-stone-400">{k.toUpperCase()}</span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-stone-400">🔒 เงินเพิ่ม/ลดเองไม่ได้: ส่งคำขอให้ DM อนุมัติก่อน</p>
+      <div className="mt-1 flex items-center gap-2">
+        <input className="w-24 min-w-0 flex-1 rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-center" inputMode="numeric"
+          placeholder="จำนวน" aria-label={`จำนวน ${coin.toUpperCase()}`} value={amount}
+          onChange={(e) => { setAmount(e.target.value.replace(/[^0-9]/g, '').slice(0, 7)); setMessage(null) }} />
+        <Button className="px-3 text-sm" onClick={() => ask('gain')}>ขอรับ {coin.toUpperCase()}</Button>
+        <Button className="px-3 text-sm" onClick={() => ask('spend')}>ขอจ่าย {coin.toUpperCase()}</Button>
+      </div>
+      <div className="mt-2"><TextInput value={note} placeholder="เหตุผล (ไม่บังคับ) เช่น ขายดาบ, ค่าห้องพัก" onChange={(v) => setNote(v.slice(0, 120))} /></div>
+      <p className={`mt-1 text-xs ${message ? (message.ok ? 'text-emerald-400' : 'text-red-400') : 'text-stone-500'}`}>
+        {message?.text ?? `รวมมูลค่า ${gp.toLocaleString('en-US', { maximumFractionDigits: 2 })} GP`}
+      </p>
+      {mine.length > 0 && (
+        <ul className="mt-2 space-y-1 text-sm">
+          {mine.slice(0, 6).map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-2 rounded bg-stone-900 px-2 py-1">
+              <span className="min-w-0 truncate">{coinRequestLabel(r)}{r.note && <span className="text-stone-400"> · {r.note}</span>}</span>
+              <span className={`shrink-0 text-xs ${r.status === 'open' ? 'text-amber-300' : r.status === 'approved' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {r.status === 'open' ? '⏳ รอ DM' : r.status === 'approved' ? '✓ อนุมัติแล้ว' : '✕ ไม่อนุมัติ'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  )
+}
+
+/** Items the DM put in the reward pool: take some for this character (the DM's device gives what is still there). */
+function PoolPicker({ c }: { c: Character }) {
+  const lobby = useLobby()
+  const [asked, setAsked] = useState<string | null>(null)
+  if (!lobby.myCharacterIds.includes(c.id)) {
+    return <p className="mb-3 rounded-lg bg-stone-900 p-3 text-sm text-stone-400">คลังกลางเปิดเมื่ออยู่ในห้องออนไลน์ของ DM (แท็บ 🌐 ห้อง) · ของใหม่ต้องหยิบจากคลังที่ DM ใส่ไว้เท่านั้น</p>
+  }
+  const pool = lobby.pool
+  return (
+    <div className="mb-3 space-y-2 rounded-lg bg-stone-900 p-3">
+      <p className="text-sm font-bold">🎁 คลังกลาง (ของที่ DM ใส่ไว้ตอนนี้)</p>
+      {pool === null && <p className="text-sm text-stone-500">กำลังโหลดคลังจาก DM…</p>}
+      {pool?.length === 0 && <p className="text-sm text-stone-500">คลังว่าง: รอ DM เพิ่มของรางวัล</p>}
+      <ul className="max-h-72 space-y-1 overflow-y-auto">
+        {pool?.map((p) => <PoolRow key={p.id} item={p} asked={asked === p.id} onTake={(qty) => { lobby.takeFromPool(c.id, p.id, qty); setAsked(p.id) }} />)}
+      </ul>
+      {asked && <p className="text-xs text-emerald-400">ส่งแล้ว ของจะเข้ากระเป๋าเมื่อเครื่อง DM ยืนยัน (ถ้ามีคนหยิบไปก่อน จะได้เท่าที่เหลือ)</p>}
+    </div>
+  )
+}
+
+function PoolRow({ item, asked, onTake }: { item: PoolItem; asked: boolean; onTake: (qty: number) => void }) {
+  const [qty, setQty] = useState('1')
+  const n = Math.max(1, Math.min(item.qty, Math.floor(Number(qty)) || 1))
+  return (
+    <li className="flex items-center gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
+      <ItemImage item={item} size={28} />
+      <span className="min-w-0 flex-1">
+        {item.magic && '✨ '}<span className="font-bold">{item.name}</span><span className="text-stone-400"> · เหลือ {item.qty}</span>
+        {item.description && <span className="block whitespace-pre-wrap text-xs text-stone-400">{item.description}</span>}
+      </span>
+      {item.qty > 1 && (
+        <input className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-1 py-1 text-center" inputMode="numeric" aria-label="จำนวนที่หยิบ"
+          value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+      )}
+      <Button className="px-3 py-1 text-sm" onClick={() => onTake(n)}>{asked ? 'หยิบอีก' : 'หยิบ'}</Button>
+    </li>
+  )
+}
+
 /** Every slot and what is in each; tap an SRD item's name to read about it. */
 function SlotGrid({ slots, data, onTakeOff }: {
   slots: Partial<Record<EquipSlot, InventoryItem>>
@@ -182,12 +293,14 @@ function SlotRow({ slot, item, both, srd, onTakeOff }: {
   )
 }
 
-function ItemRow({ item, srd, slots, onEquip, change }: {
+function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
   item: InventoryItem
   srd: SrdItem | undefined
   slots: Partial<Record<EquipSlot, InventoryItem>>
   onEquip: (slot: EquipSlot) => void
   change: Change
+  /** The DM runs this character's items: the number can go down, not up. */
+  noMore: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [choosing, setChoosing] = useState(false)
@@ -198,7 +311,7 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
       <div className="flex items-center gap-2">
         <ItemImage item={item} srd={srd} />
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
+          {item.magic && <span className="mr-1" title="Magic Item">✨</span>}{item.name}{item.qty !== 1 && <span className="font-normal text-stone-400"> ×{item.qty}</span>}
           {item.wear && <span className="ml-1 text-xs text-stone-500">({SLOT_LABEL[item.wear]})</span>}
           {itemUnitWeight(item, srd) > 0 && <span className="ml-1 text-xs font-normal text-stone-500">{formatLb(item.qty * itemUnitWeight(item, srd))}</span>}
           <span className="ml-1 text-xs font-normal text-stone-500">{srd ? 'ⓘ' : '✎'}</span>
@@ -220,8 +333,9 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
           ))}
         </div>
       )}
-      {open && <ItemActions item={item} srd={srd} wearable={fits.length > 0} change={change} />}
+      {open && <ItemActions item={item} srd={srd} wearable={fits.length > 0} change={change} noMore={noMore} />}
       {open && srd && <ItemDetails srd={srd} item={item} />}
+      {open && !srd && item.description && <CustomItemText item={item} />}
       {open && !srd && <ItemPictureField item={item} change={change} />}
     </li>
   )
@@ -231,11 +345,13 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
  * Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up).
  * Things worn or held (weapons, armor, a cloak…) aren't used up, so they only get แก้ไข and ลบ.
  */
-function ItemActions({ item, srd, wearable, change }: { item: InventoryItem; srd: SrdItem | undefined; wearable: boolean; change: Change }) {
+function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryItem; srd: SrdItem | undefined; wearable: boolean; change: Change; noMore: boolean }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(item.name)
   const [qty, setQty] = useState(String(item.qty))
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
+  const [description, setDescription] = useState(item.description ?? '')
+  const [magic, setMagic] = useState(!!item.magic)
   const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pill = 'rounded-full border px-3 py-1 text-sm'
@@ -246,19 +362,30 @@ function ItemActions({ item, srd, wearable, change }: { item: InventoryItem; srd
         <div className="flex gap-2">
           <div className="min-w-0 flex-1"><TextInput value={name} onChange={setName} /></div>
           <input className="w-16 rounded-lg border border-stone-600 bg-stone-900 px-2 py-2 text-center" inputMode="numeric" aria-label="จำนวน"
-            value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+            value={qty} onChange={(e) => {
+              const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
+              setQty(noMore && v !== '' && Number(v) > item.qty ? String(item.qty) : v)
+            }} />
         </div>
+        {noMore && <p className="text-xs text-stone-500">ลดจำนวนได้ · ของเพิ่มต้องหยิบจากคลังกลางของ DM</p>}
         <div className="flex gap-2">
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
             change((latest) => {
-              const next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
+              let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
+              // The effect text and Magic Item mark are the DM's (a character the DM runs can't change them).
+              if (!srd && !noMore) next = setItemDetails(next, item.id, { description, magic })
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
           }}>บันทึก</Button>
-          <Button className="px-3 text-sm" onClick={() => { setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : ''); setEditing(false) }}>ยกเลิก</Button>
+          <Button className="px-3 text-sm" onClick={() => {
+            setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : '')
+            setDescription(item.description ?? ''); setMagic(!!item.magic); setEditing(false)
+          }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
+        {!srd && !noMore && <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />}
+        {!srd && noMore && <p className="text-xs text-stone-500">คำอธิบาย / Magic Item: DM เป็นคนแก้</p>}
         {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
       </div>
     )
@@ -352,7 +479,8 @@ function ItemPictureField({ item, change }: { item: InventoryItem; change: Chang
   )
 }
 
-function ItemPicker({ data, onAdd, onAddCustom }: {
+/** SRD equipment search plus a custom item form (the sheet's "+ เพิ่มของ", and the DM's "+ ของรางวัล"). */
+export function ItemPicker({ data, onAdd, onAddCustom }: {
   data: SrdEquipment | null
   onAdd: (item: SrdItem) => void
   onAddCustom: AddCustom
@@ -408,16 +536,20 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
   const [qty, setQty] = useState('1')
   const [weight, setWeight] = useState('')
   const [wear, setWear] = useState<EquipSlot | ''>('')
+  const [description, setDescription] = useState('')
+  const [magic, setMagic] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
   const n = Math.max(1, Math.min(9999, Math.floor(Number(qty)) || 1))
   function add() {
     if (!name.trim()) return
-    onAdd(name, n, wear || undefined, weight === '' ? undefined : Number(weight))
+    onAdd({ name, qty: n, wear: wear || undefined, weight: weight === '' ? undefined : Number(weight), description, magic })
     setAdded(name.trim())
     setName('')
     setQty('1')
     setWeight('')
     setWear('')
+    setDescription('')
+    setMagic(false)
   }
   return (
     <div className="mb-3 space-y-2 rounded-lg border border-stone-700 p-2">
@@ -432,6 +564,7 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
         <Button className="px-3 text-sm" onClick={add}>+ เพิ่ม</Button>
       </div>
       <WeightField value={weight} onChange={setWeight} />
+      <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />
       {added && <p className="text-xs text-emerald-400">✓ เพิ่ม {added} แล้ว</p>}
     </div>
   )
@@ -444,7 +577,33 @@ function pickerLine(i: SrdItem): string {
   return costLine(i.cost)
 }
 
-type AddCustom = (name: string, qty: number, wear: EquipSlot | undefined, weight: number | undefined) => void
+export type AddCustom = (item: CustomItem) => void
+
+/** A custom item's own text, e.g. a magic item's effect: **bold**, *italic* and lists work. */
+function CustomItemText({ item }: { item: InventoryItem }) {
+  return (
+    <div className="mt-1 rounded-lg bg-stone-900 p-2 text-sm text-stone-300">
+      {item.magic && <p className="mb-1 text-xs font-bold text-violet-300">✨ Magic Item</p>}
+      <MiniMarkdown text={item.description ?? ''} />
+    </div>
+  )
+}
+
+/** A custom item's effect text and the Magic Item mark (the custom form and the edit box). */
+function DetailsFields({ description, magic, onDescription, onMagic }: {
+  description: string
+  magic: boolean
+  onDescription: (v: string) => void
+  onMagic: (v: boolean) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Checkbox checked={magic} onChange={onMagic} label="✨ Magic Item" />
+      <p className="text-xs text-stone-400">คำอธิบาย / Effect (ไม่บังคับ) เช่น +1 AC ขณะสวม, ใช้ได้ 1 ครั้งต่อ Long Rest</p>
+      <TextArea value={description} rows={3} onChange={(v) => onDescription(v.slice(0, MAX_ITEM_DESCRIPTION))} />
+    </div>
+  )
+}
 
 /** Weight of one piece, for items the SRD list has no weight for (blank = not counted). */
 function WeightField({ value, onChange }: { value: string; onChange: (v: string) => void }) {

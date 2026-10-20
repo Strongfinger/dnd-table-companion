@@ -112,6 +112,10 @@ export interface InventoryItem {
   image?: string
   /** Weight of one piece in lb, typed by the player for items without SRD weight (custom and magic items). */
   weight?: number
+  /** A custom item's own text, e.g. a magic item's effect (typed by the DM or player). */
+  description?: string
+  /** A custom item marked as a magic item (shown with ✨). */
+  magic?: true
 }
 
 export function newId(): string {

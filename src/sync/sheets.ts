@@ -9,6 +9,7 @@
 import type { Character } from '../model/character'
 import { parseCharacterAction, type CharacterAction } from '../model/characterActions'
 import { parseCharacterImport } from '../model/io'
+import { keepDmEconomy } from '../model/rewards'
 import type { Member } from './transport'
 
 /** A full sheet from another device, checked like an imported file (network data is untrusted). */
@@ -99,8 +100,8 @@ export const isEditHello = (body: unknown) => typeof body === 'object' && body !
 export const PLAY_FIELDS = ['hitDiceSpent', 'deathSaves', 'heroicInspiration', 'exhaustion', 'conditions', 'buffs', 'concentration', 'turn'] as const
 
 /**
- * The DM device got a player's edit-screen save: take what the player builds (scores, items,
- * spells, notes, max HP, max slots...) but keep the DM's play state (current HP, conditions, death
+ * The DM device got a player's edit-screen save: take what the player builds (scores, items they
+ * used up, dropped or renamed, spells, notes, max HP, max slots...) but keep the DM's play state (current HP, conditions, death
  * saves, slots and feature uses...), which may have changed since. The revision ends above both copies.
  */
 export function mergeEdit(dm: Character, edit: Character): Character {
@@ -113,6 +114,9 @@ export function mergeEdit(dm: Character, edit: Character): Character {
     spellSlots: edit.spellSlots.map((x, i) => ({ max: x.max, used: Math.min(dm.spellSlots[i]?.used ?? 0, x.max) })),
     features: edit.features.map((f) => ({ ...f, used: Math.min(dm.features.find((d) => d.id === f.id)?.used ?? 0, f.max) })),
     hp: { max: edit.hp.max, current: Math.min(dm.hp.current, edit.hp.max), temp: dm.hp.temp },
+    // Coins are the DM's (players ask for changes), and items only come in from the DM's pool.
+    coins: dm.coins,
+    inventory: keepDmEconomy(dm, edit).inventory,
     id: dm.id,
     campaignId: dm.campaignId,
     ownerDeviceId: dm.ownerDeviceId,

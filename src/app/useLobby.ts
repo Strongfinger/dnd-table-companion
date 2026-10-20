@@ -8,6 +8,7 @@ import type { Envelope, MessageKind } from '../sync/envelope'
 import type { FightSummary, PlayerLogEntry } from '../sync/fights'
 import type { LobbySession } from '../sync/lobby'
 import type { PartyCard } from '../sync/party'
+import type { CoinRequest, PoolItem } from '../model/rewards'
 import type { ConnectionStatus, Member } from '../sync/transport'
 
 export interface CharacterPick {
@@ -43,6 +44,14 @@ export interface LobbyApi {
   playedIds: string[]
   /** DM: open the last hosted room again with the same code, campaign and players. */
   rejoinLast: () => void
+  /** Player: the DM's reward pool right now (null until the DM's device has sent it). */
+  pool: PoolItem[] | null
+  /** Player: the DM's coin requests list (open and recently decided; the screen shows my characters'). */
+  coinRequests: CoinRequest[]
+  /** Player: take items from the pool for my character (the DM's device gives what is still there). */
+  takeFromPool: (characterId: string, itemId: string, qty: number) => void
+  /** Player: ask the DM to add or take coins from my character. */
+  requestCoins: (characterId: string, request: Pick<CoinRequest, 'kind' | 'coin' | 'amount' | 'note'>) => void
   /** Player: every character this device plays in the room (the picked one + any the DM handed over). */
   myCharacterIds: string[]
   /** DM: hand a character to a player's device (null = take it back). */

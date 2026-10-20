@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { findItem, loadSrdEquipment } from './equipment'
-import { addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
+import { equippedMagicEffects, setItemDetails, MAX_ITEM_DESCRIPTION, addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
 import { parseCharacterImport } from './io'
 
 const rogue = () => createCharacter({ name: 'Nyx', className: 'Rogue', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
@@ -227,5 +227,32 @@ describe('inventory', () => {
     expect(editItem(c, rope.id, 'X', 0).inventory).toEqual([])
     expect(removeItem(c, rope.id).inventory).toEqual([])
     expect(removeItem(c, 'nope')).toBe(c)
+  })
+
+  it('sets a custom item\'s effect text and magic mark (not on SRD items)', async () => {
+    const data = await loadSrdEquipment()
+    let c = addPlainItem(rogue(), 'Ring of the Old King', 1, 'ring1')
+    const id = c.inventory[0].id
+    c = setItemDetails(c, id, { description: '  +1 AC while worn ', magic: true })
+    expect(c.inventory[0]).toMatchObject({ description: '+1 AC while worn', magic: true })
+    expect(setItemDetails(c, id, { description: '+1 AC while worn', magic: true })).toBe(c)
+    c = setItemDetails(c, id, { description: '' })
+    expect(c.inventory[0].description).toBeUndefined()
+    expect(c.inventory[0].magic).toBeUndefined()
+    expect(setItemDetails(c, id, { description: 'x'.repeat(MAX_ITEM_DESCRIPTION + 50) }).inventory[0].description).toHaveLength(MAX_ITEM_DESCRIPTION)
+    const withDagger = addSrdItem(c, findItem(data, 'dagger')!, data)
+    expect(setItemDetails(withDagger, withDagger.inventory[1].id, { description: 'no' })).toBe(withDagger)
+  })
+
+  it('lists the effects of equipped magic items only', () => {
+    const item = (id: string, over: object) => ({ id, name: id, qty: 1, wear: 'cloak' as const, ...over })
+    const c = rogue()
+    c.inventory = [
+      item('worn', { magic: true, description: 'Resistance to Fire', equipped: true, slot: 'cloak' }),
+      item('in-bag', { magic: true, description: 'Not worn' }),
+      item('plain', { description: 'Not magic', equipped: true, slot: 'neck' }),
+      item('no-text', { magic: true, equipped: true, slot: 'head' }),
+    ]
+    expect(equippedMagicEffects(c)).toEqual([{ id: 'worn', name: 'worn', description: 'Resistance to Fire' }])
   })
 })
