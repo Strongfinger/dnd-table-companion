@@ -1,4 +1,4 @@
-// The DM's tools: party rest for the live room, generators and the campaign notebook. Everything here stays on
+// The DM's tools: party rest for the live room, players' coin requests, the reward pool, generators and the campaign notebook. Everything here stays on
 // the DM's device. The SRD lookup has its own tab (📖 ค้นหา).
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
@@ -7,6 +7,7 @@ import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Button, Section } from '../ui/kit'
 import Generators from './Generators'
 import PartyRest from './PartyRest'
+import { CoinRequests, RewardPool } from './RewardDesk'
 import { NotebookList } from './Notebook'
 
 export default function DmHome() {
@@ -19,10 +20,14 @@ export default function DmHome() {
     <div className="space-y-4">
       <header>
         <h1 className="text-3xl font-bold text-amber-400">🧙 ผู้ช่วย DM</h1>
-        <p className="text-stone-400">พักทั้งปาร์ตี้ เครื่องสุ่ม และสมุดแคมเปญ (เก็บในเครื่องนี้ ผู้เล่นไม่เห็น)</p>
+        <p className="text-stone-400">พักทั้งปาร์ตี้ คำขอเงิน คลังของรางวัล เครื่องสุ่ม และสมุดแคมเปญ (เก็บในเครื่องนี้)</p>
       </header>
 
       <PartyRest />
+
+      <CoinRequests />
+
+      <RewardPool />
 
       <CampaignPicker value={campaignId} onChange={setCampaignId} />
 

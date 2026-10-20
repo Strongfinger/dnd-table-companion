@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { useLobby } from '../app/useLobby'
-import { useRunsCampaign } from '../app/useRunsCampaign'
+import { useDmRunsEconomy, useRunsCampaign } from '../app/useRunsCampaign'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { listCampaigns } from '../db/campaigns'
 import { deleteCharacter, getCharacter, saveCharacter } from '../db/characters'
@@ -47,6 +47,8 @@ export default function CharacterEdit({ id }: { id: string }) {
   // Played in a room: the level changes only through ⬆️ with the DM's permission (model/levelLock.ts).
   const runsCampaign = useRunsCampaign(draft?.campaignId)
   const levelLocked = !!draft?.levelLock && !runsCampaign
+  // Run by a DM on another device: items come from the DM's pool and coins by request (on the sheet), not from here.
+  const dmRunsEconomy = useDmRunsEconomy({ id, campaignId: draft?.campaignId })
   const campaigns = useLiveQuery(listCampaigns) ?? []
   const lobby = useLobby()
 
@@ -393,6 +395,13 @@ export default function CharacterEdit({ id }: { id: string }) {
         </div>
       </Section>
 
+      {dmRunsEconomy ? (
+        <Section title="ของในกระเป๋า (Inventory)">
+          <p className="text-sm text-stone-400">
+            🔒 DM เป็นคนดูแลของและเงินของตัวละครนี้: หยิบของจากคลังกลาง ใช้/ทิ้ง/สวมของ และขอเงินจาก DM ได้ที่หน้าชีท
+          </p>
+        </Section>
+      ) : (
       <Section
         title="ของในกระเป๋า (Inventory)"
         action={<Button className="text-sm" onClick={() => set('inventory', [...c.inventory, { id: newId(), name: '', qty: 1 }])}>+ เพิ่ม</Button>}
@@ -423,6 +432,7 @@ export default function CharacterEdit({ id }: { id: string }) {
           })}
         </div>
       </Section>
+      )}
 
       <Section title="ความสามารถพิเศษ (Features & Traits)">
         <TextArea value={c.featuresText} rows={6} onChange={(v) => set('featuresText', v)} />

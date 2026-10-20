@@ -18,6 +18,7 @@ import Lobby from './screens/Lobby'
 import PartyOverview from './screens/PartyOverview'
 import { PlayerFight, PlayerFightList } from './screens/PlayerFights'
 import RoomRollToast from './screens/RoomRollToast'
+import { CoinRequestBar } from './screens/RewardDesk'
 
 // DM-side screens load on first use, so players' phones start faster (the offline app still caches them all).
 const DmHome = lazy(() => import('./screens/DmHome'))
@@ -125,6 +126,7 @@ function NavBar({ route }: { route: Route }) {
         <a href="#/lobby" className={tab(route.name === 'lobby')}><span className="text-base leading-none">🌐</span><span>ห้อง <LobbyDot /></span></a>
       </div>
       <LiveFightBar />
+      <CoinRequestBar />
       {lobby.session?.role === 'player' && lobby.shortRestSince && (
         // Players: the DM started a short rest. Tap to roll Hit Dice on my sheet.
         <a href={lobby.session.characterId ? `#/c/${lobby.session.characterId}` : '#/lobby'} className="mx-auto block max-w-5xl bg-sky-900 px-4 py-2 text-sm font-bold text-sky-100">
