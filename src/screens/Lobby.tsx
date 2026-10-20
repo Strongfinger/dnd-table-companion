@@ -16,6 +16,7 @@ import { isValidRoomCode, normalizeRoomCode } from '../sync/roomCode'
 import type { ConnectionStatus } from '../sync/transport'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Button, Section, TextInput } from '../ui/kit'
+import { LangSwitch } from '../ui/ThaiText'
 import PlayerViewPanel from './PlayerViewPanel'
 
 const STATUS_TEXT: Record<ConnectionStatus, string> = {
@@ -38,6 +39,13 @@ export default function Lobby({ code: linkCode }: { code: string | null }) {
         <p className="rounded-lg bg-amber-950 p-3 text-sm text-amber-200">ลิงก์นี้เป็นของห้อง {linkCode} แต่คุณอยู่ในห้อง {lobby.session.code} อยู่ · กด "ออกจากห้อง" ก่อนเพื่อเข้าห้องใหม่</p>
       )}
       {lobby.session ? <InRoom /> : <Start linkCode={linkCode} />}
+      {/* The app's one ไทย/EN switch for rules text: set once here, used by every card on this device. */}
+      <Section title="ภาษาของคำอธิบาย">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-stone-400">คาถา มอนสเตอร์ ไอเทม และความสามารถ ทุกการ์ดในเครื่องนี้จะใช้ภาษานี้</p>
+          <LangSwitch />
+        </div>
+      </Section>
     </div>
   )
 }

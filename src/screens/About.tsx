@@ -2,9 +2,15 @@
 import { useState } from 'react'
 import { currentDevice, setDeviceName } from '../db/device'
 import { resetDevice } from '../db/reset'
+import iconCredits from '../data/item-icon-credits.json'
 import { DND_TH_CREDIT } from '../model/dndTh'
 import { Button, Section, TextInput } from '../ui/kit'
 import { useEquipmentTh, useFeaturesTh, useMagicItemsTh, useMonstersTh, useSpellsTh } from './useSrdData'
+
+/** game-icons.net authors behind the item pictures, most used first (CC BY 3.0 asks for each one's name). */
+const ICON_AUTHORS = Object.entries(
+  Object.values(iconCredits as Record<string, { author: string }>).reduce<Record<string, number>>((n, c) => ({ ...n, [c.author]: (n[c.author] ?? 0) + 1 }), {}),
+).sort((a, b) => b[1] - a[1]).map(([author]) => author)
 
 export default function About() {
   const [name, setName] = useState(currentDevice()?.name ?? '')
@@ -62,6 +68,17 @@ export default function About() {
           </p>
         </Section>
       )}
+
+      <Section title="รูปไอเทม">
+        <p className="text-sm text-stone-300">
+          รูปอาวุธ เกราะ และของที่ปาร์ตี้ใช้บ่อย วาดด้วย Gemini สำหรับแอปนี้ ·
+          รูปของใช้ เครื่องมือ พิษ Focus แพ็ก และกระสุน ({Object.keys(iconCredits).length} ชิ้น) ทำจากไอคอนของ{' '}
+          <a className="text-amber-400 underline" href="https://game-icons.net" target="_blank" rel="noreferrer">game-icons.net</a>
+          {' '}โดย {ICON_AUTHORS.join(', ')} ใช้ภายใต้สัญญาอนุญาต{' '}
+          <a className="text-amber-400 underline" href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>
+          {' '}(แต่งสีและพื้นหลังใหม่)
+        </p>
+      </Section>
 
       <Section title="เวอร์ชัน">
         <p className="text-sm text-stone-300">

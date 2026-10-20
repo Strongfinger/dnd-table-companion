@@ -5,7 +5,7 @@ import { useLobby } from '../app/useLobby'
 import { useRunsCampaign } from '../app/useRunsCampaign'
 import { mayLevelUp } from '../model/levelLock'
 import { getCharacter } from '../db/characters'
-import { ABILITIES, buffedArmorClass, deriveSheet, formatModifier, SKILL_ABILITY, SKILLS } from '../rules'
+import { ABILITIES, buffedArmorClass, deriveSheet, formatModifier, loadedSpeed, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
 import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
@@ -16,6 +16,7 @@ import LevelUp from './LevelUp'
 import UpgradePanel from './UpgradePanel'
 import { missingLevelChoices } from '../model/feats'
 import { characterArmorClass } from '../model/inventory'
+import { characterLoad } from '../model/carrying'
 import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
@@ -50,7 +51,9 @@ export default function CharacterSheet({ id }: { id: string }) {
   const s = deriveSheet(c)
   // Armor details (formula, Strength/Stealth/training drawbacks) when AC is worked out from armor.
   const armor = c.acAuto && equipment ? characterArmorClass(c, equipment) : null
-  const speed = Math.max(0, (s.speed ?? c.speed) - (armor?.speedPenalty ?? 0))
+  // Over Carrying Capacity: Speed at most 5 ft (0 if too heavy to move), see the inventory's weight bar.
+  const load = characterLoad(c, equipment ?? undefined)
+  const speed = loadedSpeed(Math.max(0, (s.speed ?? c.speed) - (armor?.speedPenalty ?? 0)), load.state)
   const mod = formatModifier
 
   return (
@@ -90,7 +93,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={buffedArmorClass(c.ac, c.buffs)} sub={s.buffs.ac ? `บัฟ ${mod(s.buffs.ac)}` : undefined} />
         <Stat label="Initiative" value={mod(s.initiative)} />
-        <Stat label="Speed" value={`${speed} ft.`} />
+        <Stat label="Speed" value={`${speed} ft.`} sub={load.state !== 'ok' ? '🎒 หนักเกิน' : undefined} />
         <Stat label="Proficiency" value={mod(s.proficiencyBonus)} />
       </div>
 

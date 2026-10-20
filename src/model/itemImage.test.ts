@@ -64,4 +64,11 @@ describe('item pictures', () => {
     c = unequipItem(c, worn.id, data)
     expect(c.inventory.map((i) => [i.qty, !!i.image])).toEqual([[1, false], [1, true]])
   })
+
+  it('every SRD equipment item has its own picture (painted art or a game-icons.net icon)', async () => {
+    const data = await loadSrdEquipment()
+    const files = new Set(Object.keys(import.meta.glob('../../public/items/*.webp')).map((f) => f.split('/').pop()))
+    const missing = data.items.filter((i) => !files.has(`${i.id}.webp`)).map((i) => i.id)
+    expect(missing).toEqual([])
+  })
 })

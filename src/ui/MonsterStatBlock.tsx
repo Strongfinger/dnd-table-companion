@@ -6,7 +6,7 @@ import { abilityModifier, formatModifier } from '../rules'
 import { abilityRows, challengeLine, immunitiesLine, sensesLine, type FullMonster, type StatBlockEntry } from '../model/monsterDetails'
 import type { MonsterEntryTh, MonsterTh } from '../model/monstersTh'
 import MiniMarkdown from './MiniMarkdown'
-import { LangSwitch, ThaiCredit } from './ThaiText'
+import { ThaiCredit } from './ThaiText'
 import { useTextLang } from './useTextLang'
 
 /** Labels inside action text ("Melee Attack Roll:", "Hit:", "Failure:"…) in italics, as in the book. */
@@ -48,7 +48,7 @@ function Entries({ title, list, note, th }: { title: string; list: StatBlockEntr
 
 export default function MonsterStatBlock({ m, th }: { m: FullMonster; th?: MonsterTh }) {
   const dex = abilityModifier(m.scores[1])
-  const [lang, setLang] = useTextLang()
+  const [lang] = useTextLang()
   const thai = th && lang === 'th' ? th.entries : undefined
   return (
     <article className="space-y-3 rounded-xl border border-amber-900/60 bg-stone-900 p-4 text-sm leading-relaxed">
@@ -58,7 +58,6 @@ export default function MonsterStatBlock({ m, th }: { m: FullMonster; th?: Monst
           {th && <p className="text-amber-200">{th.name}</p>}
           <p className="italic text-stone-400">{m.size} {m.type[0].toUpperCase() + m.type.slice(1)}, {m.alignment}</p>
         </div>
-        {th && <LangSwitch lang={lang} onChange={setLang} />}
       </header>
 
       <div className="space-y-0.5">

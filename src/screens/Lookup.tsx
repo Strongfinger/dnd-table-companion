@@ -15,7 +15,7 @@ import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type Srd
 import MiniMarkdown from '../ui/MiniMarkdown'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch, MagicItemSearch } from './LookupMore'
-import { LangSwitch, ThaiCredit } from '../ui/ThaiText'
+import { ThaiCredit } from '../ui/ThaiText'
 import { useTextLang } from '../ui/useTextLang'
 import { useGlossaryTh } from '../ui/useGlossaryTh'
 import { useMonsters, useMonstersTh, useSpells, useSpellsTh } from './useSrdData'
@@ -186,7 +186,7 @@ export function SpellView({ id }: { id: string }) {
 /** One spell, 2024 style. */
 export function SpellCard({ sp }: { sp: SrdSpell }) {
   const th = useSpellsTh()[sp.id]
-  const [lang, setLang] = useTextLang()
+  const [lang] = useTextLang()
   const showThai = !!th && lang === 'th'
   const higherLabel = sp.level === 0 ? 'Cantrip Upgrade.' : 'Using a Higher-Level Spell Slot.'
   const englishHigher = sp.higher?.replace(/^Using a Higher-Level Spell Slot\.\s*/, '').replace(/^Cantrip Upgrade\.\s*/, '')
@@ -198,7 +198,6 @@ export function SpellCard({ sp }: { sp: SrdSpell }) {
           {th && <p className="text-amber-200">{th.name}</p>}
           <p className="italic text-stone-400">{spellLevelLine(sp)} ({sp.classes.join(', ')})</p>
         </div>
-        {th && <LangSwitch lang={lang} onChange={setLang} />}
       </header>
       <div className="space-y-0.5">
         <Row label="Casting Time">{castingTimeLine(sp)}</Row>

@@ -42,3 +42,12 @@ the text column on a phone; a setting "แสดงรูปไอเทม" (on
 - Art: generated with Gemini in one style, painted fantasy icon on a dark background
   (`scripts/item-art/gen.py`, same approach as the chronicle images).
 - First batch: 79 items (everything the party carries, plus all weapons, armor and shields) and 19 fallback icons.
+
+## Decided 2026-10-20 (later): free icons for the rest of the equipment
+- Gemini credits are limited, so the other 117 SRD equipment items (gear, tools, poisons, foci, packs, ammunition)
+  that only showed their kind icon got pictures made from free [game-icons.net](https://game-icons.net) icons
+  (CC BY 3.0). `scripts/item-icons/render.mjs` tints each silhouette by kind (warm metal/leather, green poison,
+  violet focus, steel ammunition) on the same dark vignette as the painted art.
+- `scripts/item-icons/icons.json` maps item id to icon; change an entry and re-run the script for that id.
+  Authors are recorded in `src/data/item-icon-credits.json` and credited on the About page.
+- Every SRD equipment item now has its own picture (a test checks this). Magic items still use the kind icons.

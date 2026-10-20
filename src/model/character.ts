@@ -110,6 +110,8 @@ export interface InventoryItem {
   wear?: EquipSlot
   /** A custom item's own small picture (data: URL), chosen by the player. See model/itemImage.ts. */
   image?: string
+  /** Weight of one piece in lb, typed by the player for items without SRD weight (custom and magic items). */
+  weight?: number
 }
 
 export function newId(): string {

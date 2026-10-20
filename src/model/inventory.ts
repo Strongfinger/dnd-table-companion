@@ -164,7 +164,7 @@ export function slotContents(c: Character, data: SrdEquipment): Partial<Record<E
 /** Put a piece back in the pack, on a matching unequipped stack if there is one. */
 function toPack(inventory: InventoryItem[], item: InventoryItem): InventoryItem[] {
   const plain = takeOff(item)
-  const same = (i: InventoryItem) => i.id !== item.id && !i.equipped && i.name === item.name && i.srdId === item.srdId && i.wear === item.wear && i.image === item.image
+  const same = (i: InventoryItem) => i.id !== item.id && !i.equipped && i.name === item.name && i.srdId === item.srdId && i.wear === item.wear && i.image === item.image && i.weight === item.weight
   const stack = inventory.find(same)
   if (!stack) return inventory.map((i) => (i.id === item.id ? plain : i))
   return inventory

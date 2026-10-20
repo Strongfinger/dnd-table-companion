@@ -7,6 +7,7 @@ import {
 import { createCharacter, EQUIP_SLOTS, newId, type Character, type EquipSlot } from './character'
 import { parseBuff } from './characterActions'
 import { isItemImage } from './itemImage'
+import { MAX_ITEM_WEIGHT } from './carrying'
 
 export const EXPORT_FORMAT = 'dnd-table-companion/character'
 export const EXPORT_VERSION = 1
@@ -247,6 +248,11 @@ function spell(v: unknown): Character['spells'][number] | undefined {
   return name === undefined ? undefined : { id: itemId(v.id), name, level: v.level, prepared: v.prepared === true }
 }
 
+/** A typed item weight: 0 to MAX_ITEM_WEIGHT lb. */
+function isItemWeight(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= MAX_ITEM_WEIGHT
+}
+
 function item(v: unknown): Character['inventory'][number] | undefined {
   if (!isObject(v) || !isInt(v.qty, 0, 9999)) return undefined
   const name = text(v.name, 200)
@@ -257,6 +263,7 @@ function item(v: unknown): Character['inventory'][number] | undefined {
   if (isSlot(v.slot)) out.slot = v.slot
   if (isSlot(v.wear)) out.wear = v.wear
   if (isItemImage(v.image)) out.image = v.image
+  if (isItemWeight(v.weight)) out.weight = v.weight
   return out
 }
 
