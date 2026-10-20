@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { newId, type Character } from '../model/character'
 import { BUFF_ENDS_LABEL, BUFF_TARGET_LABEL, buffModsText, type CharacterAction } from '../model/characterActions'
 import { BUFF_ENDS, BUFF_LIMIT, BUFF_TARGETS, type Buff, type BuffEnds, type BuffTarget } from '../rules'
+import { equippedMagicEffects } from '../model/inventory'
 import { Button } from '../ui/kit'
+import MiniMarkdown from '../ui/MiniMarkdown'
 
 /** SRD 5.2.1 spells that are common buffs. Dice bonuses (Bless) can't be added into a number, so they're a note. */
 const PRESETS: Omit<Buff, 'id'>[] = [
@@ -40,6 +42,24 @@ export function BuffChips({ buffs, onRemove }: { buffs: Buff[]; onRemove?: (id: 
   )
 }
 
+/**
+ * Effects of the magic items the character wears or holds (custom items marked ✨ with an effect text). They last
+ * while the item is equipped; numbers in them are a note for the table (not added to the sheet like a buff's).
+ */
+export function MagicItemEffects({ effects }: { effects: { id: string; name: string; description: string }[] }) {
+  if (effects.length === 0) return null
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      {effects.map((e) => (
+        <div key={e.id} className="rounded-lg border border-violet-600 bg-violet-950 px-2.5 py-1.5 text-xs">
+          <p>✨ <b>{e.name}</b> <span className="text-stone-400">· Magic Item ที่สวมอยู่ · มีผลจนกว่าจะถอด</span></p>
+          <div className="text-stone-200"><MiniMarkdown text={e.description} /></div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function BuffPanel({ c, act, canAdd, canRemove }: {
   c: Character
   act: (a: CharacterAction) => void
@@ -55,6 +75,7 @@ export default function BuffPanel({ c, act, canAdd, canRemove }: {
     setModText(Object.fromEntries(Object.entries(b.mods).map(([t, n]) => [t, String(n)])))
   }
   const buffs = c.buffs ?? []
+  const magic = equippedMagicEffects(c)
 
   function save() {
     if (!draft || !draft.name.trim()) return
@@ -75,10 +96,11 @@ export default function BuffPanel({ c, act, canAdd, canRemove }: {
         <span className="text-sm text-stone-400">บัฟ/เอฟเฟกต์ชั่วคราว <span className="text-xs text-stone-600">· ตัวเลขบวกในใบตัวละครแล้ว</span></span>
         {canAdd && !draft && <Button aria-label="เพิ่มบัฟ" className="px-3 py-1 text-sm" onClick={() => start(EMPTY)}>+ เพิ่ม</Button>}
       </div>
-      {buffs.length === 0 && !draft && (
+      {buffs.length === 0 && magic.length === 0 && !draft && (
         <p className="text-xs text-stone-500">{canAdd ? 'ยังไม่มี · เช่น Longstrider (Speed +10 ft.) หรือพรที่ +1 Skill Check จนพักยาว' : 'ยังไม่มี · DM เป็นคนใส่ให้'}</p>
       )}
       <BuffChips buffs={buffs} onRemove={canRemove ? (id) => act({ type: 'removeBuff', buffId: id }) : undefined} />
+      <MagicItemEffects effects={magic} />
 
       {draft && (
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3 text-sm">

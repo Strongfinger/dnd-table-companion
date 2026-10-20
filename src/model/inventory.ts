@@ -86,6 +86,13 @@ export function setItemDetails(c: Character, itemId: string, details: { descript
   return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? next : i)) }
 }
 
+/** Equipped (worn or held) custom magic items with an effect text: shown with the buffs on the play panel. */
+export function equippedMagicEffects(c: Pick<Character, 'inventory'>): { id: string; name: string; description: string }[] {
+  return c.inventory
+    .filter((i) => i.magic && (i.equipped || i.slot) && i.description)
+    .map((i) => ({ id: i.id, name: i.name, description: i.description! }))
+}
+
 /** Throw an item away. */
 export function removeItem(c: Character, itemId: string): Character {
   if (!c.inventory.some((i) => i.id === itemId)) return c

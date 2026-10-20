@@ -372,7 +372,8 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
             change((latest) => {
               let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
-              if (!srd) next = setItemDetails(next, item.id, { description, magic })
+              // The effect text and Magic Item mark are the DM's (a character the DM runs can't change them).
+              if (!srd && !noMore) next = setItemDetails(next, item.id, { description, magic })
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
@@ -383,7 +384,8 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
           }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
-        {!srd && <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />}
+        {!srd && !noMore && <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />}
+        {!srd && noMore && <p className="text-xs text-stone-500">คำอธิบาย / Magic Item: DM เป็นคนแก้</p>}
         {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
       </div>
     )

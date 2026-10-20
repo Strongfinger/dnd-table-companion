@@ -149,6 +149,11 @@ describe('keepDmEconomy', () => {
     const ok = keepDmEconomy(dm, { ...dm, coins: { ...dm.coins, gp: 900 }, inventory: split })
     expect(ok.coins.gp).toBe(5)
     expect(ok.inventory).toEqual(split)
+    // The effect text and Magic Item mark stay the DM's.
+    const ring = { id: 'r', name: 'Ring', qty: 1, description: '+1 AC', magic: true as const }
+    const withRing = { ...dm, inventory: [ring] }
+    expect(keepDmEconomy(withRing, { ...withRing, inventory: [{ id: 'r', name: 'My Ring', qty: 1, description: '+5 AC' }] }).inventory)
+      .toEqual([{ id: 'r', name: 'My Ring', qty: 1, description: '+1 AC', magic: true }])
     const extra = keepDmEconomy(dm, { ...dm, inventory: [...dm.inventory, { id: 'z', name: 'Gem', qty: 1 }] })
     expect(extra.inventory).toEqual(dm.inventory)
   })

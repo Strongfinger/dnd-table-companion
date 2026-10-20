@@ -237,6 +237,13 @@ const totalQty = (items: InventoryItem[]) => items.reduce((n, i) => n + i.qty, 0
  * use up, drop, rename or equip items but not bring in more than the DM's copy has (new items come from the pool).
  */
 export function keepDmEconomy(dm: Pick<Character, 'coins' | 'inventory'>, incoming: Character): Character {
-  const inventory = totalQty(incoming.inventory) > totalQty(dm.inventory) ? dm.inventory : incoming.inventory
+  if (totalQty(incoming.inventory) > totalQty(dm.inventory)) return { ...incoming, coins: dm.coins, inventory: dm.inventory }
+  // A custom item's effect text and Magic Item mark are the DM's to change.
+  const inventory = incoming.inventory.map((i) => {
+    const mine = dm.inventory.find((d) => d.id === i.id)
+    if (!mine) return i
+    const { description: _d, magic: _m, ...rest } = i
+    return { ...rest, ...(mine.description ? { description: mine.description } : {}), ...(mine.magic ? { magic: mine.magic } : {}) }
+  })
   return { ...incoming, coins: dm.coins, inventory }
 }
