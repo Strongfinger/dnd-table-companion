@@ -39,6 +39,19 @@ export default defineConfig({
         // The app uses #/ routes, so any page load can be answered with index.html.
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Item pictures (public/items, about 1.5 MB in all): kept as they are looked at, so the first
+            // install stays small but an item you have seen still shows at the table with no internet.
+            urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/items/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'item-art',
+              expiration: { maxEntries: 150, maxAgeSeconds: 60 * 60 * 24 * 180 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
