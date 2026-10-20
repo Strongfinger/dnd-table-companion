@@ -1,6 +1,6 @@
 # Requirement: item and equipment images
 
-Status: **planned, waiting for the owner's approval** (requested 2026-10-20). No app code changed yet.
+Status: **approved 2026-10-20, being built** on branch `claude/project-thread-t1gn5i`.
 
 ## What the owner asked
 Add illustrations for items and equipment to make the sheet more fun. Watch the UI: images must not
@@ -38,6 +38,7 @@ the text column on a phone; a setting "แสดงรูปไอเทม" (on
 3. Custom-item pictures.
 4. The rest of gear/tools and magic items as they show up in the campaign.
 
-## Open choices for the owner
-- Art source: generate with Gemini in one consistent style (default), like the chronicle images; or icons only.
-- Style: painted fantasy icon on a plain dark background (default), or line-art.
+## Decided 2026-10-20
+- Art: generated with Gemini in one style, painted fantasy icon on a dark background
+  (`scripts/item-art/gen.py`, same approach as the chronicle images).
+- First batch: 79 items (everything the party carries, plus all weapons, armor and shields) and 19 fallback icons.
