@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { carryingCapacity, coinWeight, dragLiftPushLimit, loadState } from './carrying'
+import { carryingCapacity, coinWeight, dragLiftPushLimit, loadedSpeed, loadState } from './carrying'
 
 describe('carrying capacity (SRD 5.2.1)', () => {
   it('is Strength × 15 lb for Small and Medium characters', () => {
@@ -34,5 +34,12 @@ describe('carrying capacity (SRD 5.2.1)', () => {
     expect(loadState(151, 150)).toBe('over')
     expect(loadState(300, 150)).toBe('over')
     expect(loadState(301, 150)).toBe('tooHeavy')
+  })
+
+  it('caps Speed at 5 ft over capacity, and 0 when too heavy to move', () => {
+    expect(loadedSpeed(30, 'ok')).toBe(30)
+    expect(loadedSpeed(30, 'over')).toBe(5)
+    expect(loadedSpeed(0, 'over')).toBe(0)
+    expect(loadedSpeed(30, 'tooHeavy')).toBe(0)
   })
 })

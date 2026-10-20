@@ -8,7 +8,9 @@ import { getSetting } from '../db/device'
 import { isDead, isDying } from '../model/actions'
 import type { Character } from '../model/character'
 import { HEALTH_LABEL, healthStatus } from '../model/playerView'
-import { buffedArmorClass, deriveSheet, formatModifier, hitDieSize, isSrdSpecies, SPECIES_INFO } from '../rules'
+import { buffedArmorClass, deriveSheet, formatModifier, hitDieSize, isSrdSpecies, loadedSpeed, SPECIES_INFO } from '../rules'
+import { characterLoad } from '../model/carrying'
+import { useEquipment } from './useSrdData'
 import CampaignPicker, { ALL } from '../ui/CampaignPicker'
 import { Term } from '../ui/help'
 import { ActionEconomyBar } from '../ui/kit'
@@ -50,6 +52,8 @@ export default function PartyOverview() {
 
 function PartyCard({ c }: { c: Character }) {
   const s = deriveSheet(c)
+  // Over Carrying Capacity: Speed at most 5 ft (0 if too heavy to move).
+  const load = characterLoad(c, useEquipment() ?? undefined)
   const pct = Math.round((c.hp.current / Math.max(1, c.hp.max)) * 100)
   const dead = isDead(c)
   const dying = isDying(c)
@@ -99,7 +103,7 @@ function PartyCard({ c }: { c: Character }) {
 
       {/* Senses and speed */}
       <div className="flex flex-wrap gap-x-4 text-xs text-stone-300">
-        <span><Term name="Speed" /> {s.speed ?? c.speed} ft.</span>
+        <span><Term name="Speed" /> {loadedSpeed(s.speed ?? c.speed, load.state)} ft.{load.state !== 'ok' && ' 🎒 หนักเกิน'}</span>
         <span><Term name="Passive Perception" /> {s.passivePerception}</span>
         {s.spellSaveDC !== null && <span><Term name="Spell Save DC" /> {s.spellSaveDC}</span>}
         <span><Term name="Hit Dice" /> d{hitDieSize(c)} {c.level - c.hitDiceSpent}/{c.level}</span>

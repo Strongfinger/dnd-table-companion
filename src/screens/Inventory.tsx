@@ -220,15 +220,18 @@ function ItemRow({ item, srd, slots, onEquip, change }: {
           ))}
         </div>
       )}
-      {open && <ItemActions item={item} srd={srd} change={change} />}
+      {open && <ItemActions item={item} srd={srd} wearable={fits.length > 0} change={change} />}
       {open && srd && <ItemDetails srd={srd} item={item} />}
       {open && !srd && <ItemPictureField item={item} change={change} />}
     </li>
   )
 }
 
-/** Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up). */
-function ItemActions({ item, srd, change }: { item: InventoryItem; srd: SrdItem | undefined; change: Change }) {
+/**
+ * Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up).
+ * Things worn or held (weapons, armor, a cloak…) aren't used up, so they only get แก้ไข and ลบ.
+ */
+function ItemActions({ item, srd, wearable, change }: { item: InventoryItem; srd: SrdItem | undefined; wearable: boolean; change: Change }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(item.name)
   const [qty, setQty] = useState(String(item.qty))
@@ -262,9 +265,11 @@ function ItemActions({ item, srd, change }: { item: InventoryItem; srd: SrdItem 
   }
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
-      <button type="button" className={`${pill} border-emerald-600 text-emerald-300`} onClick={() => change((latest) => consumeItem(latest, item.id))}>
-        ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
-      </button>
+      {!wearable && (
+        <button type="button" className={`${pill} border-emerald-600 text-emerald-300`} onClick={() => change((latest) => consumeItem(latest, item.id))}>
+          ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
+        </button>
+      )}
       <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(true) }}>แก้ไข</button>
       <button type="button" className={`${pill} ${confirmDelete ? 'border-red-500 bg-red-900 font-bold text-red-100' : 'border-red-800 text-red-400'}`}
         onClick={() => (confirmDelete ? change((latest) => removeItem(latest, item.id)) : setConfirmDelete(true))}>
@@ -481,12 +486,12 @@ function LoadBar({ c, data }: { c: Character; data: SrdEquipment | undefined }) 
       </p>
       {load.state === 'over' && (
         <p className="rounded-lg bg-red-950 p-2 text-xs text-red-200">
-          เกิน Carrying Capacity: ลาก ยก หรือดันได้ถึง {formatLb(load.limit)} แต่ Speed ไม่เกิน {OVER_CAPACITY_SPEED} ft
+          เกิน Carrying Capacity: Speed เหลือ {OVER_CAPACITY_SPEED} ft (หักบนชีทแล้ว) · ลาก ยก หรือดันได้ถึง {formatLb(load.limit)}
         </p>
       )}
       {load.state === 'tooHeavy' && (
         <p className="rounded-lg bg-red-950 p-2 text-xs text-red-200">
-          หนักเกินกว่าจะขยับได้ (เกิน {formatLb(load.limit)}) ต้องทิ้งของบางอย่าง
+          หนักเกินกว่าจะขยับได้ (เกิน {formatLb(load.limit)}): Speed เป็น 0 จนกว่าจะทิ้งของบางอย่าง
         </p>
       )}
     </div>

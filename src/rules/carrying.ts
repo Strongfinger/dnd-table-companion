@@ -46,3 +46,9 @@ export function loadState(weight: number, capacity: number): LoadState {
 
 /** Speed while over carrying capacity (dragging, lifting or pushing): no more than 5 feet. */
 export const OVER_CAPACITY_SPEED = 5
+
+/** Speed with this load: unchanged within capacity, at most 5 ft over it, 0 when too heavy to move at all. */
+export function loadedSpeed(speed: number, state: LoadState): number {
+  if (state === 'tooHeavy') return 0
+  return state === 'over' ? Math.min(speed, OVER_CAPACITY_SPEED) : speed
+}
