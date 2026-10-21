@@ -26,4 +26,14 @@ Ten agents in four teams, defined in `.claude/agents/`. The main Claude session 
 7. **Cannot be undone** (publishing Firebase rules, Vercel settings, deleting data, sending things to players): wait for Tan's go-ahead.
 8. **Finish:** one result message, save lasting facts to memory, close the thread.
 
+## Agent status board
+
+Tan watches the team on a live board: [ทีม Agent ของ Tan](https://claude.ai/artifact/3yEQREAwjGXPvKyQtFvxdP). It cannot read threads by itself, so every thread updates it with the `ArtifactData` tool (collection `agents`, one document per agent id, e.g. `developer`):
+
+- **Start of work:** `status: "working"`, `task` (short Thai text), `thread_id` (the thread's `cmsg_…` id), `updated_at` (ISO time).
+- **Waiting on Tan** (a PR to merge, a yes for Gemini, a decision): `status: "waiting"`, same fields.
+- **Done:** `status: "idle"`, remove `task` and `thread_id`, set `updated_at`.
+
+Update every agent role the thread is acting as. Read the document first and pass its `version` as `if_version`.
+
 All agents: reply to Tan in Thai, keep D&D terms in English, SRD 5.2.1 content only, no AI inside the app, no secret keys in code.
