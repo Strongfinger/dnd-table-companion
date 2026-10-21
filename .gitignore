@@ -21,3 +21,6 @@ public/zz-*
 
 # Owlbear Rodeo maps and tokens (large, third-party art: never commit)
 docs/Owlbear-Rodeo/
+
+# UX/UI kit gate receipts (local only)
+.ds-receipts/
