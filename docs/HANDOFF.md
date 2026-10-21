@@ -11,7 +11,7 @@ Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local p
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
 - **Checks:** `npm test` (625 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
-- **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `rules-reviewer` agent after
+- **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `content-reviewer` agent (was rules-reviewer) after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
   the old cached build until it reloads/updates; the About page shows the build time.

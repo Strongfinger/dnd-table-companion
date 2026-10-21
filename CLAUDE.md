@@ -25,7 +25,8 @@ The DM runs it on a laptop or tablet. Players use phones for their own character
 - Reply in English even when the owner writes in Thai.
 - Build in small, runnable steps. After each step, say how to run or see it.
 - Put game-rule logic in `src/rules/` as pure functions, separate from UI.
-- After changing anything in `src/rules/`, run the `rules-reviewer` agent.
+- After changing anything in `src/rules/` or game content, run the `content-reviewer` agent.
+- Team of 10 agents and the work process: see [docs/TEAM.md](docs/TEAM.md).
 
 ## Roadmap
 See [docs/ROADMAP.md](docs/ROADMAP.md). Latest state and next steps: [docs/HANDOFF.md](docs/HANDOFF.md).
