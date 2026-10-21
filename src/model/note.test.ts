@@ -42,6 +42,13 @@ describe('notebook pages', () => {
     expect(createNote('camp', 0, 'quest', 'Find Gundren').fields).toEqual({ status: 'open' })
   })
 
+  it('a new house rule starts active and is listed with its effect', () => {
+    const rule = createNote('camp', 0, 'rule', 'Burning')
+    expect(rule.fields).toEqual({ status: 'active' })
+    rule.fields = { ...rule.fields, type: 'condition', effect: '1d4 Fire ต่อเทิร์น' }
+    expect(pageSummary(rule)).toBe('🟢 ใช้อยู่ · 🔥 สถานะ · 1d4 Fire ต่อเทิร์น')
+  })
+
   it('reads [[links]] in text', () => {
     expect(parseLinks('Met [[Sildar]] at [[ Phandalin ]].')).toEqual([{ text: 'Met ' }, { link: 'Sildar' }, { text: ' at ' }, { link: 'Phandalin' }, { text: '.' }])
     expect(parseLinks('no links')).toEqual([{ text: 'no links' }])

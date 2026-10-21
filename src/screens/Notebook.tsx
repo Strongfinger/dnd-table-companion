@@ -149,6 +149,7 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, on
       <header>
         <p className="text-xs text-stone-400">{KIND_LABEL[note.kind]}{note.kind === 'session' && ` · ${thaiDate(note.sessionDate)}`}</p>
         <h2 className="text-2xl font-bold text-amber-400">{noteTitle(note)}</h2>
+        {note.kind === 'rule' && <p className="text-xs text-sky-300">กฎของกลุ่มเรา (house rule) ไม่ใช่กฎทางการของ D&D 2024</p>}
       </header>
       {fields.length > 0 && (
         <dl className="space-y-1 rounded-lg bg-stone-900 p-3 text-sm">

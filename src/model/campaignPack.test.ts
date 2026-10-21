@@ -22,6 +22,11 @@ function ok(text: string) {
 }
 
 describe('parseCampaignPack', () => {
+  it('keeps house rule pages', () => {
+    const { pack: p } = ok(pack({ pages: [{ id: 'hr-burning', kind: 'rule', title: 'Burning', fields: { status: 'trial', duration: '2 เทิร์น' } }] }))
+    expect(p.notes[0]).toMatchObject({ id: 'doip-hr-burning', kind: 'rule', fields: { status: 'trial', duration: '2 เทิร์น' } })
+  })
+
   it('builds pages, a session plan and a fight with stable ids', () => {
     const { pack: p, warnings } = ok(pack())
     expect(warnings).toEqual([])
