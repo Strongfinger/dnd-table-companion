@@ -72,7 +72,7 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
 - [x] Player permissions: no self give-backs/rests/new turn, DM gives back in the same round only, read-only combat tab with safe log, players end their own turn; Action/Bonus Action on own turn only; read-only logs that follow the DM's deletions; DM rests the whole party from the room screen; short rest is a start/end period, Hit Dice only during it (2026-10-12)
 - [x] Message layer: id per message (drop duplicates), sender = device from the connection, players may only act on their own character, rate limit per device (4.4)
 
-## Phase 5 — Hardening · 1–2 sessions
+## Phase 5 — Hardening · 1–2 sessions (one open item: the first real session)
 - [ ] Multi-device tests, a real test session with friends, fixes
   - [x] Playtest (2026-10-16) and its fixes (2026-10-18, PRs #1–#3): DM rejoins the room they left, Thai help for the
         18 skills, Action/Bonus Action/Reaction only suggest spells and features that fit, spells open in place + back
@@ -91,9 +91,23 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
   - [x] Monsters: Thai names + stat block text, 340 of 341 monsters, ไทย/EN switch, Thai search (`src/data/srd-monsters-th.json`, 2026-10-18, PR #4)
 - [x] Clean up old room messages in Firebase: the DM device deletes messages older than 1 h (rules published 2026-10-13; check live in the first real session)
 
+## Phase 6 — Table extras (added after the playtest) ✅ done 2026-10-19 to 2026-10-21 (PRs #5–#18)
+Owner requests that came out of the playtest and later table use; all done, none needs Firebase rule changes except the chronicle.
+- [x] 2026-10-19 Inventory: coin purse (cp/sp/ep/gp/pp), custom items, one item per equipment slot, two ring slots, edit/use/delete items, tap an equipped item to read it
+- [x] 2026-10-19 Temporary buffs: the DM puts effects like Longstrider or a blessing on a character (`src/rules/buffs.ts`); Bless and Shield of Faith presets end on a rest
+- [x] 2026-10-19 Full backup and restore of all app data as one JSON file (`#/backup`, `src/model/backup.ts`)
+- [x] 2026-10-19 Journey chronicle (บันทึกการเดินทาง): the DM writes a storybook chapter after each session (markdown, up to 24 pictures); published chapters sync through Firebase `chronicles/` so players read them any time, with an offline copy
+- [x] 2026-10-19 Smaller: edit character notes in place, DM can rename a fight, room characters and imported packs stay in the DM's campaign, campaign name fix
+- [x] 2026-10-20 Carrying Capacity (Str × 15 lb, coins 50 per lb); over it Speed is cut to 5 ft, past double it is 0
+- [x] 2026-10-20 One Thai/English button in the top bar for every card
+- [x] 2026-10-20 Reward pool (คลังกลาง) and coin requests: characters run by a DM take items from the pool and ask the DM for coin changes; the DM keeps the free controls
+- [x] 2026-10-20 Magic items on the sheet: custom items can be marked ✨ Magic Item with an effect text; worn ones show with the buffs; only the DM edits effects
+- [x] 2026-10-21 SRD magic items can go into the reward pool (✨ chip), get a wear slot after adding, and show a short Thai effect summary (`srd-magic-items-summary-th.json`, all 278) with a read-more page; the treasure generator can fill the pool
+- [x] 2026-10-21 New waist slot (เอว) for belts; belts worn on the legs move to it
+
 ## Later
 - [x] Content enhancement: SRD weapons/armor, class features and limited-use features, starting gear, magic items, spells, feats, poisons, Lookup tabs: done as the content plan E1–E7, F1, F2 in [RESEARCH.md](RESEARCH.md) (2026-10-13)
 - [ ] ~~Minimap / battle map~~ → use an outside tool (e.g. Owlbear Rodeo) next to the app (decided 2026-10-12)
 - [ ] ~~Claude API DM helper~~ → no AI (decided 2026-10-12)
 - [ ] QR code export/import of a character (optional)
-- [ ] Item and equipment pictures (small thumbnails in inventory, slots and item details): planned 2026-10-20, waiting for approval, see [ITEM-IMAGES.md](ITEM-IMAGES.md)
+- [x] Item and equipment pictures: 98 painted SRD item pictures + 117 game-icons.net icons for gear, tools, poisons, foci, packs and ammunition, shown in the inventory, slots and item details; custom items can carry their own small picture (2026-10-20 plan in [ITEM-IMAGES.md](ITEM-IMAGES.md); built 2026-10-20, waist-slot belt picture 2026-10-21)
