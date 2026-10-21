@@ -9,7 +9,7 @@ import {
 import { useLobby } from '../app/useLobby'
 import { rollEventText } from '../model/rollEvent'
 import { Button } from '../ui/kit'
-import { onRollerRequest, type RollerRequest } from '../ui/rollerBus'
+import { isRollerDocked, onRollerDock, onRollerRequest, type RollerRequest } from '../ui/rollerBus'
 
 export interface RollRecord {
   id: number
@@ -76,6 +76,9 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  // The DM panel has its own 🎲 on wide screens; the floating one would cover it there.
+  const [docked, setDocked] = useState(isRollerDocked)
+  useEffect(() => onRollerDock(setDocked), [])
   // null = the default for my role in the room.
   const [shareChoice, setShareChoice] = useState<boolean | null>(null)
   const share = !!lobby.session && (shareChoice ?? lobby.session.role === 'player')
@@ -123,7 +126,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
           type="button"
           aria-label="เปิดตัวทอยลูกเต๋า"
           onClick={() => setOpen(true)}
-          className={`fixed right-4 bottom-20 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-black/50 transition duration-200 ${tucked ? 'pointer-events-none translate-y-24 opacity-0' : ''}`}
+          className={`fixed right-4 bottom-20 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl shadow-lg shadow-black/50 transition duration-200 ${docked ? 'lg:hidden' : ''} ${tucked ? 'pointer-events-none translate-y-24 opacity-0' : ''}`}
         >
           🎲
         </button>

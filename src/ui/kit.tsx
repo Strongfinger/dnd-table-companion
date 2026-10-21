@@ -99,6 +99,7 @@ const buttonStyles = {
   primary: 'bg-amber-500 text-stone-900 hover:bg-amber-400',
   secondary: 'bg-stone-700 text-stone-100 hover:bg-stone-600',
   danger: 'bg-red-800 text-white hover:bg-red-700',
+  heal: 'bg-emerald-800 text-white hover:bg-emerald-700',
 }
 
 export function Button({ children, onClick, variant = 'secondary', className = '', 'aria-label': ariaLabel }: {
@@ -264,4 +265,19 @@ export function HelpButton({ term, children, className = '', onClick, ...rest }:
 
 function EconomyButton({ label, used, locked, className, onClick }: { label: string; used: boolean; locked: boolean; className: string; onClick: () => void }) {
   return <HelpButton term={label} aria-pressed={used} className={className} onClick={onClick}>{locked && '🔒 '}{label}</HelpButton>
+}
+
+/** Bar colour by how much HP is left: green, then amber under half, red under a quarter. */
+function hpBarColor(current: number, max: number) {
+  const ratio = max > 0 ? current / max : 0
+  return ratio > 0.5 ? 'bg-emerald-500' : ratio > 0.25 ? 'bg-amber-500' : 'bg-red-500'
+}
+
+export function HpBar({ current, max, className = 'h-2' }: { current: number; max: number; className?: string }) {
+  const width = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0
+  return (
+    <div className={`overflow-hidden rounded-full bg-stone-700 ${className}`}>
+      <div className={`h-full ${hpBarColor(current, max)}`} style={{ width: `${width}%` }} />
+    </div>
+  )
 }

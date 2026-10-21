@@ -22,3 +22,25 @@ export function onRollerRequest(l: Listener): () => void {
   listeners.add(l)
   return () => listeners.delete(l)
 }
+
+// A screen with its own 🎲 button (the DM panel on a laptop) "docks" the roller: the floating
+// button then hides on wide screens, where it would cover the panel. Counted, so nesting is safe.
+let docks = 0
+const dockListeners = new Set<(docked: boolean) => void>()
+
+/** Call in a useEffect; returns the undock function. */
+export function dockRoller(): () => void {
+  docks++
+  for (const l of dockListeners) l(true)
+  return () => {
+    docks--
+    for (const l of dockListeners) l(docks > 0)
+  }
+}
+
+export const isRollerDocked = (): boolean => docks > 0
+
+export function onRollerDock(l: (docked: boolean) => void): () => void {
+  dockListeners.add(l)
+  return () => dockListeners.delete(l)
+}

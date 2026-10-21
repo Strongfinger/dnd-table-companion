@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import UpdatePrompt from './app/UpdatePrompt'
 import PullToRefresh from './ui/PullToRefresh'
 import { HelpProvider } from './ui/help'
@@ -115,10 +115,19 @@ function NavBar({ route }: { route: Route }) {
   const inLookup = route.name === 'lookup' || route.name === 'monster' || route.name === 'spell'
   const inDm = route.name === 'dm' || route.name === 'packImport' || route.name === 'note'
   const isPlayer = lobby.session?.role === 'player'
+  // Publish the bar's height as --nav-h so a page's own sticky bar (the sheet's tabs) can sit just under it.
+  const navRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => document.documentElement.style.setProperty('--nav-h', `${nav.offsetHeight}px`))
+    observer.observe(nav)
+    return () => observer.disconnect()
+  }, [])
   // Phones: icon above a short label so five tabs fit; wider screens: one line.
   const tab = (active: boolean) => `flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap px-1 py-2 text-xs font-bold sm:flex-row sm:justify-center sm:gap-1 sm:py-3 sm:text-base ${active ? 'border-b-2 border-amber-400 text-amber-400' : 'text-stone-500'}`
   return (
-    <nav className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/95">
+    <nav ref={navRef} className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950">
       <div className="mx-auto flex max-w-5xl">
         <a href="#/" className={tab(!inFights && !inDm && !inLookup && route.name !== 'lobby')}><span className="text-base leading-none">📜</span><span>ตัวละคร</span></a>
         <a href="#/fights" className={tab(inFights)}><span className="text-base leading-none">⚔️</span><span>การต่อสู้</span></a>

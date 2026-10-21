@@ -4,7 +4,8 @@
 // - Generators: NPCs, places, loot, encounters (added to this fight)…
 // - Notebook: this campaign's pages (sessions, NPCs, places, quests…), read and edited in place
 // - Fight log
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { dockRoller, openRoller } from '../ui/rollerBus'
 import { addMonstersToFight } from '../db/turns'
 import type { Encounter } from '../model/encounter'
 import { findMonsterForCombatant, type FullMonster } from '../model/monsterDetails'
@@ -38,6 +39,8 @@ function savedTab(): PanelTab {
 
 export default function DmPanel({ encounter, log }: { encounter: Encounter; log: ReactNode }) {
   const [tab, setTab] = useState<PanelTab>(savedTab)
+  // This panel has its own 🎲 button (laptop), so the floating one steps aside.
+  useEffect(() => dockRoller(), [])
   const choose = (t: PanelTab) => {
     setTab(t)
     try {
@@ -49,7 +52,7 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
 
   return (
     <section className="rounded-xl bg-stone-800 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-9rem)] lg:flex-col">
-      <div className="flex flex-wrap gap-1 border-b border-stone-700 p-2">
+      <div className="flex flex-wrap items-center gap-1 border-b border-stone-700 p-2">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -60,9 +63,17 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
             {t.label}
           </button>
         ))}
+        {/* Laptop: the dice roller opens from here instead of a floating button over the stat block. */}
+        <button
+          type="button"
+          aria-label="เปิดตัวทอยลูกเต๋า"
+          onClick={() => openRoller({ expression: '1d20', label: '' })}
+          className="ml-auto hidden h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-xl lg:flex"
+        >
+          🎲
+        </button>
       </div>
-      {/* Extra bottom padding (lg) so the last buttons can scroll clear of the floating 🎲 button */}
-      <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-20">
+      <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {tab === 'stats' && <StatsTab encounter={encounter} />}
         {tab === 'lookup' && <LookupTab encounter={encounter} />}
         {tab === 'gen' && <Generators campaignId={encounter.campaignId} encounter={encounter} />}

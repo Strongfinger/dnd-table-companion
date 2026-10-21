@@ -1,4 +1,4 @@
-// In-play tracking on the sheet: HP, death saves, rests, spell slots, features, conditions, buffs.
+// In-play tracking on the sheet: action economy, death saves, rests, spell slots, features, conditions, buffs.
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
@@ -21,8 +21,6 @@ const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th
 
 export default function PlayPanel({ c }: { c: Character }) {
   const lobby = useLobby()
-  const [amount, setAmount] = useState('')
-  const [critical, setCritical] = useState(false)
   const [message, setMessage] = useState('')
   const [resting, setResting] = useState(false)
   const [confirmLong, setConfirmLong] = useState(false)
@@ -41,29 +39,9 @@ export default function PlayPanel({ c }: { c: Character }) {
     if (refused) setMessage(`🔒 ${refused}`)
     else if (text) setMessage(text)
   }
-  const value = Math.max(0, Math.floor(Number(amount) || 0))
   const atZero = c.hp.current === 0
   const dead = isDead(c)
   const stable = atZero && c.deathSaves.successes >= 3
-
-  function damage() {
-    if (!value) return
-    act({ type: 'damage', amount: value, critical })
-    setAmount('')
-    setCritical(false)
-  }
-
-  function healing() {
-    if (!value) return
-    act({ type: 'heal', amount: value })
-    setAmount('')
-  }
-
-  function tempHp() {
-    if (!value) return
-    act({ type: 'tempHp', amount: value })
-    setAmount('')
-  }
 
   const deathSave = (d20: number, manual: boolean) => act({ type: 'deathSave', d20, manual })
 
@@ -106,45 +84,11 @@ export default function PlayPanel({ c }: { c: Character }) {
 
   return (
     <Section title="ระหว่างเล่น">
-      {/* HP */}
-      <div className="flex items-end justify-between">
-        <div>
-          <div className={`text-4xl font-bold ${atZero ? 'text-red-400' : ''}`}>
-            {c.hp.current}<span className="text-xl text-stone-400">/{c.hp.max}</span>
-          </div>
-          <div className="text-xs text-stone-400">HP{c.hp.temp > 0 && <span className="ml-2 rounded bg-sky-900 px-1 text-sky-200"><Term name="Temp HP">Temp {c.hp.temp}</Term></span>}</div>
-        </div>
-        <HelpButton
-          term="Heroic Inspiration"
-          onClick={() => act({ type: 'setInspiration', on: !c.heroicInspiration })}
-          className={`rounded-lg px-3 py-2 text-sm ${c.heroicInspiration ? 'bg-amber-500 font-bold text-stone-900' : 'bg-stone-900 text-stone-400'}`}
-        >
-          {c.heroicInspiration ? '★' : '☆'} Heroic Inspiration
-        </HelpButton>
-      </div>
-
-      <div className="mt-3 flex gap-2">
-        <input
-          className="w-16 rounded-lg border border-stone-600 bg-stone-900 px-2 py-2 text-center text-base"
-          inputMode="numeric"
-          placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-        />
-        <Button variant="danger" className="flex-1 whitespace-nowrap px-2" onClick={damage}>− ดาเมจ</Button>
-        <Button className="flex-1 whitespace-nowrap bg-emerald-800 px-2 hover:bg-emerald-700" onClick={healing}>+ ฮีล</Button>
-        <Button className="whitespace-nowrap px-2" onClick={tempHp}>Temp</Button>
-      </div>
-      {atZero && (
-        <label className="mt-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" className="h-5 w-5 accent-amber-400" checked={critical} onChange={(e) => setCritical(e.target.checked)} />
-          โดน Critical Hit (Death Save ล้มเหลว 2)
-        </label>
-      )}
-      {message && <p className="mt-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{message}</p>}
+      {/* HP sits above the tabs on the sheet (HpCard), so it never scrolls away. */}
+      {message && <p className="mb-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{message}</p>}
 
       {/* Action economy for this turn (the combat tracker resets it automatically) */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <ActionEconomyBar
             economy={c.turn}
