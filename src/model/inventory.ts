@@ -134,7 +134,7 @@ export function removeItem(c: Character, itemId: string): Character {
 /** Thai names of the slots, in the order the sheet shows them. */
 export const SLOT_LABEL: Record<EquipSlot, string> = {
   head: 'หัว', neck: 'คอ', hands: 'ถุงมือ', ring1: 'แหวน 1', ring2: 'แหวน 2', cloak: 'ผ้าคลุม', body: 'เกราะ/ชุด',
-  legs: 'ขา', feet: 'เท้า', mainHand: 'มือหลัก', offHand: 'มือรอง', back: 'สะพายหลัง',
+  waist: 'เอว', legs: 'ขา', feet: 'เท้า', mainHand: 'มือหลัก', offHand: 'มือรอง', back: 'สะพายหลัง',
 }
 
 const HANDS: EquipSlot[] = ['mainHand', 'offHand']
@@ -173,6 +173,7 @@ const takeOff = ({ slot: _slot, equipped: _equipped, ...rest }: InventoryItem): 
  * Returns the same character when nothing changes.
  */
 export function normalizeEquipment(c: Character, data: SrdEquipment): Character {
+  c = beltsToWaist(c)
   const used = new Set<EquipSlot>()
   const place = new Map<string, EquipSlot | null>()
   const tryPlace = (item: InventoryItem, slot: EquipSlot) => {
@@ -207,6 +208,16 @@ export function normalizeEquipment(c: Character, data: SrdEquipment): Character 
     return takeOff(i)
   })
   return changed ? { ...c, inventory } : c
+}
+
+/** Magic belts added before the waist slot existed were worn on the legs: move them to the waist. */
+function beltsToWaist(c: Character): Character {
+  const old = (i: InventoryItem) => i.magic && /^Belt\b/.test(i.name) && i.wear === 'legs'
+  if (!c.inventory.some(old)) return c
+  return {
+    ...c,
+    inventory: c.inventory.map((i) => (old(i) ? { ...i, wear: 'waist' as const, ...(i.slot === 'legs' ? { slot: 'waist' as const } : {}) } : i)),
+  }
 }
 
 /** What is in each slot (a Two-Handed weapon shows in both hands). */

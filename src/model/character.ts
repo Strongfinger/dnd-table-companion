@@ -95,7 +95,7 @@ export interface FeatPick {
 }
 
 /** Where an item is held or worn: one item per slot (model/inventory.ts). `back` = a weapon slung on the back; two rings. */
-export const EQUIP_SLOTS = ['head', 'neck', 'hands', 'ring1', 'ring2', 'cloak', 'body', 'legs', 'feet', 'mainHand', 'offHand', 'back'] as const
+export const EQUIP_SLOTS = ['head', 'neck', 'hands', 'ring1', 'ring2', 'cloak', 'body', 'waist', 'legs', 'feet', 'mainHand', 'offHand', 'back'] as const
 export type EquipSlot = (typeof EQUIP_SLOTS)[number]
 
 export interface InventoryItem {

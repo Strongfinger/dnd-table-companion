@@ -176,7 +176,7 @@ describe('SRD magic items as rewards', () => {
     expect(magicItemWear(loot('Boots of Speed', 'Wondrous Items'))).toBe('feet')
     expect(magicItemWear(loot('Gauntlets of Ogre Power', 'Wondrous Items'))).toBe('hands')
     expect(magicItemWear(loot('Helm of Telepathy', 'Wondrous Items'))).toBe('head')
-    expect(magicItemWear(loot('Belt of Giant Strength', 'Wondrous Items'))).toBe('legs')
+    expect(magicItemWear(loot('Belt of Giant Strength', 'Wondrous Items'))).toBe('waist')
     expect(magicItemWear(loot('Bag of Holding', 'Wondrous Items'))).toBe('back')
     expect(magicItemWear(loot('Potion of Healing', 'Potions'))).toBeUndefined()
     expect(magicItemWear(loot('Bag of Tricks', 'Wondrous Items'))).toBeUndefined()

@@ -269,8 +269,7 @@ export function magicItemWear(item: Pick<LootItem, 'name' | 'category'>): EquipS
   if (/^(Gauntlets|Gloves|Bracers)\b/.test(n)) return 'hands'
   if (/^(Helm|Hat|Circlet|Headband|Goggles|Eyes of|Ioun Stone)\b/.test(n)) return 'head'
   if (/^Robe\b/.test(n)) return 'body'
-  // No belt slot: a belt goes with the legs (the waist).
-  if (/^Belt\b/.test(n)) return 'legs'
+  if (/^Belt\b/.test(n)) return 'waist'
   if (/^(Bag of Holding|Handy Haversack|Efficient Quiver)$/.test(n)) return 'back'
   if (/^(Rod|Immovable Rod)\b/.test(n)) return 'mainHand'
   return undefined

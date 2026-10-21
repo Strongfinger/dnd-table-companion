@@ -173,6 +173,19 @@ describe('inventory', () => {
     expect(clash.inventory.map((i) => i.slot ?? null)).toEqual(['offHand', null])
   })
 
+  it('moves magic belts worn on the legs (before the waist slot) to the waist', async () => {
+    const data = await loadSrdEquipment()
+    const c = rogue()
+    c.inventory = [
+      { id: 'b', name: 'Belt of Dwarvenkind', qty: 1, magic: true, wear: 'legs', equipped: true, slot: 'legs' },
+      { id: 'p', name: 'Belt of Dwarvenkind', qty: 1, magic: true, wear: 'legs' },
+      { id: 'g', name: 'Greaves', qty: 1, wear: 'legs', equipped: true, slot: 'legs' },
+    ]
+    const n = normalizeEquipment(c, data)
+    expect(n.inventory.map((i) => [i.wear, i.slot ?? null])).toEqual([['waist', 'waist'], ['waist', null], ['legs', 'legs']])
+    expect(normalizeEquipment(n, data)).toBe(n)
+  })
+
   it('keeps slot and wear through export/import', async () => {
     const data = await loadSrdEquipment()
     let c = addPlainItem(rogue(), 'Boots', 1, 'feet')
