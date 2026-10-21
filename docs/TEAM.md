@@ -6,7 +6,7 @@ Ten agents in four teams, defined in `.claude/agents/`. The main Claude session 
 |---|---|---|
 | App | `business-analyst` | Requirements, spec and solution ideas (with tech-researcher / dnd-specialist) before coding |
 | App | `developer` | Code, algorithms, debugging, code review; branch + PR, never merges |
-| App | `ux-ui-designer` | Desktop/mobile screens, mockups, layout, interface code |
+| App | `ux-ui-designer` | Desktop/mobile screens, mockups, layout, interface code; design skills from `.claude/ux-ui-kit/` |
 | Quality | `qa-tester` | Test cases, bug hunting, root cause → back to the app team |
 | Quality | `content-reviewer` | Thai language and spelling, pictures, D&D rules and SRD license (replaces rules-reviewer) |
 | Knowledge | `tech-researcher` | Skills, tools and libraries; folders, backups, project memory |
