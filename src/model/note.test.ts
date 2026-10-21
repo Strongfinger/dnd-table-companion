@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { backlinks, createNote, findPage, noteTitle, pageSummary, parseLinks, searchNotes, thaiDate, today, withNoteDefaults } from './note'
+import { backlinks, changeKind, createNote, findPage, noteTitle, pageSummary, parseLinks, searchNotes, thaiDate, today, withNoteDefaults } from './note'
 
 describe('notes', () => {
   it('today uses local time', () => {
@@ -47,6 +47,19 @@ describe('notebook pages', () => {
     expect(rule.fields).toEqual({ status: 'active' })
     rule.fields = { ...rule.fields, type: 'condition', effect: '1d4 Fire ต่อเทิร์น' }
     expect(pageSummary(rule)).toBe('🟢 ใช้อยู่ · 🔥 สถานะ · 1d4 Fire ต่อเทิร์น')
+  })
+
+  it('changing the page type drops choice values the new type does not have', () => {
+    const quest = { ...createNote('camp', 0, 'quest', 'Find Gundren'), fields: { status: 'done', goal: 'หา Gundren' } }
+    expect(changeKind(quest, 'rule').fields).toEqual({ status: 'active', goal: 'หา Gundren' })
+    const place = { ...createNote('camp', 0, 'place', 'Phandalin'), fields: { type: 'เมือง' } }
+    expect(changeKind(place, 'rule').fields).toEqual({ status: 'active' })
+    expect(changeKind(place, 'npc').fields).toEqual({ type: 'เมือง' })
+  })
+
+  it('a page type from a newer app version opens as a session page', () => {
+    const stored = { ...createNote('camp', 0), kind: 'spaceship' as never }
+    expect(withNoteDefaults(stored).kind).toBe('session')
   })
 
   it('reads [[links]] in text', () => {

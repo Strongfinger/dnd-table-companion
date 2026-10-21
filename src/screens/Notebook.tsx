@@ -8,7 +8,7 @@ import { go } from '../app/router'
 import { listCampaigns } from '../db/campaigns'
 import { deleteNote, getNote, listNotes, saveNote } from '../db/notes'
 import {
-  backlinks, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, plainText, searchNotes, thaiDate,
+  backlinks, changeKind, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, plainText, searchNotes, thaiDate,
   type Note, type NoteKind,
 } from '../model/note'
 import { Button, TextInput } from '../ui/kit'
@@ -234,7 +234,7 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
         <Button variant="primary" className="text-sm" onClick={done}>✓ เสร็จ</Button>
       </div>
       <div className="flex flex-wrap gap-2">
-        <select aria-label="ประเภทหน้า" className={select} value={note.kind} onChange={(e) => set({ kind: e.target.value as NoteKind })}>
+        <select aria-label="ประเภทหน้า" className={select} value={note.kind} onChange={(e) => { const { kind, fields } = changeKind(note, e.target.value as NoteKind); set({ kind, fields }) }}>
           {NOTE_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
         </select>
         <select aria-label="แคมเปญ" className={`min-w-0 flex-1 ${select}`} value={note.campaignId ?? ''} onChange={(e) => set({ campaignId: e.target.value || null })}>

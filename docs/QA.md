@@ -3,6 +3,25 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 7 — PR #23 house rule pages (`rule` kind), 2026-10-21
+**Result:** pass. vitest 765/765, `tsc -b`, lint, build all clean. **Tested** (preview build, Chromium, 1280 px + 390 px):
+import `house-rules-pack.json` (3 rules, preview shows "📏 House rule × 3"), filter chip, open each rule (labels, house-rule
+note, [[links]] + backlinks between Flaming Weapon and Burning), new rule (default 🟢 ใช้อยู่, all 7 fields, link in "ใครใช้ได้"),
+edit status → ⚪ เลิกใช้ shows in the list line, search (Fire / Thai text / link target / case-insensitive), re-import "add only"
+and "replace" (no duplicates), backup download keeps `kind: 'rule'` and `parseBackup` keeps all 5, no overflow at 390 px,
+no console errors. Generators / ImportPack / DmPanel unaffected; notes are not synced to players.
+
+**Open (low):**
+- **Changing a page's type keeps old field values that mean something else.** Quest → House rule keeps `status: 'open'`:
+  the page shows raw "สถานะกฎ: open", the list line drops the status, and the editor select shows "🟢 ใช้อยู่" while `open`
+  is stored (same for rule → quest with `active`, and place → rule with free-text `type`). Cause: the type select
+  (`src/screens/Notebook.tsx:237`) only sets `kind`. Fix idea: on type change, drop a choice field whose value is not
+  one of the new type's choices and use the new type's default (`createNote` defaults), plus a test.
+- **An older app build reading a `rule` page from IndexedDB would crash the notebook list** (`KIND_LABEL[n.kind].split`,
+  `Notebook.tsx:70`; `KIND_FIELDS[note.kind].filter`, `:141`). Only after a rollback/stale PWA on the same device;
+  backup/pack import in an old build falls back to a Session page (fields kept, hidden). Fix idea (future-proof): in
+  `withNoteDefaults`, map unknown kinds to `'session'`.
+
 ## Pass 6 — owner's test session, 2026-10-13
 | Found | Fix |
 |---|---|

@@ -100,7 +100,24 @@ export interface Note extends SyncMeta {
 
 /** Fill in what notes saved before the notebook don't have. */
 export function withNoteDefaults(stored: Partial<Note> & { id: string }): Note {
-  return { kind: 'session', fields: {}, scenes: [], ...stored } as Note
+  const note = { kind: 'session', fields: {}, scenes: [], ...stored } as Note
+  // A page type from a newer app version: show it as a session page instead of crashing.
+  return (NOTE_KINDS as readonly string[]).includes(note.kind) ? note : { ...note, kind: 'session' }
+}
+
+/**
+ * The page with another type. Choice fields (like a quest's or a house rule's status) keep their value
+ * only if the new type has the same choice; otherwise the new type's default is used.
+ */
+export function changeKind(note: Note, kind: NoteKind): Note {
+  const defaults = createNote(null, 0, kind).fields
+  const fields: Record<string, string> = {}
+  for (const [key, value] of Object.entries(note.fields ?? {})) {
+    const def = KIND_FIELDS[kind].find((f) => f.key === key)
+    if (def?.choices && !def.choices.some((c) => c.value === value)) continue
+    fields[key] = value
+  }
+  return { ...note, kind, fields: { ...defaults, ...fields } }
 }
 
 /** Today as YYYY-MM-DD in local time (not UTC, so a late-night session keeps its day). */
