@@ -6,6 +6,7 @@ import { loadSrdSpells, type SrdSpell } from '../model/spells'
 import type { SpellsThFile, SpellTh } from '../model/spellsTh'
 import type { FeaturesThFile, FeatureTh } from '../model/featuresTh'
 import type { MagicItemsThFile, MagicItemTh } from '../model/magicItemsTh'
+import type { MagicItemSummaryFile } from '../model/magicItemSummary'
 import type { EquipmentThFile } from '../model/equipmentTh'
 import type { MonstersThFile, MonsterTh } from '../model/monstersTh'
 import { loadSrdEquipment, type SrdEquipment } from '../model/equipment'
@@ -93,6 +94,15 @@ export function useMagicItems(): LootItem[] | null {
     import('../data/srd-magic-items.json').then((m) => setList(m.default as LootItem[]))
   }, [])
   return list
+}
+
+/** Short Thai summaries of the SRD magic items by id ({} until loaded). */
+export function useMagicItemSummaries(): MagicItemSummaryFile['items'] {
+  const [map, setMap] = useState<MagicItemSummaryFile['items']>({})
+  useEffect(() => {
+    import('../data/srd-magic-items-summary-th.json').then((m) => setMap((m.default as MagicItemSummaryFile).items))
+  }, [])
+  return map
 }
 
 /** SRD 5.2.1 equipment (weapons, armor, gear) for the sheet's attacks and inventory. */

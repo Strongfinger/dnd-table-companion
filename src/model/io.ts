@@ -8,7 +8,7 @@ import { createCharacter, EQUIP_SLOTS, newId, type Character, type EquipSlot } f
 import { parseBuff } from './characterActions'
 import { isItemImage } from './itemImage'
 import { MAX_ITEM_WEIGHT } from './carrying'
-import { MAX_ITEM_DESCRIPTION } from './inventory'
+import { MAX_ITEM_DESCRIPTION, MAX_ITEM_SUMMARY } from './inventory'
 
 export const EXPORT_FORMAT = 'dnd-table-companion/character'
 export const EXPORT_VERSION = 1
@@ -267,6 +267,8 @@ function item(v: unknown): Character['inventory'][number] | undefined {
   if (isItemWeight(v.weight)) out.weight = v.weight
   const description = text(v.description, MAX_ITEM_DESCRIPTION)
   if (description) out.description = description
+  const summary = text(v.summary, MAX_ITEM_SUMMARY)
+  if (summary) out.summary = summary
   if (v.magic === true) out.magic = true
   return out
 }

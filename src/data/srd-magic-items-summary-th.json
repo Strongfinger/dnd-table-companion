@@ -1,0 +1,1118 @@
+{
+ "source": "Short Thai summaries of the SRD 5.2.1 magic items (src/data/srd-magic-items.json), written for this app (2026-10-21).",
+ "license": "This work includes material from the System Reference Document 5.2.1 (\"SRD 5.2.1\") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+ "items": {
+  "adamantine-armor": {
+   "name": "Adamantine Armor",
+   "summary": "ขณะสวม Critical Hit ที่โดนคุณกลายเป็นการโดนธรรมดา"
+  },
+  "ammunition-of-slaying": {
+   "name": "Ammunition of Slaying",
+   "summary": "ศัตรูชนิดที่กำหนด (DM เลือก) ที่โดนกระสุนนี้ต้อง CON Save DC 17 พลาดรับ Force เพิ่ม 6d10 (ผ่านรับครึ่ง) · ใช้แล้วหมดเวท"
+  },
+  "ammunition-1": {
+   "name": "Ammunition, +1",
+   "summary": "+1 Attack และ Damage · โดนเป้าแล้วหมดเวท"
+  },
+  "ammunition-2": {
+   "name": "Ammunition, +2",
+   "summary": "+2 Attack และ Damage · โดนเป้าแล้วหมดเวท"
+  },
+  "ammunition-3": {
+   "name": "Ammunition, +3",
+   "summary": "+3 Attack และ Damage · โดนเป้าแล้วหมดเวท"
+  },
+  "amulet-of-health": {
+   "name": "Amulet of Health",
+   "summary": "CON กลายเป็น 19 ขณะสวม (ไม่มีผลถ้า CON เดิม 19 ขึ้นไป)"
+  },
+  "amulet-of-proof-against-detection-and-location": {
+   "name": "Amulet of Proof against Detection and Location",
+   "summary": "ขณะสวม ไม่โดนเล็งด้วยเวท Divination และไม่ถูกมองผ่านเซนเซอร์ Scrying เว้นแต่ยอม"
+  },
+  "amulet-of-the-planes": {
+   "name": "Amulet of the Planes",
+   "summary": "Magic action + INT (Arcana) DC 15: ผ่าน = ร่าย Plane Shift ไปที่ที่รู้จัก · พลาด = คุณและรอบตัว 15 ft ไประนาบสุ่ม"
+  },
+  "animated-shield": {
+   "name": "Animated Shield",
+   "summary": "Bonus Action ให้โล่ลอยป้องกัน 1 นาที (ได้ AC โล่โดยมือว่าง)"
+  },
+  "apparatus-of-the-crab": {
+   "name": "Apparatus of the Crab",
+   "summary": "ถังเหล็กที่กลายเป็นยานปูกลใต้น้ำ คนขับ 2 คน ควบคุมด้วยคันโยก 10 อัน (เดิน ว่าย หนีบ)"
+  },
+  "armor-1": {
+   "name": "Armor +1",
+   "summary": "+1 AC ขณะสวม (นอกจาก AC ปกติของเกราะ)"
+  },
+  "armor-2": {
+   "name": "Armor +2",
+   "summary": "+2 AC ขณะสวม (นอกจาก AC ปกติของเกราะ)"
+  },
+  "armor-3": {
+   "name": "Armor +3",
+   "summary": "+3 AC ขณะสวม (นอกจาก AC ปกติของเกราะ)"
+  },
+  "armor-of-invulnerability": {
+   "name": "Armor of Invulnerability",
+   "summary": "Resistance ต่อ Bludgeoning, Piercing, Slashing · Magic action: Immunity ต่อทั้งสามแบบ 10 นาที (1 ครั้ง/วัน)"
+  },
+  "armor-of-resistance": {
+   "name": "Armor of Resistance",
+   "summary": "Resistance ต่อความเสียหาย 1 ชนิด (DM เลือกหรือทอย)"
+  },
+  "armor-of-vulnerability": {
+   "name": "Armor of Vulnerability",
+   "summary": "Resistance ต่อ Bludgeoning, Piercing หรือ Slashing 1 ชนิด · คำสาป: Vulnerability ต่ออีก 2 ชนิด และถอดไม่ได้"
+  },
+  "arrow-catching-shield": {
+   "name": "Arrow-Catching Shield",
+   "summary": "+2 AC เพิ่มต่อ ranged attack · Reaction รับลูกยิงแทนเพื่อนที่อยู่ในระยะ 5 ft"
+  },
+  "bag-of-beans": {
+   "name": "Bag of Beans",
+   "summary": "ถุงถั่ว 3d4 เม็ด: เททิ้งระเบิด Fire 5d4 รัศมี 10 ft (DEX DC 15 ครึ่ง) · ปลูกเม็ดถั่วได้ผลสุ่ม"
+  },
+  "bag-of-devouring": {
+   "name": "Bag of Devouring",
+   "summary": "ดูเหมือน Bag of Holding แต่กินสิ่งมีชีวิตและของที่ใส่ลงไป · สิ่งที่ยื่นมือเข้าไปอาจโดนดึงเข้าไป"
+  },
+  "bag-of-holding": {
+   "name": "Bag of Holding",
+   "summary": "ใส่ของได้ 500 lb (64 ลบ.ฟุต) แต่หนักแค่ 5 lb · หยิบของใช้ Utilize action"
+  },
+  "bag-of-tricks": {
+   "name": "Bag of Tricks",
+   "summary": "Magic action ดึงลูกขนออกมาโยน กลายเป็นสัตว์สุ่มที่เป็นมิตรจนถึงเช้า (3 ตัว/วัน) · Bonus Action สั่งการ"
+  },
+  "bead-of-force": {
+   "name": "Bead of Force",
+   "summary": "ขว้าง 60 ft ระเบิดรัศมี 10 ft: DEX DC 15 พลาดรับ Force 5d4 และติดในทรงกลมพลัง 1 นาที"
+  },
+  "bead-of-nourishment": {
+   "name": "Bead of Nourishment",
+   "summary": "กิน 1 เม็ด = อิ่มเท่า Rations 1 วัน"
+  },
+  "belt-of-dwarvenkind": {
+   "name": "Belt of Dwarvenkind",
+   "summary": "CON +2 (สูงสุด 20) · รู้ภาษา Dwarvish · Advantage Persuasion กับ dwarf · ถ้าไม่ใช่ dwarf: Darkvision 60 ft, Resistance ต่อ Poison และ Advantage Save vs Poisoned"
+  },
+  "belt-of-giant-strength": {
+   "name": "Belt of Giant Strength",
+   "summary": "STR กลายเป็น 21–29 ตามชนิดยักษ์ขณะสวม (ไม่มีผลถ้า STR เดิมสูงกว่า)"
+  },
+  "berserker-axe": {
+   "name": "Berserker Axe",
+   "summary": "+1 Attack/Damage · HP max +1 ต่อเลเวล · คำสาป: โดนโจมตีอาจคลั่ง (WIS DC 15) และไม่ยอมทิ้งขวาน"
+  },
+  "boots-of-elvenkind": {
+   "name": "Boots of Elvenkind",
+   "summary": "เดินไม่มีเสียง · Advantage DEX (Stealth)"
+  },
+  "boots-of-levitation": {
+   "name": "Boots of Levitation",
+   "summary": "ร่าย Levitate ใส่ตัวเองได้ตามใจ"
+  },
+  "boots-of-speed": {
+   "name": "Boots of Speed",
+   "summary": "Bonus Action: Speed ×2 และ Opportunity Attack ใส่คุณมี Disadvantage (รวม 10 นาที ต่อ Long Rest)"
+  },
+  "boots-of-striding-and-springing": {
+   "name": "Boots of Striding and Springing",
+   "summary": "Speed อย่างน้อย 30 ft และไม่ลดจากของหนักหรือเกราะหนัก · กระโดดไกล 30 ft ใช้ movement แค่ 10 ft (1 ครั้ง/เทิร์น)"
+  },
+  "boots-of-the-winterlands": {
+   "name": "Boots of the Winterlands",
+   "summary": "Resistance ต่อ Cold · ทนหนาวจัด · ไม่นับน้ำแข็ง/หิมะเป็น Difficult Terrain"
+  },
+  "bowl-of-commanding-water-elementals": {
+   "name": "Bowl of Commanding Water Elementals",
+   "summary": "เติมน้ำแล้ว Magic action เรียก Water Elemental ที่เชื่อฟัง 1 ชม. (1 ครั้ง/วัน)"
+  },
+  "bracers-of-archery": {
+   "name": "Bracers of Archery",
+   "summary": "Proficiency กับ Longbow/Shortbow และ +2 Damage กับธนูพวกนั้น"
+  },
+  "bracers-of-defense": {
+   "name": "Bracers of Defense",
+   "summary": "+2 AC ถ้าไม่สวมเกราะและไม่ใช้โล่"
+  },
+  "horn-of-valhalla-2": {
+   "name": "Brass Horn of Valhalla",
+   "summary": "Magic action เป่าเรียกวิญญาณนักรบ (Berserker) 3 ตนช่วยสู้ 1 ชม. (1 ครั้ง/7 วัน) · ต้องมี Proficiency อาวุธ Simple ทุกชนิด ไม่งั้นโดนโจมตีเอง"
+  },
+  "brazier-of-commanding-fire-elementals": {
+   "name": "Brazier of Commanding Fire Elementals",
+   "summary": "Magic action เรียก Fire Elemental ที่เชื่อฟัง 1 ชม. (1 ครั้ง/วัน)"
+  },
+  "horn-of-valhalla-3": {
+   "name": "Bronze Horn of Valhalla",
+   "summary": "Magic action เป่าเรียกวิญญาณนักรบ (Berserker) 4 ตนช่วยสู้ 1 ชม. (1 ครั้ง/7 วัน) · ต้องมี training เกราะ Medium ไม่งั้นโดนโจมตีเอง"
+  },
+  "brooch-of-shielding": {
+   "name": "Brooch of Shielding",
+   "summary": "Resistance ต่อ Force และ Immunity ต่อ Magic Missile"
+  },
+  "broom-of-flying": {
+   "name": "Broom of Flying",
+   "summary": "ขี่บินได้ Fly Speed 50 ft (30 ft ถ้าบรรทุกเกิน 200 lb) · เรียกให้บินมาหาได้ในระยะ 1 ไมล์"
+  },
+  "candle-of-invocation": {
+   "name": "Candle of Invocation",
+   "summary": "จุดแล้ว (รวม 4 ชม.) ขณะอยู่ในแสง 30 ft คุณได้ Advantage ทุก D20 Test · Cleric/Druid ร่ายเวทเลเวล 1 ไม่เสีย slot · หรือร่าย Gate ครั้งเดียว"
+  },
+  "cape-of-the-mountebank": {
+   "name": "Cape of the Mountebank",
+   "summary": "ร่าย Dimension Door ได้ (1 ครั้ง/วัน) ทิ้งควันไว้ที่เดิม"
+  },
+  "carpet-of-flying": {
+   "name": "Carpet of Flying",
+   "summary": "พรมบินได้ตามคำสั่งในระยะ 30 ft · ขนาดและ Fly Speed ตามชนิดพรม (บรรทุกเกินช้าลงครึ่ง)"
+  },
+  "censer-of-controlling-air-elementals": {
+   "name": "Censer of Controlling Air Elementals",
+   "summary": "Magic action เรียก Air Elemental ที่เชื่อฟัง 1 ชม. (1 ครั้ง/วัน)"
+  },
+  "chime-of-opening": {
+   "name": "Chime of Opening",
+   "summary": "ร่าย Knock ได้ 10 ครั้งแล้วแตก"
+  },
+  "circlet-of-blasting": {
+   "name": "Circlet of Blasting",
+   "summary": "ร่าย Scorching Ray (+5 to hit) ได้ 1 ครั้ง/วัน"
+  },
+  "cloak-of-arachnida": {
+   "name": "Cloak of Arachnida",
+   "summary": "Resistance ต่อ Poison · Climb Speed เดินบนผนัง/เพดานได้ · ไม่ติดใยแมงมุม · ร่าย Web (DC 13) 1 ครั้ง/วัน"
+  },
+  "cloak-of-displacement": {
+   "name": "Cloak of Displacement",
+   "summary": "ศัตรูโจมตีคุณด้วย Disadvantage · หยุดทำงานถึงต้นเทิร์นหน้าเมื่อคุณโดนดาเมจ"
+  },
+  "cloak-of-elvenkind": {
+   "name": "Cloak of Elvenkind",
+   "summary": "Advantage DEX (Stealth) · Perception ที่หาคุณมี Disadvantage"
+  },
+  "cloak-of-invisibility": {
+   "name": "Cloak of Invisibility",
+   "summary": "3 ชาร์จ: Magic action ใช้ 1 ชาร์จ ได้ Invisible 1 ชม. · ฟื้น 1d3 ชาร์จทุกเช้า"
+  },
+  "cloak-of-protection": {
+   "name": "Cloak of Protection",
+   "summary": "+1 AC และ +1 ทุก Saving Throw"
+  },
+  "cloak-of-the-bat": {
+   "name": "Cloak of the Bat",
+   "summary": "Advantage DEX (Stealth) · ในที่มืด/สลัวบินได้ 40 ft · ร่าย Polymorph เป็นค้างคาวได้ 1 ครั้ง/วัน"
+  },
+  "cloak-of-the-manta-ray": {
+   "name": "Cloak of the Manta Ray",
+   "summary": "หายใจใต้น้ำได้ และ Swim Speed 60 ft"
+  },
+  "crystal-ball": {
+   "name": "Crystal Ball",
+   "summary": "ร่าย Scrying (DC 17) ได้"
+  },
+  "crystal-ball-of-mind-reading": {
+   "name": "Crystal Ball of Mind Reading",
+   "summary": "ร่าย Scrying (DC 17) และ Detect Thoughts ผ่านเซนเซอร์ได้"
+  },
+  "crystal-ball-of-telepathy": {
+   "name": "Crystal Ball of Telepathy",
+   "summary": "ร่าย Scrying (DC 17) · สื่อสารโทรจิตผ่านเซนเซอร์ · ร่าย Suggestion ผ่านเซนเซอร์ 1 ครั้ง/วัน"
+  },
+  "crystal-ball-of-true-seeing": {
+   "name": "Crystal Ball of True Seeing",
+   "summary": "ร่าย Scrying (DC 17) และมี Truesight 120 ft รอบเซนเซอร์"
+  },
+  "cube-of-force": {
+   "name": "Cube of Force",
+   "summary": "10 ชาร์จ: กดหน้าลูกบาศก์เพื่อร่ายเวทป้องกัน (เช่น Mage Armor, Shield, Wall of Force) · ฟื้น 1d6 ชาร์จทุกเช้า"
+  },
+  "cubic-gate": {
+   "name": "Cubic Gate",
+   "summary": "3 ชาร์จ: ร่าย Gate หรือ Plane Shift ไปยังระนาบที่ผูกกับแต่ละหน้า"
+  },
+  "dagger-of-venom": {
+   "name": "Dagger of Venom",
+   "summary": "+1 Attack/Damage · Bonus Action เคลือบพิษ: โดนแล้ว CON DC 15 พลาดรับ Poison 2d10 และ Poisoned 1 นาที (1 ครั้ง/วัน)"
+  },
+  "dancing-sword": {
+   "name": "Dancing Sword",
+   "summary": "Bonus Action โยนให้ดาบลอยโจมตีเองได้ 4 ครั้ง แล้วกลับมาที่มือ"
+  },
+  "decanter-of-endless-water": {
+   "name": "Decanter of Endless Water",
+   "summary": "Magic action สั่งให้น้ำไหลออก: 1 แกลลอน, 5 แกลลอน หรือพุ่งแรงผลักศัตรู (STR DC 13)"
+  },
+  "deck-of-illusions": {
+   "name": "Deck of Illusions",
+   "summary": "สุ่มจั่วการ์ดแล้วขว้าง กลายเป็นภาพลวงตาของสัตว์ประหลาดจนกว่าจะถูกจับได้"
+  },
+  "defender": {
+   "name": "Defender",
+   "summary": "+3 Attack/Damage · โจมตีครั้งแรกของเทิร์น ย้ายโบนัสบางส่วนไปเป็น AC ได้ถึงเทิร์นหน้า"
+  },
+  "demon-armor": {
+   "name": "Demon Armor",
+   "summary": "+1 AC · รู้ภาษา Abyssal · Unarmed Strike +1 ทำ Slashing 1d8 · คำสาป: ถอดไม่ได้ และ Disadvantage โจมตีหรือ Save กับปีศาจ"
+  },
+  "dimensional-shackles": {
+   "name": "Dimensional Shackles",
+   "summary": "ใส่สิ่งมีชีวิตที่ Incapacitated: ห้ามเทเลพอร์ตหรือเดินทางข้ามมิติ"
+  },
+  "dragon-orb": {
+   "name": "Dragon Orb",
+   "summary": "(Artifact) ควบคุมมังกรในระยะ 1 ไมล์ด้วย CHA Save DC 15 · ร่ายเวทหลายแบบ · DM ใช้เป็นของพิเศษ"
+  },
+  "dragon-scale-mail": {
+   "name": "Dragon Scale Mail",
+   "summary": "+1 AC · Advantage Save ต่อ Breath Weapon ของมังกร · Resistance ต่อธาตุของมังกรชนิดนั้น · หาทิศมังกรชนิดเดียวกันที่ใกล้ที่สุดได้ 1 ครั้ง/วัน"
+  },
+  "dragon-slayer": {
+   "name": "Dragon Slayer",
+   "summary": "+1 Attack/Damage · ทำดาเมจเพิ่ม 3d6 ใส่ Dragon"
+  },
+  "dust-of-disappearance": {
+   "name": "Dust of Disappearance",
+   "summary": "ใช้ครั้งเดียว: คุณและทุกคนรอบตัว 10 ft ได้ Invisible 2d4 นาที"
+  },
+  "dust-of-dryness": {
+   "name": "Dust of Dryness",
+   "summary": "1d6+4 หยิบมือ: เปลี่ยนน้ำ 15 ft เป็นเม็ดเล็ก · โรยใส่ Elemental น้ำ: CON DC 13 พลาดรับ Necrotic 10d6"
+  },
+  "dust-of-sneezing-and-choking": {
+   "name": "Dust of Sneezing and Choking",
+   "summary": "(ของหลอก ดูเหมือน Dust of Disappearance) ใช้แล้วคุณและทุกคนในระยะ 30 ft ต้อง CON DC 15 พลาด = Incapacitated และหายใจไม่ออกจามไม่หยุด"
+  },
+  "dwarven-plate": {
+   "name": "Dwarven Plate",
+   "summary": "+2 AC · Reaction ลดระยะที่ถูกผลักไปตามพื้นได้สูงสุด 10 ft"
+  },
+  "dwarven-thrower": {
+   "name": "Dwarven Thrower",
+   "summary": "+3 Attack/Damage · ขว้างได้ (20/60 ft) แล้วบินกลับมือ · ขว้างโดนทำ Force เพิ่ม 1d8 (2d8 ใส่ Giant)"
+  },
+  "efficient-quiver": {
+   "name": "Efficient Quiver",
+   "summary": "กระบอกธนู 3 ช่อง ใส่ลูกธนู 60, Javelin 18 และไม้ยาว 6 ชิ้น แต่หนักไม่เกิน 2 lb"
+  },
+  "efreeti-bottle": {
+   "name": "Efreeti Bottle",
+   "summary": "เปิดขวดปล่อย Efreeti: สุ่มผล อาจโจมตีคุณ รับใช้ 1 ชม. หรือให้พร 3 ข้อ (Wish)"
+  },
+  "elemental-gem": {
+   "name": "Elemental Gem",
+   "summary": "ทุบอัญมณีเรียก Elemental ที่เชื่อฟัง 1 ชม. (ชนิดตามสีอัญมณี) · ใช้ได้ครั้งเดียว"
+  },
+  "elixir-of-health": {
+   "name": "Elixir of Health",
+   "summary": "ดื่มแล้วหายจากโรคเวท และหายจาก Blinded, Deafened, Paralyzed, Poisoned"
+  },
+  "elven-chain": {
+   "name": "Elven Chain",
+   "summary": "+1 AC · ใส่ได้แม้ไม่มี training เกราะ Medium/Heavy"
+  },
+  "energy-bow": {
+   "name": "Energy Bow",
+   "summary": "+1 Attack/Damage · ลูกธนูพลังงานทำ Force · ยิงลูกพิเศษได้ (ผลัก, หยุดเป้า, สร้างบันได)"
+  },
+  "eversmoking-bottle": {
+   "name": "Eversmoking Bottle",
+   "summary": "เปิดขวดปล่อยควันหนา Heavily Obscured รัศมี 60 ft และขยายทุกนาที"
+  },
+  "eyes-of-charming": {
+   "name": "Eyes of Charming",
+   "summary": "3 ชาร์จ: ร่าย Charm Person (DC 13) เพิ่มเลเวลได้ตามชาร์จที่ใช้ · ฟื้นทุกเช้า"
+  },
+  "eyes-of-minute-seeing": {
+   "name": "Eyes of Minute Seeing",
+   "summary": "Darkvision 1 ft และ Advantage INT (Investigation) ตรวจของระยะ 1 ft"
+  },
+  "eyes-of-the-eagle": {
+   "name": "Eyes of the Eagle",
+   "summary": "Advantage WIS (Perception) ที่ใช้สายตา · มองเห็นรายละเอียดได้ไกลมาก"
+  },
+  "feather-token": {
+   "name": "Feather Token",
+   "summary": "ขนนกใช้ครั้งเดียว ผลตามชนิด (สมอ, นก, พัด, เรือหงส์, ต้นไม้, แส้)"
+  },
+  "figurine-of-wondrous-power": {
+   "name": "Figurine of Wondrous Power",
+   "summary": "โยนรูปปั้นกลายเป็นสัตว์ที่เชื่อฟังชั่วเวลาหนึ่ง · ชนิดและเวลาใช้ซ้ำตามรูปปั้น"
+  },
+  "flame-tongue": {
+   "name": "Flame Tongue",
+   "summary": "Bonus Action จุดไฟ: ทำ Fire เพิ่ม 2d6 และให้แสงสว่าง 40 ft"
+  },
+  "folding-boat": {
+   "name": "Folding Boat",
+   "summary": "กล่องไม้ที่กางออกเป็นเรือพาย หรือเรือใหญ่ด้วยคำสั่ง"
+  },
+  "frost-brand": {
+   "name": "Frost Brand",
+   "summary": "ตีโดนทำ Cold เพิ่ม 1d6 · Resistance ต่อ Fire · ดับไฟรอบตัวได้ 1 ครั้ง/ชม."
+  },
+  "gauntlets-of-ogre-power": {
+   "name": "Gauntlets of Ogre Power",
+   "summary": "STR กลายเป็น 19 ขณะสวม (ไม่มีผลถ้า STR เดิม 19 ขึ้นไป)"
+  },
+  "gem-of-brightness": {
+   "name": "Gem of Brightness",
+   "summary": "50 ชาร์จ: ส่องแสง (ฟรี), ลำแสงทำให้ Blinded, หรือแสงจ้ากรวย 30 ft (CON DC 15)"
+  },
+  "gem-of-seeing": {
+   "name": "Gem of Seeing",
+   "summary": "3 ชาร์จ: มองผ่านอัญมณีได้ Truesight 120 ft นาน 10 นาที · ฟื้น 1d3 ทุกเช้า"
+  },
+  "giant-slayer": {
+   "name": "Giant Slayer",
+   "summary": "+1 Attack/Damage · ตีโดน Giant ทำเพิ่ม 2d6 และ STR DC 15 พลาดล้ม Prone"
+  },
+  "glamoured-studded-leather": {
+   "name": "Glamoured Studded Leather",
+   "summary": "+1 AC · Bonus Action เปลี่ยนรูปลักษณ์เกราะให้ดูเหมือนเสื้อผ้าหรือเกราะอื่น"
+  },
+  "gloves-of-missile-snaring": {
+   "name": "Gloves of Missile Snaring",
+   "summary": "Reaction เมื่อโดนอาวุธ Ranged/Thrown: ลดดาเมจ 1d10 + DEX mod · ลดเหลือ 0 จับไว้ได้"
+  },
+  "gloves-of-swimming-and-climbing": {
+   "name": "Gloves of Swimming and Climbing",
+   "summary": "Climb Speed และ Swim Speed เท่า Speed · +5 STR (Athletics) ปีนหรือว่ายน้ำ"
+  },
+  "gloves-of-thievery": {
+   "name": "Gloves of Thievery",
+   "summary": "+5 DEX (Sleight of Hand) · มองไม่เห็นถุงมือขณะสวม"
+  },
+  "goggles-of-night": {
+   "name": "Goggles of Night",
+   "summary": "Darkvision 60 ft (มีอยู่แล้วเพิ่มอีก 60 ft)"
+  },
+  "hammer-of-thunderbolts": {
+   "name": "Hammer of Thunderbolts",
+   "summary": "+1 Attack/Damage · 5 ชาร์จ: ขว้าง 20/60 ft โดนแล้วเป้าและรอบ 30 ft CON DC 17 พลาด = Stunned · ใช้คู่ Belt of Giant Strength/Gauntlets of Ogre Power: STR +4"
+  },
+  "handy-haversack": {
+   "name": "Handy Haversack",
+   "summary": "เป้มิติ: ช่องข้างละ 200 lb ช่องกลาง 500 lb หนักแค่ 5 lb · ของที่ต้องการอยู่บนสุดเสมอ (หยิบด้วย Bonus Action)"
+  },
+  "hat-of-disguise": {
+   "name": "Hat of Disguise",
+   "summary": "ร่าย Disguise Self ได้ตามใจ"
+  },
+  "hat-of-many-spells": {
+   "name": "Hat of Many Spells",
+   "summary": "Spellcasting Focus ของ Wizard · ลองร่ายเวท Wizard ที่ไม่รู้ได้ด้วย INT (Arcana) DC 10 + เลเวลเวท"
+  },
+  "headband-of-intellect": {
+   "name": "Headband of Intellect",
+   "summary": "INT กลายเป็น 19 ขณะสวม (ไม่มีผลถ้า INT เดิม 19 ขึ้นไป)"
+  },
+  "helm-of-brilliance": {
+   "name": "Helm of Brilliance",
+   "summary": "อัญมณีในหมวกใช้ร่ายเวทแสงและไฟ (Daylight, Fireball, Wall of Fire ฯลฯ) · Resistance ต่อ Fire · อาวุธติดไฟ"
+  },
+  "helm-of-comprehending-languages": {
+   "name": "Helm of Comprehending Languages",
+   "summary": "ร่าย Comprehend Languages ได้ตามใจ"
+  },
+  "helm-of-telepathy": {
+   "name": "Helm of Telepathy",
+   "summary": "โทรจิต 30 ft · ร่าย Detect Thoughts และ Suggestion (DC 13) อย่างละ 1 ครั้ง/วัน"
+  },
+  "helm-of-teleportation": {
+   "name": "Helm of Teleportation",
+   "summary": "3 ชาร์จ: ร่าย Teleport · ฟื้น 1d3 ทุกเช้า"
+  },
+  "holy-avenger": {
+   "name": "Holy Avenger",
+   "summary": "+3 Attack/Damage · Fiend/Undead โดนเพิ่ม Radiant 2d10 · ออร่า 10 ft: คุณและพวกพ้อง Advantage Save ต่อเวท (Paladin เลเวล 17+ เป็น 30 ft)"
+  },
+  "horn-of-blasting": {
+   "name": "Horn of Blasting",
+   "summary": "เป่าแตรกรวย 30 ft: CON DC 15 พลาดรับ Thunder 5d8 และ Deafened · มีโอกาสแตกระเบิด"
+  },
+  "horseshoes-of-a-zephyr": {
+   "name": "Horseshoes of a Zephyr",
+   "summary": "ม้าที่ใส่ครบ 4 เกือกลอยเหนือพื้น เดินบนน้ำ/ลาวาได้ ไม่ทิ้งรอย ไม่สนใจ Difficult Terrain · เดินทาง 12 ชม./วันไม่เหนื่อย"
+  },
+  "horseshoes-of-speed": {
+   "name": "Horseshoes of Speed",
+   "summary": "ม้าที่ใส่ครบ 4 เกือก Speed +30 ft"
+  },
+  "immovable-rod": {
+   "name": "Immovable Rod",
+   "summary": "กดปุ่มแล้วแท่งค้างกลางอากาศ รับน้ำหนักได้ 8,000 lb"
+  },
+  "instant-fortress": {
+   "name": "Instant Fortress",
+   "summary": "รูปปั้นเล็กที่ขยายเป็นหอคอย adamantine 20×20 ft สูง 30 ft"
+  },
+  "ioun-stone": {
+   "name": "Ioun Stone",
+   "summary": "หินลอยรอบหัว ให้ผลตามชนิด (เช่น +1 AC, +1 Save, เพิ่มค่า Ability) · ใช้ Magic action คว้าคืน"
+  },
+  "iron-bands": {
+   "name": "Iron Bands",
+   "summary": "ขว้างใส่สิ่งมีชีวิตในระยะ 60 ft: โดนแล้ว Restrained · ใช้ได้ 1 ครั้ง/วัน"
+  },
+  "iron-flask": {
+   "name": "Iron Flask",
+   "summary": "ขังสิ่งมีชีวิตต่างระนาบไว้ในขวด (WIS DC 17) แล้วปล่อยให้รับใช้ 1 ชม."
+  },
+  "horn-of-valhalla-4": {
+   "name": "Iron Horn of Valhalla",
+   "summary": "Magic action เป่าเรียกวิญญาณนักรบ (Berserker) 5 ตนช่วยสู้ 1 ชม. (1 ครั้ง/7 วัน) · ต้องมี Proficiency อาวุธ Martial ทุกชนิด ไม่งั้นโดนโจมตีเอง"
+  },
+  "javelin-of-lightning": {
+   "name": "Javelin of Lightning",
+   "summary": "เลือกทำ Lightning แทน Piercing · ขว้างเป็นสายฟ้ายาว 120 ft (DEX DC 13 รับ 4d6) 1 ครั้ง/วัน"
+  },
+  "lantern-of-revealing": {
+   "name": "Lantern of Revealing",
+   "summary": "แสงตะเกียงทำให้เห็นสิ่งที่ Invisible ในรัศมีแสงจ้า 30 ft"
+  },
+  "luck-blade": {
+   "name": "Luck Blade",
+   "summary": "+1 Attack/Damage และ +1 Saving Throw · ทอย d20 ซ้ำได้ 1 ครั้ง/วัน · อาจมี Wish ติดมาด้วย"
+  },
+  "mace-of-disruption": {
+   "name": "Mace of Disruption",
+   "summary": "Fiend/Undead โดนเพิ่ม Radiant 2d6 · ถ้าเหลือ HP ≤ 25 ต้อง WIS DC 15 ไม่ผ่านถูกทำลาย · ส่องแสงได้"
+  },
+  "mace-of-smiting": {
+   "name": "Mace of Smiting",
+   "summary": "+1 Attack/Damage (+3 กับ Construct) · ทอยได้ 20 ทำเพิ่ม 7 (14 กับ Construct)"
+  },
+  "mace-of-terror": {
+   "name": "Mace of Terror",
+   "summary": "3 ชาร์จ: Magic action ปล่อยความกลัว 30 ft (WIS DC 15) พลาด = Frightened 1 นาที · ฟื้น 1d3 ทุกเช้า"
+  },
+  "mantle-of-spell-resistance": {
+   "name": "Mantle of Spell Resistance",
+   "summary": "Advantage ต่อ Saving Throw ที่มาจากเวท"
+  },
+  "manual-of-bodily-health": {
+   "name": "Manual of Bodily Health",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: CON +2 (สูงสุด 30)"
+  },
+  "manual-of-gainful-exercise": {
+   "name": "Manual of Gainful Exercise",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: STR +2 (สูงสุด 30)"
+  },
+  "manual-of-golems": {
+   "name": "Manual of Golems",
+   "summary": "คู่มือสร้าง Golem (ต้องเป็นผู้ร่ายเวทที่มี slot เลเวล 5)"
+  },
+  "manual-of-quickness-of-action": {
+   "name": "Manual of Quickness of Action",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: DEX +2 (สูงสุด 30)"
+  },
+  "marvelous-pigments": {
+   "name": "Marvelous Pigments",
+   "summary": "สีวาดแล้วกลายเป็นของจริง (ไม่ใช่สิ่งมีชีวิต) · 1d4 หม้อ"
+  },
+  "medallion-of-thoughts": {
+   "name": "Medallion of Thoughts",
+   "summary": "5 ชาร์จ: ร่าย Detect Thoughts (DC 13) · ฟื้น 1d4 ทุกเช้า"
+  },
+  "mirror-of-life-trapping": {
+   "name": "Mirror of Life Trapping",
+   "summary": "กระจกที่ขังผู้มองไว้ข้างใน (CHA DC 15) ได้ 12 ช่อง"
+  },
+  "mithral-armor": {
+   "name": "Mithral Armor",
+   "summary": "ไม่มี Disadvantage Stealth และไม่ต้องใช้ STR ตามเกราะ · ใส่ใต้เสื้อผ้าได้"
+  },
+  "mysterious-deck": {
+   "name": "Mysterious Deck",
+   "summary": "ไพ่ลึกลับ ประกาศจำนวนแล้วจั่ว แต่ละใบผลรุนแรงต่างกัน ทั้งดีและร้าย (DM คุมผล)"
+  },
+  "necklace-of-adaptation": {
+   "name": "Necklace of Adaptation",
+   "summary": "หายใจได้ทุกสภาพแวดล้อม · Advantage Save หลบหรือจบ Poisoned"
+  },
+  "necklace-of-fireballs": {
+   "name": "Necklace of Fireballs",
+   "summary": "1d6+3 ลูก: ขว้างเป็น Fireball (DC 15) 60 ft · ขว้างหลายลูกพร้อมกันแรงขึ้น"
+  },
+  "necklace-of-prayer-beads": {
+   "name": "Necklace of Prayer Beads",
+   "summary": "ลูกประคำ 1d4+2 ร่ายเวทของนักบวชได้ (Bless, Cure Wounds, Lesser Restoration ฯลฯ) ลูกละ 1 ครั้ง/วัน"
+  },
+  "nine-lives-stealer": {
+   "name": "Nine Lives Stealer",
+   "summary": "+2 Attack/Damage · 1d8+1 ชาร์จ: ทอย 20 ใส่เป้า HP < 100 ต้อง CON DC 15 ไม่ผ่านตายทันที"
+  },
+  "oathbow": {
+   "name": "Oathbow",
+   "summary": "ประกาศศัตรูสาบาน: Advantage โจมตีเป้านั้นและโดนเพิ่ม Piercing 3d6 · Disadvantage กับอาวุธอื่น"
+  },
+  "oil-of-etherealness": {
+   "name": "Oil of Etherealness",
+   "summary": "ทาตัว 10 นาที แล้วได้ผล Etherealness 1 ชม."
+  },
+  "oil-of-sharpness": {
+   "name": "Oil of Sharpness",
+   "summary": "ทาอาวุธ Slashing/Piercing ที่ไม่ใช่เวท กลายเป็นอาวุธ +3 นาน 1 ชม."
+  },
+  "oil-of-slipperiness": {
+   "name": "Oil of Slipperiness",
+   "summary": "ทาตัวได้ผล Freedom of Movement 8 ชม. · หรือเทพื้นเป็น Grease 10 ft"
+  },
+  "pearl-of-power": {
+   "name": "Pearl of Power",
+   "summary": "Magic action ฟื้น spell slot เลเวล 3 หรือต่ำกว่า 1 ช่อง (1 ครั้ง/วัน)"
+  },
+  "periapt-of-health": {
+   "name": "Periapt of Health",
+   "summary": "Magic action ฟื้น 2d4+2 HP (1 ครั้ง/วัน) · Advantage Save หลบหรือจบ Poisoned"
+  },
+  "periapt-of-proof-against-poison": {
+   "name": "Periapt of Proof against Poison",
+   "summary": "Immunity ต่อ Poison damage และ Poisoned"
+  },
+  "periapt-of-wound-closure": {
+   "name": "Periapt of Wound Closure",
+   "summary": "Death Save ที่ทอยได้ 9 หรือต่ำกว่านับเป็น 10 · ทอย Hit Point Die ฟื้น HP ได้สองเท่า"
+  },
+  "philter-of-love": {
+   "name": "Philter of Love",
+   "summary": "ดื่มแล้วถูก Charmed โดยสิ่งมีชีวิตแรกที่เห็นใน 10 นาที นาน 1 ชม."
+  },
+  "pipes-of-haunting": {
+   "name": "Pipes of Haunting",
+   "summary": "3 ชาร์จ: เป่าทำให้ศัตรูในระยะ 30 ft Frightened 1 นาที (WIS DC 15) · ฟื้น 1d3 ทุกเช้า"
+  },
+  "pipes-of-the-sewers": {
+   "name": "Pipes of the Sewers",
+   "summary": "หนูไม่โจมตีคุณ · 3 ชาร์จ: เป่าเรียกฝูงหนูมาช่วย"
+  },
+  "plate-armor-of-etherealness": {
+   "name": "Plate Armor of Etherealness",
+   "summary": "Magic action ได้ผล Etherealness นาน 10 นาที (1 ครั้ง/วัน)"
+  },
+  "portable-hole": {
+   "name": "Portable Hole",
+   "summary": "ผ้าดำที่กางเป็นหลุมมิติลึก 10 ft ไว้เก็บของหรือซ่อน · ห้ามใส่ใน Bag of Holding"
+  },
+  "potion-of-animal-friendship": {
+   "name": "Potion of Animal Friendship",
+   "summary": "ดื่มแล้วร่าย Animal Friendship เลเวล 3 (DC 13)"
+  },
+  "potion-of-clairvoyance": {
+   "name": "Potion of Clairvoyance",
+   "summary": "ดื่มแล้วได้ผล Clairvoyance (ไม่ต้อง Concentration)"
+  },
+  "potion-of-climbing": {
+   "name": "Potion of Climbing",
+   "summary": "Climb Speed เท่า Speed และ Advantage ปีน 1 ชม."
+  },
+  "potion-of-diminution": {
+   "name": "Potion of Diminution",
+   "summary": "ตัวเล็กลง (Reduce ของ Enlarge/Reduce) 1d4 ชม."
+  },
+  "potion-of-flying": {
+   "name": "Potion of Flying",
+   "summary": "Fly Speed เท่า Speed และลอยตัวได้ 1 ชม."
+  },
+  "potion-of-gaseous-form": {
+   "name": "Potion of Gaseous Form",
+   "summary": "กลายเป็นหมอก (Gaseous Form) 1 ชม. · จบเองด้วย Bonus Action"
+  },
+  "potion-of-giant-strength": {
+   "name": "Potion of Giant Strength",
+   "summary": "STR กลายเป็น 21–29 ตามชนิดยักษ์ 1 ชม."
+  },
+  "potions-of-healing-uncommon": {
+   "name": "Potion of Greater Healing",
+   "summary": "ดื่มฟื้น 4d4+4 HP"
+  },
+  "potion-of-growth": {
+   "name": "Potion of Growth",
+   "summary": "ตัวใหญ่ขึ้น (Enlarge ของ Enlarge/Reduce) 10 นาที"
+  },
+  "potions-of-healing-common": {
+   "name": "Potion of Healing",
+   "summary": "ดื่มฟื้น 2d4+2 HP"
+  },
+  "potion-of-heroism": {
+   "name": "Potion of Heroism",
+   "summary": "ได้ 10 Temp HP และผล Bless 1 ชม."
+  },
+  "potion-of-invisibility": {
+   "name": "Potion of Invisibility",
+   "summary": "Invisible 1 ชม. · จบเมื่อโจมตี ทำดาเมจ หรือร่ายเวท"
+  },
+  "potion-of-invulnerability": {
+   "name": "Potion of Invulnerability",
+   "summary": "Resistance ต่อดาเมจทุกชนิด 1 นาที"
+  },
+  "potion-of-longevity": {
+   "name": "Potion of Longevity",
+   "summary": "อายุลดลง 1d6+6 ปี · ดื่มซ้ำมีโอกาสแก่ขึ้นแทน"
+  },
+  "potion-of-mind-reading": {
+   "name": "Potion of Mind Reading",
+   "summary": "ได้ผล Detect Thoughts (DC 13) 10 นาที"
+  },
+  "potion-of-poison": {
+   "name": "Potion of Poison",
+   "summary": "(ของหลอก ดูเหมือนยาดี) ดื่มแล้วรับ Poison 4d6 และ CON DC 13 พลาด = Poisoned 1 ชม."
+  },
+  "potion-of-resistance": {
+   "name": "Potion of Resistance",
+   "summary": "Resistance ต่อดาเมจ 1 ชนิด 1 ชม."
+  },
+  "potion-of-speed": {
+   "name": "Potion of Speed",
+   "summary": "ได้ผล Haste 1 นาที โดยไม่เหนื่อยหลังจบ"
+  },
+  "potions-of-healing-rare": {
+   "name": "Potion of Superior Healing",
+   "summary": "ดื่มฟื้น 8d4+8 HP"
+  },
+  "potions-of-healing-very-rare": {
+   "name": "Potion of Supreme Healing",
+   "summary": "ดื่มฟื้น 10d4+20 HP"
+  },
+  "potion-of-vitality": {
+   "name": "Potion of Vitality",
+   "summary": "หาย Exhaustion ทั้งหมดและหาย Poisoned · 24 ชม. ใช้ Hit Point Die ฟื้นค่าสูงสุด"
+  },
+  "potion-of-water-breathing": {
+   "name": "Potion of Water Breathing",
+   "summary": "หายใจใต้น้ำได้ 24 ชม."
+  },
+  "quarterstaff-of-the-acrobat": {
+   "name": "Quarterstaff of the Acrobat",
+   "summary": "+2 Attack/Damage · ส่องแสง · ปรับยาวได้ถึง 30 ft · Reaction เบี่ยงการโจมตีระยะไกล (+2 AC)"
+  },
+  "ring-of-animal-influence": {
+   "name": "Ring of Animal Influence",
+   "summary": "3 ชาร์จ: ร่าย Animal Friendship, Fear (เฉพาะสัตว์) หรือ Speak with Animals (DC 13)"
+  },
+  "ring-of-djinni-summoning": {
+   "name": "Ring of Djinni Summoning",
+   "summary": "Magic action เรียก Djinni ที่เชื่อฟังได้นานสูงสุด 1 ชม. (Concentration)"
+  },
+  "ring-of-elemental-command": {
+   "name": "Ring of Elemental Command",
+   "summary": "Advantage โจมตี Elemental และ Elemental โจมตีคุณมี Disadvantage · บังคับ Elemental (WIS DC 18) · ได้พลังและเวทของธาตุที่ผูกไว้"
+  },
+  "ring-of-evasion": {
+   "name": "Ring of Evasion",
+   "summary": "3 ชาร์จ: Reaction เปลี่ยน DEX Save ที่พลาดเป็นผ่าน · ฟื้น 1d3 ทุกเช้า"
+  },
+  "ring-of-feather-falling": {
+   "name": "Ring of Feather Falling",
+   "summary": "ตกช้า 60 ft ต่อรอบ และไม่รับดาเมจจากการตก"
+  },
+  "ring-of-free-action": {
+   "name": "Ring of Free Action",
+   "summary": "Difficult Terrain ไม่เปลืองระยะ · เวทลด Speed หรือทำให้ Paralyzed/Restrained ไม่ได้"
+  },
+  "ring-of-invisibility": {
+   "name": "Ring of Invisibility",
+   "summary": "Magic action ทำตัว Invisible จนกว่าจะถอดหรือเลิกด้วย Bonus Action"
+  },
+  "ring-of-jumping": {
+   "name": "Ring of Jumping",
+   "summary": "ร่าย Jump ใส่ตัวเองได้ตามใจ"
+  },
+  "ring-of-mind-shielding": {
+   "name": "Ring of Mind Shielding",
+   "summary": "อ่านใจ จับโกหก หรือรู้ alignment ไม่ได้ · โทรจิตหาคุณได้เมื่อคุณยอม"
+  },
+  "ring-of-protection": {
+   "name": "Ring of Protection",
+   "summary": "+1 AC และ +1 ทุก Saving Throw"
+  },
+  "ring-of-regeneration": {
+   "name": "Ring of Regeneration",
+   "summary": "ฟื้น 1d6 HP ทุก 10 นาที (ถ้ามี HP อย่างน้อย 1) · อวัยวะงอกใหม่ได้"
+  },
+  "ring-of-resistance": {
+   "name": "Ring of Resistance",
+   "summary": "Resistance ต่อดาเมจ 1 ชนิดตามอัญมณีบนแหวน"
+  },
+  "ring-of-shooting-stars": {
+   "name": "Ring of Shooting Stars",
+   "summary": "ร่าย Dancing Lights/Light · 6 ชาร์จ: Faerie Fire, ลูกบอลสายฟ้า, ดาวตก (Fire)"
+  },
+  "ring-of-spell-storing": {
+   "name": "Ring of Spell Storing",
+   "summary": "เก็บเวทเลเวล 1–5 รวม 5 เลเวลไว้ร่ายภายหลัง"
+  },
+  "ring-of-spell-turning": {
+   "name": "Ring of Spell Turning",
+   "summary": "Advantage Save ต่อเวท · ผ่าน Save เวทเลเวล 7 ลงมาไม่มีผล · สะท้อนเวทที่เล็งคุณคนเดียวกลับได้"
+  },
+  "ring-of-swimming": {
+   "name": "Ring of Swimming",
+   "summary": "Swim Speed 40 ft"
+  },
+  "ring-of-telekinesis": {
+   "name": "Ring of Telekinesis",
+   "summary": "ร่าย Telekinesis ได้ตามใจ"
+  },
+  "ring-of-the-ram": {
+   "name": "Ring of the Ram",
+   "summary": "3 ชาร์จ: ยิงหัวแกะ (+7 to hit) 2d10 Force ต่อชาร์จและผลักไปไกล · ฟื้น 1d3 ทุกเช้า"
+  },
+  "ring-of-three-wishes": {
+   "name": "Ring of Three Wishes",
+   "summary": "3 ชาร์จ: ร่าย Wish ชาร์จละครั้ง"
+  },
+  "ring-of-warmth": {
+   "name": "Ring of Warmth",
+   "summary": "ลดดาเมจ Cold 2d8 · ทนหนาวจัดได้"
+  },
+  "ring-of-water-walking": {
+   "name": "Ring of Water Walking",
+   "summary": "ร่าย Water Walk ใส่ตัวเองได้ตามใจ"
+  },
+  "ring-of-x-ray-vision": {
+   "name": "Ring of X-ray Vision",
+   "summary": "Magic action มองทะลุของแข็ง 30 ft นาน 1 นาที · ใช้ซ้ำก่อน Long Rest ต้อง CON DC 15 ไม่งั้นได้ Exhaustion 1"
+  },
+  "robe-of-eyes": {
+   "name": "Robe of Eyes",
+   "summary": "Advantage Perception ทางสายตา · Darkvision และ Truesight 120 ft · ไม่ถูกจู่โจมจากด้านข้าง"
+  },
+  "robe-of-scintillating-colors": {
+   "name": "Robe of Scintillating Colors",
+   "summary": "3 ชาร์จ: เสื้อส่องแสงหลากสี ศัตรูที่เห็นอาจ Stunned (WIS DC 15) · ศัตรูโจมตีคุณมี Disadvantage"
+  },
+  "robe-of-stars": {
+   "name": "Robe of Stars",
+   "summary": "+1 Saving Throw · ดาว 6 ดวงร่าย Magic Missile (เลเวล 5) · เข้า Astral Plane ได้"
+  },
+  "robe-of-the-archmagi": {
+   "name": "Robe of the Archmagi",
+   "summary": "AC 15 + DEX mod เมื่อไม่สวมเกราะ · Advantage Save ต่อเวท · +2 Spell Save DC และ Spell Attack"
+  },
+  "robe-of-useful-items": {
+   "name": "Robe of Useful Items",
+   "summary": "ดึงผ้าปะออกมาเป็นของใช้จริง (มีด ไม้ ตะเกียง ประตู ฯลฯ)"
+  },
+  "rod-of-absorption": {
+   "name": "Rod of Absorption",
+   "summary": "Reaction ดูดเวทที่เล็งคุณคนเดียว เก็บพลังไว้ร่ายเวทเอง (สูงสุด 50 เลเวล)"
+  },
+  "rod-of-alertness": {
+   "name": "Rod of Alertness",
+   "summary": "Advantage Perception และ Initiative · ร่าย Detect Magic ฯลฯ · ออร่า +1 AC ให้พวกพ้อง"
+  },
+  "rod-of-lordly-might": {
+   "name": "Rod of Lordly Might",
+   "summary": "Mace +3 · ปุ่มเปลี่ยนเป็นดาบไฟ ขวาน หอก บันได · ทำ Paralyzed, Frightened หรือดูด HP"
+  },
+  "rod-of-resurrection": {
+   "name": "Rod of Resurrection",
+   "summary": "5 ชาร์จ: Heal (1 ชาร์จ) หรือ Resurrection (5 ชาร์จ) · ฟื้น 1 ชาร์จทุกเช้า"
+  },
+  "rod-of-rulership": {
+   "name": "Rod of Rulership",
+   "summary": "Magic action สั่งสิ่งมีชีวิตในระยะ 120 ft: WIS DC 15 พลาด = Charmed 8 ชม. (1 ครั้ง/วัน)"
+  },
+  "rod-of-security": {
+   "name": "Rod of Security",
+   "summary": "พาคุณและพวกอีก 199 คนไปพักในมิติปลอดภัยได้นานถึง 200 วัน"
+  },
+  "rope-of-climbing": {
+   "name": "Rope of Climbing",
+   "summary": "เชือก 60 ft ที่เลื้อยไปผูกตามคำสั่ง รับน้ำหนัก 3,000 lb"
+  },
+  "rope-of-entanglement": {
+   "name": "Rope of Entanglement",
+   "summary": "เชือกพันสิ่งมีชีวิตในระยะ 20 ft: DEX DC 15 พลาด = Restrained"
+  },
+  "scarab-of-protection": {
+   "name": "Scarab of Protection",
+   "summary": "+1 AC · Advantage Save ต่อเวท · 12 ชาร์จ: Reaction เปลี่ยน Save ที่พลาดจาก Necromancy/Undead เป็นผ่าน"
+  },
+  "scimitar-of-speed": {
+   "name": "Scimitar of Speed",
+   "summary": "+2 Attack/Damage · โจมตีเพิ่มด้วย Bonus Action ทุกเทิร์น"
+  },
+  "sending-stones": {
+   "name": "Sending Stones",
+   "summary": "หินคู่: ร่าย Sending ไปหาคนถือหินอีกก้อน (1 ครั้ง/วัน)"
+  },
+  "sentinel-shield": {
+   "name": "Sentinel Shield",
+   "summary": "Advantage ต่อ Initiative และ WIS (Perception) ขณะถือ"
+  },
+  "shield-1": {
+   "name": "Shield +1",
+   "summary": "+1 AC เพิ่มจากโล่ปกติ"
+  },
+  "shield-2": {
+   "name": "Shield +2",
+   "summary": "+2 AC เพิ่มจากโล่ปกติ"
+  },
+  "shield-3": {
+   "name": "Shield +3",
+   "summary": "+3 AC เพิ่มจากโล่ปกติ"
+  },
+  "shield-of-missile-attraction": {
+   "name": "Shield of Missile Attraction",
+   "summary": "Resistance ต่อดาเมจจากอาวุธ Ranged · คำสาป: ลูกยิงที่เล็งคนใกล้คุณเปลี่ยนมาโดนคุณแทน"
+  },
+  "shield-of-the-cavalier": {
+   "name": "Shield of the Cavalier",
+   "summary": "+2 AC เพิ่มจากโล่ปกติ · กระแทกด้วยโล่ผลักศัตรู · Reaction สร้างเกราะพลังปกป้องรอบตัว"
+  },
+  "horn-of-valhalla-1": {
+   "name": "Silver Horn of Valhalla",
+   "summary": "Magic action เป่าเรียกวิญญาณนักรบ (Berserker) 2 ตนช่วยสู้ 1 ชม. (1 ครั้ง/7 วัน)"
+  },
+  "slippers-of-spider-climbing": {
+   "name": "Slippers of Spider Climbing",
+   "summary": "เดินบนผนังและเพดานได้ มือว่าง · Climb Speed เท่า Speed (ยกเว้นพื้นลื่น)"
+  },
+  "sovereign-glue": {
+   "name": "Sovereign Glue",
+   "summary": "กาววิเศษที่ติดของสองชิ้นถาวร · แกะได้ด้วย Universal Solvent เท่านั้น"
+  },
+  "spell-scroll-common": {
+   "name": "Spell Scroll (Cantrip or Level 1)",
+   "summary": "ม้วนคาถาแคนทริปหรือเลเวล 1: ร่ายได้ครั้งเดียวถ้าเวทอยู่ในรายการของคุณ (DC 13, +5 to hit)"
+  },
+  "spell-scroll-uncommon": {
+   "name": "Spell Scroll (Level 2 or 3)",
+   "summary": "ม้วนคาถาเลเวล 2–3: ร่ายได้ครั้งเดียวถ้าเวทอยู่ในรายการของคุณ (DC 13, +5 to hit)"
+  },
+  "spell-scroll-rare": {
+   "name": "Spell Scroll (Level 4 or 5)",
+   "summary": "ม้วนคาถาเลเวล 4–5: ร่ายได้ครั้งเดียวถ้าเวทอยู่ในรายการของคุณ (DC 15, +7 to hit)"
+  },
+  "spell-scroll-very-rare": {
+   "name": "Spell Scroll (Level 6 to 8)",
+   "summary": "ม้วนคาถาเลเวล 6–8: ร่ายได้ครั้งเดียวถ้าเวทอยู่ในรายการของคุณ (DC 17, +9 to hit)"
+  },
+  "spell-scroll-legendary": {
+   "name": "Spell Scroll (Level 9)",
+   "summary": "ม้วนคาถาเลเวล 9: ร่ายได้ครั้งเดียวถ้าเวทอยู่ในรายการของคุณ (DC 19, +11 to hit)"
+  },
+  "spellguard-shield": {
+   "name": "Spellguard Shield",
+   "summary": "Advantage Save ต่อเวทและเวทมนตร์ · Spell attack ใส่คุณมี Disadvantage"
+  },
+  "sphere-of-annihilation": {
+   "name": "Sphere of Annihilation",
+   "summary": "ลูกกลมดำที่ลบทุกสิ่งที่สัมผัส · ควบคุมด้วย INT (Arcana) DC 25"
+  },
+  "staff-of-charming": {
+   "name": "Staff of Charming",
+   "summary": "10 ชาร์จ: ร่าย Charm Person, Command, Comprehend Languages · สะท้อนเวท Enchantment ที่ Save ผ่าน · เปลี่ยน Save ที่พลาดเป็นผ่าน 1 ครั้ง/วัน"
+  },
+  "staff-of-fire": {
+   "name": "Staff of Fire",
+   "summary": "Resistance ต่อ Fire · 10 ชาร์จ: ร่าย Burning Hands, Fireball, Wall of Fire"
+  },
+  "staff-of-frost": {
+   "name": "Staff of Frost",
+   "summary": "Resistance ต่อ Cold · 10 ชาร์จ: ร่าย Cone of Cold, Fog Cloud, Ice Storm, Wall of Ice"
+  },
+  "staff-of-healing": {
+   "name": "Staff of Healing",
+   "summary": "10 ชาร์จ: ร่าย Cure Wounds, Lesser Restoration, Mass Cure Wounds"
+  },
+  "staff-of-power": {
+   "name": "Staff of Power",
+   "summary": "Quarterstaff +2 · +2 AC, Saving Throw และ Spell attack · 20 ชาร์จ: ร่ายเวทโจมตีหลายแบบ"
+  },
+  "staff-of-striking": {
+   "name": "Staff of Striking",
+   "summary": "Quarterstaff +3 · 10 ชาร์จ: ตีโดนใช้ได้ถึง 3 ชาร์จ ชาร์จละ Force 1d6"
+  },
+  "staff-of-swarming-insects": {
+   "name": "Staff of Swarming Insects",
+   "summary": "10 ชาร์จ: สร้างฝูงแมลงบังตา 30 ft · ร่าย Giant Insect, Insect Plague"
+  },
+  "staff-of-the-magi": {
+   "name": "Staff of the Magi",
+   "summary": "Quarterstaff +2 · +2 Spell attack · Advantage Save ต่อเวท · 50 ชาร์จ ร่ายเวทหลายอย่าง · หักไม้ระเบิดได้"
+  },
+  "staff-of-the-python": {
+   "name": "Staff of the Python",
+   "summary": "Magic action โยนไม้กลายเป็นงูยักษ์ (Giant Constrictor Snake) ที่ควบคุมได้"
+  },
+  "staff-of-the-woodlands": {
+   "name": "Staff of the Woodlands",
+   "summary": "Quarterstaff +2 · +2 Spell attack · 6 ชาร์จ ร่ายเวทธรรมชาติ · ปักเป็นต้นไม้ได้"
+  },
+  "staff-of-thunder-and-lightning": {
+   "name": "Staff of Thunder and Lightning",
+   "summary": "Quarterstaff +2 · สายฟ้า, ฟ้าร้อง, ฟ้าผ่า, สายฟ้าและฟ้าร้องผสม (แต่ละอย่าง 1 ครั้ง/วัน)"
+  },
+  "staff-of-withering": {
+   "name": "Staff of Withering",
+   "summary": "3 ชาร์จ: ตีโดนใช้ 1 ชาร์จ ทำ Necrotic เพิ่ม 2d10 และ CON DC 15 พลาด = Disadvantage STR/CON 1 ชม."
+  },
+  "stone-of-controlling-earth-elementals": {
+   "name": "Stone of Controlling Earth Elementals",
+   "summary": "Magic action เรียก Earth Elemental ที่เชื่อฟัง 1 ชม. (1 ครั้ง/วัน)"
+  },
+  "stone-of-good-luck-(luckstone)": {
+   "name": "Stone of Good Luck (Luckstone)",
+   "summary": "+1 ทุก Ability Check และ Saving Throw"
+  },
+  "sun-blade": {
+   "name": "Sun Blade",
+   "summary": "Bonus Action สร้างใบดาบแสง: Longsword +2 Finesse ทำ Radiant (Undead โดนเพิ่ม 1d8) · ส่องแสงแดด"
+  },
+  "sword-of-life-stealing": {
+   "name": "Sword of Life Stealing",
+   "summary": "ทอยได้ 20 ทำ Necrotic เพิ่ม 15 และคุณได้ Temp HP เท่ากัน (ไม่ใช่ Construct/Undead)"
+  },
+  "sword-of-sharpness": {
+   "name": "Sword of Sharpness",
+   "summary": "ตีของได้ดาเมจเต็ม · ทอยได้ 20 ทำ Slashing เพิ่ม 14 และเป้าได้ Exhaustion 1"
+  },
+  "sword-of-wounding": {
+   "name": "Sword of Wounding",
+   "summary": "ตีโดนทำ Necrotic เพิ่ม 2d6 และ CON DC 15 พลาด = ฟื้น HP ไม่ได้ 1 ชม."
+  },
+  "talisman-of-pure-good": {
+   "name": "Talisman of Pure Good",
+   "summary": "Fiend/Undead แตะรับ Radiant 8d6 · Holy Symbol +2 Spell attack · ส่งปีศาจลงหลุมไฟได้ 7 ครั้ง"
+  },
+  "talisman-of-the-sphere": {
+   "name": "Talisman of the Sphere",
+   "summary": "Advantage INT (Arcana) ควบคุม Sphere of Annihilation และเคลื่อนได้ไกลขึ้น"
+  },
+  "talisman-of-ultimate-evil": {
+   "name": "Talisman of Ultimate Evil",
+   "summary": "คนที่ไม่ใช่ Fiend/Undead แตะรับ Necrotic 8d6 · Holy Symbol +2 Spell attack · ส่งศัตรูลงหลุมได้"
+  },
+  "thunderous-greatclub": {
+   "name": "Thunderous Greatclub",
+   "summary": "STR เป็น 20 ขณะ Attune · ตีโดนทำ Thunder เพิ่ม 1d8 · Thunderclap และ Earthquake 1 ครั้ง/วัน"
+  },
+  "tome-of-clear-thought": {
+   "name": "Tome of Clear Thought",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: INT +2 (สูงสุด 30)"
+  },
+  "tome-of-leadership-and-influence": {
+   "name": "Tome of Leadership and Influence",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: CHA +2 (สูงสุด 30)"
+  },
+  "tome-of-understanding": {
+   "name": "Tome of Understanding",
+   "summary": "อ่าน 48 ชม. ใน 6 วัน: WIS +2 (สูงสุด 30)"
+  },
+  "trident-of-fish-command": {
+   "name": "Trident of Fish Command",
+   "summary": "3 ชาร์จ: ร่าย Dominate Beast (DC 15) ใส่สัตว์ที่ว่ายน้ำได้ · ฟื้น 1d3 ทุกเช้า"
+  },
+  "universal-solvent": {
+   "name": "Universal Solvent",
+   "summary": "น้ำยาละลายกาวทุกชนิด รวม Sovereign Glue"
+  },
+  "vicious-weapon": {
+   "name": "Vicious Weapon",
+   "summary": "ตีโดนทำดาเมจเพิ่ม 2d6 ชนิดเดียวกับอาวุธ"
+  },
+  "vorpal-sword": {
+   "name": "Vorpal Sword",
+   "summary": "+3 Attack/Damage · ไม่สนใจ Resistance ต่อ Slashing · ทอยได้ 20 ตัดหัวเป้า"
+  },
+  "wand-of-binding": {
+   "name": "Wand of Binding",
+   "summary": "7 ชาร์จ: ร่าย Hold Monster (5) หรือ Hold Person (2) DC 17 · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-enemy-detection": {
+   "name": "Wand of Enemy Detection",
+   "summary": "7 ชาร์จ: 1 นาที รู้ทิศศัตรูที่ใกล้ที่สุดในระยะ 60 ft แม้ล่องหน"
+  },
+  "wand-of-fear": {
+   "name": "Wand of Fear",
+   "summary": "7 ชาร์จ: ร่าย Command (หนี/หมอบ) 1 ชาร์จ หรือ Fear 3 ชาร์จ (DC 15)"
+  },
+  "wand-of-fireballs": {
+   "name": "Wand of Fireballs",
+   "summary": "7 ชาร์จ: ร่าย Fireball (DC 15) ใช้ 1–3 ชาร์จเพิ่มเลเวล · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-lightning-bolts": {
+   "name": "Wand of Lightning Bolts",
+   "summary": "7 ชาร์จ: ร่าย Lightning Bolt (DC 15) ใช้ 1–3 ชาร์จเพิ่มเลเวล · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-magic-detection": {
+   "name": "Wand of Magic Detection",
+   "summary": "3 ชาร์จ: ร่าย Detect Magic · ฟื้น 1d3 ทุกเช้า"
+  },
+  "wand-of-magic-missiles": {
+   "name": "Wand of Magic Missiles",
+   "summary": "7 ชาร์จ: ร่าย Magic Missile ใช้ 1–3 ชาร์จเพิ่มเลเวล · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-paralysis": {
+   "name": "Wand of Paralysis",
+   "summary": "7 ชาร์จ: ยิงลำแสง 60 ft: CON DC 15 พลาด = Paralyzed 1 นาที"
+  },
+  "wand-of-polymorph": {
+   "name": "Wand of Polymorph",
+   "summary": "7 ชาร์จ: ร่าย Polymorph (DC 15) · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-secrets": {
+   "name": "Wand of Secrets",
+   "summary": "3 ชาร์จ: ชี้หาประตูลับหรือกับดักที่ใกล้ที่สุดในระยะ 60 ft"
+  },
+  "wand-of-the-war-mage-1": {
+   "name": "Wand of the War Mage +1",
+   "summary": "+1 Spell attack · ไม่สนใจ Half Cover"
+  },
+  "wand-of-the-war-mage-2": {
+   "name": "Wand of the War Mage +2",
+   "summary": "+2 Spell attack · ไม่สนใจ Half Cover"
+  },
+  "wand-of-the-war-mage-3": {
+   "name": "Wand of the War Mage +3",
+   "summary": "+3 Spell attack · ไม่สนใจ Half Cover"
+  },
+  "wand-of-web": {
+   "name": "Wand of Web",
+   "summary": "7 ชาร์จ: ร่าย Web (DC 13) · ฟื้น 1d6+1 ทุกเช้า"
+  },
+  "wand-of-wonder": {
+   "name": "Wand of Wonder",
+   "summary": "7 ชาร์จ: ปล่อยเวทสุ่มจากตาราง ณ จุดในระยะ 120 ft (DC 15)"
+  },
+  "weapon-1": {
+   "name": "Weapon +1",
+   "summary": "+1 Attack และ Damage"
+  },
+  "weapon-2": {
+   "name": "Weapon +2",
+   "summary": "+2 Attack และ Damage"
+  },
+  "weapon-3": {
+   "name": "Weapon +3",
+   "summary": "+3 Attack และ Damage"
+  },
+  "weapon-of-warning": {
+   "name": "Weapon of Warning",
+   "summary": "คุณและพวกในระยะ 30 ft ได้ Advantage ต่อ Initiative และตื่นทันทีเมื่อการต่อสู้เริ่ม (ถ้าหลับธรรมดา)"
+  },
+  "well-of-many-worlds": {
+   "name": "Well of Many Worlds",
+   "summary": "ผ้าที่กางเป็นประตูมิติสองทางไปยังโลกอื่น"
+  },
+  "wind-fan": {
+   "name": "Wind Fan",
+   "summary": "ร่าย Gust of Wind (DC 13) · ใช้ซ้ำในวันเดียวกันมีโอกาสขาด"
+  },
+  "winged-boots": {
+   "name": "Winged Boots",
+   "summary": "4 ชาร์จ: Fly Speed 30 ft นาน 1 ชม. ต่อชาร์จ · ฟื้น 1d4 ทุกเช้า"
+  },
+  "wings-of-flying": {
+   "name": "Wings of Flying",
+   "summary": "Magic action กางปีก Fly Speed 60 ft นาน 1 ชม. · ใช้ซ้ำได้หลังพัก 1d12 ชม."
+  }
+ }
+}

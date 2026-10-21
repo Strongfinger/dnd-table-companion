@@ -13,6 +13,7 @@ import CharacterSheet from './screens/CharacterSheet'
 import CreateWizard from './screens/CreateWizard'
 import DiceRoller, { type RollRecord } from './screens/DiceRoller'
 import ImportCharacter from './screens/ImportCharacter'
+import ItemPage from './screens/ItemPage'
 import LiveFightBar from './screens/LiveFightBar'
 import Lobby from './screens/Lobby'
 import PartyOverview from './screens/PartyOverview'
@@ -54,6 +55,7 @@ export default function App() {
         {route.name === 'sheet' && <CharacterSheet id={route.id} />}
         {/* key makes React start a fresh form when switching characters */}
         {route.name === 'edit' && <CharacterEdit key={route.id} id={route.id} />}
+        {route.name === 'item' && <ItemPage key={`${route.id}/${route.itemId}`} id={route.id} itemId={route.itemId} />}
         {route.name === 'fights' && <FightsRoute />}
         {route.name === 'fight' && <FightRoute key={route.id} id={route.id} />}
         {route.name === 'about' && <About />}

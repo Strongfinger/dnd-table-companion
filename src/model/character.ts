@@ -116,6 +116,8 @@ export interface InventoryItem {
   description?: string
   /** A custom item marked as a magic item (shown with ✨). */
   magic?: true
+  /** A magic item's key effects in a line or two, shown with the buffs (the full text is in `description`). */
+  summary?: string
 }
 
 export function newId(): string {

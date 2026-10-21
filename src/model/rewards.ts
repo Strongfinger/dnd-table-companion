@@ -7,9 +7,9 @@ import { gainCoins, spendCoins, type Coin } from '../rules'
 import { canManageCampaign, type Campaign } from './campaign'
 import { newId, type Character, type EquipSlot, type InventoryItem } from './character'
 import { findItem, type SrdEquipment } from './equipment'
-import { addPlainItem, addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails } from './inventory'
+import { addPlainItem, addSrdItem, MAX_ITEM_DESCRIPTION, MAX_ITEM_SUMMARY, setItemDetails } from './inventory'
 import { setItemWeight } from './carrying'
-import type { LootItem } from './generators'
+import type { GenLoot, LootItem } from './generators'
 
 /** One kind of item waiting in the pool: an SRD item (by id) or a custom one (name, wear slot, weight). */
 export interface PoolItem {
@@ -21,6 +21,8 @@ export interface PoolItem {
   weight?: number
   /** A custom item's text, e.g. a magic item's effect. */
   description?: string
+  /** A magic item's key effects in short (see InventoryItem.summary). */
+  summary?: string
   magic?: true
 }
 
@@ -34,14 +36,15 @@ export function addToPool(pool: PoolItem[], item: Omit<PoolItem, 'id'>): PoolIte
   const qty = Math.min(MAX_QTY, Math.floor(item.qty))
   if (!name || !(qty >= 1)) return pool
   const description = item.srdId ? undefined : item.description?.trim().slice(0, MAX_ITEM_DESCRIPTION) || undefined
+  const summary = item.srdId ? undefined : item.summary?.trim().slice(0, MAX_ITEM_SUMMARY) || undefined
   const magic = !item.srdId && item.magic ? (true as const) : undefined
   const same = pool.find((p) => p.srdId === item.srdId &&
-    (item.srdId ? true : p.name === name && p.wear === item.wear && p.weight === item.weight && p.description === description && p.magic === magic))
+    (item.srdId ? true : p.name === name && p.wear === item.wear && p.weight === item.weight && p.description === description && p.summary === summary && p.magic === magic))
   if (same) return pool.map((p) => (p === same ? { ...p, qty: Math.min(MAX_QTY, p.qty + qty) } : p))
   if (pool.length >= MAX_POOL_ITEMS) return pool
   const extra = {
     ...(item.srdId ? { srdId: item.srdId } : {}), ...(item.wear ? { wear: item.wear } : {}), ...(item.weight ? { weight: item.weight } : {}),
-    ...(description ? { description } : {}), ...(magic ? { magic } : {}),
+    ...(description ? { description } : {}), ...(summary ? { summary } : {}), ...(magic ? { magic } : {}),
   }
   return [...pool, { id: newId(), name, qty, ...extra }]
 }
@@ -83,6 +86,7 @@ export interface CustomItem {
   wear?: EquipSlot
   weight?: number
   description?: string
+  summary?: string
   magic?: boolean
 }
 
@@ -96,7 +100,7 @@ export function addCustomItem(c: Character, item: CustomItem): Character {
   if (added && item.weight) next = setItemWeight(next, added.id, item.weight)
   const target = added ?? next.inventory.find((i, n) => i.qty !== c.inventory[n]?.qty)
   if (target && !target.description && (item.description?.trim() || item.magic)) {
-    next = setItemDetails(next, target.id, { description: item.description, magic: item.magic || target.magic })
+    next = setItemDetails(next, target.id, { description: item.description, summary: item.summary, magic: item.magic || target.magic })
   }
   return next
 }
@@ -116,6 +120,7 @@ export function parsePool(body: unknown): PoolItem[] | null {
       ...(typeof p.wear === 'string' ? { wear: p.wear as EquipSlot } : {}),
       ...(typeof p.weight === 'number' && p.weight > 0 ? { weight: p.weight } : {}),
       ...(typeof p.description === 'string' && p.description ? { description: p.description.slice(0, MAX_ITEM_DESCRIPTION) } : {}),
+      ...(typeof p.summary === 'string' && p.summary ? { summary: p.summary.slice(0, MAX_ITEM_SUMMARY) } : {}),
       ...(p.magic === true ? { magic: true as const } : {}),
     })
   }
@@ -272,10 +277,11 @@ export function magicItemWear(item: Pick<LootItem, 'name' | 'category'>): EquipS
 }
 
 /**
- * An SRD magic item as a custom ✨ Magic Item (for the DM's pool or a sheet): its slot, and its rarity and text
- * (Thai when there is a translation) as the effect. Its numbers (e.g. +1 AC) aren't worked out by the app.
+ * An SRD magic item as a custom ✨ Magic Item (for the DM's pool or a sheet): its slot, its rarity and text
+ * (Thai when there is a translation) as the effect, and its short Thai summary (srd-magic-items-summary-th.json)
+ * for the buffs list. Its numbers (e.g. +1 AC) aren't worked out by the app.
  */
-export function magicItemToCustom(item: LootItem, thaiText?: string): CustomItem {
+export function magicItemToCustom(item: LootItem, thaiText?: string, summary?: string): CustomItem {
   const head = `*${item.rarity}${item.attunement ? ' · Requires Attunement' : ''}*`
   const wear = magicItemWear(item)
   return {
@@ -283,6 +289,27 @@ export function magicItemToCustom(item: LootItem, thaiText?: string): CustomItem
     qty: 1,
     ...(wear ? { wear } : {}),
     description: `${head}\n\n${thaiText?.trim() || item.desc.trim()}`.slice(0, MAX_ITEM_DESCRIPTION),
+    ...(summary ? { summary: summary.slice(0, MAX_ITEM_SUMMARY) } : {}),
     magic: true,
   }
+}
+
+/**
+ * What the treasure generator rolled, as items for the pool: each valuable (a gem or art object, named with its
+ * worth) and each magic item (as in magicItemToCustom, with its Thai text and summary). Coins aren't items, so the
+ * DM hands them out on the sheet or with coin requests.
+ */
+export function lootToPool(
+  loot: Pick<GenLoot, 'valuables' | 'items'>,
+  thai: Record<string, { text: string }> = {},
+  summaries: Record<string, { summary: string }> = {},
+): Omit<PoolItem, 'id'>[] {
+  const valuables = loot.valuables.map((v) => ({
+    name: `${v.text} (${v.value} gp)`, qty: 1, description: `ของมีค่า ขายได้ประมาณ ${v.value} gp`,
+  }))
+  const magic = loot.items.map((i) => {
+    const { magic: _m, ...rest } = magicItemToCustom(i, thai[i.id]?.text, summaries[i.id]?.summary)
+    return { ...rest, magic: true as const }
+  })
+  return [...valuables, ...magic]
 }
