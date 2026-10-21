@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { createCharacter } from './character'
+import { createCharacter, EQUIP_SLOTS } from './character'
 import { loadSrdEquipment } from './equipment'
 import {
   addCustomItem, addCoinRequest, addToPool, applyCoinRequest, coinRequestLabel, decideCoinRequest, dmRunsEconomy, keepDmEconomy, KEEP_DECIDED, parseCoinRequestBody,
   parseCoinRequests, parsePool, parseTake, receivePoolItem, setPoolQty, takeFromPool, type CoinRequest,
+  magicItemToCustom, magicItemWear,
 } from './rewards'
+import { MAX_ITEM_DESCRIPTION, toggleEquipped } from './inventory'
+import type { LootItem } from './generators'
 
 const hero = () => createCharacter({ name: 'Mira', coins: { cp: 0, sp: 0, ep: 0, gp: 5, pp: 0 } })
 
@@ -156,5 +159,47 @@ describe('keepDmEconomy', () => {
       .toEqual([{ id: 'r', name: 'My Ring', qty: 1, description: '+1 AC', magic: true }])
     const extra = keepDmEconomy(dm, { ...dm, inventory: [...dm.inventory, { id: 'z', name: 'Gem', qty: 1 }] })
     expect(extra.inventory).toEqual(dm.inventory)
+  })
+})
+
+describe('SRD magic items as rewards', () => {
+  const loot = (name: string, category: string, over: Partial<LootItem> = {}): LootItem =>
+    ({ id: name.toLowerCase().replace(/\W+/g, '-'), name, category, rarity: 'Uncommon', attunement: false, desc: 'English text', ...over })
+
+  it('picks the slot an SRD magic item is worn in', () => {
+    expect(magicItemWear(loot('Adamantine Armor', 'Armor'))).toBe('body')
+    expect(magicItemWear(loot('Shield +1', 'Armor'))).toBe('offHand')
+    expect(magicItemWear(loot('Flame Tongue', 'Weapons'))).toBe('mainHand')
+    expect(magicItemWear(loot('Ring of Protection', 'Rings'))).toBe('ring1')
+    expect(magicItemWear(loot('Cloak of Protection', 'Wondrous Items'))).toBe('cloak')
+    expect(magicItemWear(loot('Amulet of Health', 'Wondrous Items'))).toBe('neck')
+    expect(magicItemWear(loot('Boots of Speed', 'Wondrous Items'))).toBe('feet')
+    expect(magicItemWear(loot('Gauntlets of Ogre Power', 'Wondrous Items'))).toBe('hands')
+    expect(magicItemWear(loot('Helm of Telepathy', 'Wondrous Items'))).toBe('head')
+    expect(magicItemWear(loot('Belt of Giant Strength', 'Wondrous Items'))).toBe('legs')
+    expect(magicItemWear(loot('Bag of Holding', 'Wondrous Items'))).toBe('back')
+    expect(magicItemWear(loot('Potion of Healing', 'Potions'))).toBeUndefined()
+    expect(magicItemWear(loot('Bag of Tricks', 'Wondrous Items'))).toBeUndefined()
+  })
+
+  it('puts Adamantine Armor in the pool, and a player can take it and wear it', async () => {
+    const data = await loadSrdEquipment()
+    const armor = loot('Adamantine Armor', 'Armor', { desc: 'Critical Hits become normal hits.' })
+    const custom = magicItemToCustom(armor, '  ข้อความภาษาไทย ')
+    expect(custom).toEqual({ name: 'Adamantine Armor', qty: 1, wear: 'body', magic: true, description: '*Uncommon*\n\nข้อความภาษาไทย' })
+    expect(magicItemToCustom(loot('Ring of X', 'Rings', { attunement: true, desc: 'x'.repeat(3000) })).description).toHaveLength(MAX_ITEM_DESCRIPTION)
+    const { magic, ...rest } = custom
+    const pool = addToPool([], { ...rest, ...(magic ? { magic: true as const } : {}) })
+    expect(pool[0]).toMatchObject({ name: 'Adamantine Armor', wear: 'body', magic: true })
+    let c = receivePoolItem(createCharacter({ name: 'Mira' }), takeFromPool(pool, pool[0].id, 1).taken!, data)
+    c = toggleEquipped(c, c.inventory[0].id, data)
+    expect(c.inventory[0]).toMatchObject({ name: 'Adamantine Armor', equipped: true, slot: 'body', magic: true })
+    // Every SRD magic item gets valid text, and only real slots.
+    const all = (await import('../data/srd-magic-items.json')).default as LootItem[]
+    for (const i of all) {
+      const ci = magicItemToCustom(i)
+      expect(ci.description!.length).toBeGreaterThan(10)
+      if (ci.wear) expect(EQUIP_SLOTS).toContain(ci.wear)
+    }
   })
 })

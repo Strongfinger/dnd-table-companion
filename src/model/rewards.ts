@@ -9,6 +9,7 @@ import { newId, type Character, type EquipSlot, type InventoryItem } from './cha
 import { findItem, type SrdEquipment } from './equipment'
 import { addPlainItem, addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails } from './inventory'
 import { setItemWeight } from './carrying'
+import type { LootItem } from './generators'
 
 /** One kind of item waiting in the pool: an SRD item (by id) or a custom one (name, wear slot, weight). */
 export interface PoolItem {
@@ -246,4 +247,42 @@ export function keepDmEconomy(dm: Pick<Character, 'coins' | 'inventory'>, incomi
     return { ...rest, ...(mine.description ? { description: mine.description } : {}), ...(mine.magic ? { magic: mine.magic } : {}) }
   })
   return { ...incoming, coins: dm.coins, inventory }
+}
+
+// ——— SRD magic items as rewards ———
+
+/** Where an SRD magic item is worn or held, from its category and name (undefined: carried, e.g. a potion). */
+export function magicItemWear(item: Pick<LootItem, 'name' | 'category'>): EquipSlot | undefined {
+  const n = item.name
+  if (item.category === 'Armor') return /Shield/.test(n) ? 'offHand' : 'body'
+  if (['Weapons', 'Wands', 'Staffs'].includes(item.category)) return 'mainHand'
+  if (item.category === 'Rings') return 'ring1'
+  if (item.category !== 'Wondrous Items') return undefined
+  if (/^(Amulet|Necklace|Periapt|Medallion|Scarab|Brooch|Talisman)\b/.test(n)) return 'neck'
+  if (/^(Cloak|Cape|Mantle|Wings)\b/.test(n)) return 'cloak'
+  if (/^(Boots|Slippers|Winged Boots)\b/.test(n)) return 'feet'
+  if (/^(Gauntlets|Gloves|Bracers)\b/.test(n)) return 'hands'
+  if (/^(Helm|Hat|Circlet|Headband|Goggles|Eyes of|Ioun Stone)\b/.test(n)) return 'head'
+  if (/^Robe\b/.test(n)) return 'body'
+  // No belt slot: a belt goes with the legs (the waist).
+  if (/^Belt\b/.test(n)) return 'legs'
+  if (/^(Bag of Holding|Handy Haversack|Efficient Quiver)$/.test(n)) return 'back'
+  if (/^(Rod|Immovable Rod)\b/.test(n)) return 'mainHand'
+  return undefined
+}
+
+/**
+ * An SRD magic item as a custom ✨ Magic Item (for the DM's pool or a sheet): its slot, and its rarity and text
+ * (Thai when there is a translation) as the effect. Its numbers (e.g. +1 AC) aren't worked out by the app.
+ */
+export function magicItemToCustom(item: LootItem, thaiText?: string): CustomItem {
+  const head = `*${item.rarity}${item.attunement ? ' · Requires Attunement' : ''}*`
+  const wear = magicItemWear(item)
+  return {
+    name: item.name,
+    qty: 1,
+    ...(wear ? { wear } : {}),
+    description: `${head}\n\n${thaiText?.trim() || item.desc.trim()}`.slice(0, MAX_ITEM_DESCRIPTION),
+    magic: true,
+  }
 }

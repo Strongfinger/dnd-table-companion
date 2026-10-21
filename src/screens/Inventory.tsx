@@ -9,15 +9,15 @@
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { useDmRunsEconomy } from '../app/useRunsCampaign'
-import { addCustomItem, coinRequestLabel, type CustomItem, type PoolItem } from '../model/rewards'
+import { addCustomItem, coinRequestLabel, magicItemToCustom, type CustomItem, type PoolItem } from '../model/rewards'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, setItemWear, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
 import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
 import MiniMarkdown from '../ui/MiniMarkdown'
-import { useEquipment, useEquipmentTh } from './useSrdData'
+import { useEquipment, useEquipmentTh, useMagicItems, useMagicItemsTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
 import { useShowItemImages } from '../ui/useShowItemImages'
@@ -352,7 +352,6 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
   const [description, setDescription] = useState(item.description ?? '')
   const [magic, setMagic] = useState(!!item.magic)
-  const [wear, setWear] = useState<EquipSlot | ''>(item.wear ?? '')
   const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pill = 'rounded-full border px-3 py-1 text-sm'
@@ -368,7 +367,6 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
               setQty(noMore && v !== '' && Number(v) > item.qty ? String(item.qty) : v)
             }} />
         </div>
-        {!srd && <Select value={wear} options={WEAR_OPTIONS} onChange={setWear} />}
         {noMore && <p className="text-xs text-stone-500">ลดจำนวนได้ · ของเพิ่มต้องหยิบจากคลังกลางของ DM</p>}
         <div className="flex gap-2">
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
@@ -376,14 +374,13 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
               let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
               // The effect text and Magic Item mark are the DM's (a character the DM runs can't change them).
               if (!srd && !noMore) next = setItemDetails(next, item.id, { description, magic })
-              if (!srd) next = setItemWear(next, item.id, wear || undefined)
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
           }}>บันทึก</Button>
           <Button className="px-3 text-sm" onClick={() => {
             setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : '')
-            setDescription(item.description ?? ''); setMagic(!!item.magic); setWear(item.wear ?? ''); setEditing(false)
+            setDescription(item.description ?? ''); setMagic(!!item.magic); setEditing(false)
           }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
@@ -395,13 +392,12 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   }
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
-      {!wearable && item.magic && <p className="w-full text-xs text-amber-300">ยังไม่ได้เลือกช่องสวมใส่ · กด "แก้ไข" แล้วเลือกว่าสวมที่ไหน เพื่อให้ใส่ได้</p>}
       {!wearable && (
         <button type="button" className={`${pill} border-emerald-600 text-emerald-300`} onClick={() => change((latest) => consumeItem(latest, item.id))}>
           ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
         </button>
       )}
-      <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setWear(item.wear ?? ''); setEditing(true) }}>แก้ไข</button>
+      <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(true) }}>แก้ไข</button>
       <button type="button" className={`${pill} ${confirmDelete ? 'border-red-500 bg-red-900 font-bold text-red-100' : 'border-red-800 text-red-400'}`}
         onClick={() => (confirmDelete ? change((latest) => removeItem(latest, item.id)) : setConfirmDelete(true))}>
         {confirmDelete ? 'แตะอีกครั้งเพื่อลบ' : 'ลบ'}
@@ -490,11 +486,19 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
   onAddCustom: AddCustom
 }) {
   const thai = useEquipmentTh().items
+  const magicItems = useMagicItems()
+  const magicTh = useMagicItemsTh()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState(0)
   const [added, setAdded] = useState<string | null>(null)
   if (!data) return <CustomItemForm initialName={query} onAdd={onAddCustom} />
-  const found = searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai)
+  // The last chip, after the SRD equipment kinds: SRD magic items, added as ✨ Magic Items (with slot and text).
+  const magicChip = filter === KIND_FILTERS.length
+  const found = magicChip && !query ? [] : searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai)
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const magicFound = (magicChip || query) && magicItems
+    ? magicItems.filter((i) => words.every((w) => i.name.toLowerCase().includes(w) || !!magicTh[i.id]?.name.includes(w)))
+    : []
 
   return (
     <div className="mb-3 space-y-2 rounded-lg bg-stone-900 p-3">
@@ -507,6 +511,10 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
               {f.label}
             </button>
           ))}
+          <button type="button" onClick={() => setFilter(KIND_FILTERS.length)}
+            className={`rounded-full border px-3 py-1 ${magicChip ? 'border-amber-400 bg-amber-800 font-bold' : 'border-stone-600'}`}>
+            ✨ ไอเทมเวท
+          </button>
         </div>
       )}
       <ul className="max-h-72 space-y-1 overflow-y-auto">
@@ -521,9 +529,21 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
               : <Button className="px-3 py-1 text-sm" onClick={() => { onAdd(i); setAdded(i.id) }}>+ เพิ่ม</Button>}
           </li>
         ))}
+        {magicFound.map((i) => (
+          <li key={`magic-${i.id}`} className="flex items-center justify-between gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
+            <span className="min-w-0">
+              ✨ <span className="font-bold">{i.name}</span>{magicTh[i.id] && <span className="text-stone-400"> · {magicTh[i.id].name}</span>}
+              <span className="block text-xs text-stone-400">{i.rarity}{i.attunement && ' · Attune'} · Magic Item</span>
+            </span>
+            {added === `magic-${i.id}`
+              ? <span className="text-xs whitespace-nowrap text-emerald-400">✓ เพิ่มแล้ว</span>
+              : <Button className="px-3 py-1 text-sm" onClick={() => { onAddCustom(magicItemToCustom(i, magicTh[i.id]?.text)); setAdded(`magic-${i.id}`) }}>+ เพิ่ม</Button>}
+          </li>
+        ))}
       </ul>
-      {found.length === 0 && <p className="text-xs text-stone-500">ไม่พบใน SRD · เพิ่มเป็นของ custom ด้านล่างได้</p>}
-      <CustomItemForm key={found.length === 0 ? query : ''} initialName={found.length === 0 ? query : ''} onAdd={onAddCustom} />
+      {magicChip && !query && <p className="text-xs text-stone-500">ไอเทมเวทจาก SRD 5.2.1 ใส่เป็น ✨ Magic Item พร้อมช่องสวมใส่และคำอธิบาย · ตัวเลข (เช่น +1 AC) แอปไม่คิดให้</p>}
+      {found.length === 0 && magicFound.length === 0 && <p className="text-xs text-stone-500">ไม่พบใน SRD · เพิ่มเป็นของ custom ด้านล่างได้</p>}
+      <CustomItemForm key={found.length + magicFound.length === 0 ? query : ''} initialName={found.length + magicFound.length === 0 ? query : ''} onAdd={onAddCustom} />
     </div>
   )
 }
