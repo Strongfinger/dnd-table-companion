@@ -8,7 +8,7 @@
 // The running fight is sent to players too, as the secret-free player view ('fight' messages).
 // Dice rolls are shared with everyone in the room; the DM device writes them into the fight log.
 // The DM's reward pool (คลังกลาง) and coin requests go to players too; players take items and ask for coins through
-// the DM's device (model/rewards.ts, db/rewards.ts).
+// the DM's device (model/rewards.ts, db/rewards.ts). Handing items or coins to a friend ('give') is done there too.
 //
 // Nothing gets lost or applied twice (4.5): a player's changes wait in a saved outbox until the DM's
 // device confirms them ('ack'), and are re-sent until then; the DM's device saves the ids it has
@@ -37,6 +37,8 @@ import {
 } from '../sync/fights'
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
+import { giveNow } from '../db/give'
+import { parseGive } from '../model/give'
 import { givePoolItem, receiveCoinRequest, watchCoinRequests, watchPool } from '../db/rewards'
 import { keepDmEconomy, parseCoinRequestBody, parseCoinRequests, parsePool, parseTake, type CoinRequest, type PoolItem } from '../model/rewards'
 import {
@@ -456,6 +458,12 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (!t || !(await allowed(e.from, t.characterId))) return
       if (markApplied(e.id, s)) await givePoolItem(t.characterId, t.itemId, t.qty)
       send('ack', { ids: [e.id] })
+    } else if (s.role === 'dm' && e.kind === 'give') {
+      // A player hands an item or coins to another character played in the room (model/give.ts).
+      const g = parseGive(e.body)
+      if (!g || !(await allowed(e.from, g.fromId))) return
+      if (markApplied(e.id, s) && playedNow().includes(g.toId)) await giveNow(g)
+      send('ack', { ids: [e.id] })
     } else if (s.role === 'dm' && e.kind === 'coinRequest') {
       // A player asks for a coin change: listed for the DM to approve (the DM tab).
       const r = parseCoinRequestBody(e.body)
@@ -717,6 +725,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     },
     requestCoins: (characterId, request) => {
       if (sessionRef.current?.role === 'player' && mine(characterId)) queue('coinRequest', { characterId, ...request })
+    },
+    give: (request) => {
+      if (sessionRef.current?.role === 'player' && mine(request.fromId)) queue('give', request)
     },
     myCharacterIds: session?.role === 'player' ? [...(session.characterId ? [session.characterId] : []), ...controlled] : [],
     grant: (characterId, deviceId) => {
