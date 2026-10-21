@@ -2,6 +2,7 @@
 // pages; a player's phone shows the copy the DM's device sent in the last live room (kept for offline reading).
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import { getSetting } from '../db/device'
 import { getReceivedRules } from '../db/houseRules'
 import { listNotes } from '../db/notes'
 import { mergeRules, ownRules, searchRules } from '../model/houseRules'
@@ -11,7 +12,7 @@ import { TextInput } from '../ui/kit'
 const FIELDS = KIND_FIELDS.rule.filter((f) => f.key !== 'status')
 
 export default function HouseRuleSearch({ isPlayer }: { isPlayer: boolean }) {
-  const own = useLiveQuery(async () => ownRules(await listNotes()))
+  const own = useLiveQuery(async () => ownRules(await listNotes(), await getSetting<string>('currentCampaignId')))
   const received = useLiveQuery(getReceivedRules)
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState<string | null>(null)
@@ -20,7 +21,7 @@ export default function HouseRuleSearch({ isPlayer }: { isPlayer: boolean }) {
   const found = searchRules(rules, query)
   return (
     <div className="space-y-3">
-      <p className="text-sm text-sky-300">กฎของกลุ่มเรา (house rule) ที่ DM ตั้งไว้ ใช้แทนหรือเพิ่มจากกฎทางการของ D&D 2024</p>
+      <p className="text-sm text-sky-300">กฎของกลุ่มเรา (house rule) ที่ DM ตั้งไว้ ใช้แทนหรือเพิ่มเติมจากกฎทางการของ D&D 2024 (ไม่ใช่กฎทางการ)</p>
       {rules.length === 0 ? (
         <p className="text-sm text-stone-500">
           {isPlayer
@@ -35,7 +36,7 @@ export default function HouseRuleSearch({ isPlayer }: { isPlayer: boolean }) {
       )}
       <ul className="space-y-1.5">
         {found.map((r) => {
-          const isOpen = open === r.id || found.length === 1
+          const isOpen = open === r.id
           return (
             <li key={r.id} className="rounded-lg bg-stone-800">
               <button type="button" onClick={() => setOpen(isOpen ? null : r.id)} className="flex w-full items-baseline justify-between gap-2 px-3 py-2 text-left">

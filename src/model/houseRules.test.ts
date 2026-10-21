@@ -22,6 +22,7 @@ describe('house rules for players', () => {
 
   it('skips untitled rules and keeps the message small', () => {
     expect(rulesToShare([rule('  ')], 'doip')).toEqual([])
+    expect(rulesToShare([rule('No status', { status: '' })], 'doip').map((r) => r.status)).toEqual(['active'])
     const many = Array.from({ length: 60 }, (_, i) => rule(`Rule ${i}`, {}, 'doip', 'ก'.repeat(3000)))
     const shared = rulesToShare(many, 'doip')
     expect(shared.length).toBeGreaterThan(0)
@@ -44,6 +45,8 @@ describe('house rules for players', () => {
     expect(searchRules(shared, '+2').map((r) => r.title)).toEqual(['Flaming Weapon'])
     const own = ownRules([burning, other])
     expect(own.map((r) => r.title)).toEqual(['Burning', 'Other campaign'])
+    expect(ownRules([burning, other], 'lmop').map((r) => r.title)).toEqual(['Other campaign'])
+    expect(ownRules([burning, other], 'unknown').map((r) => r.title)).toEqual(['Burning', 'Other campaign'])
     expect(mergeRules(own, shared).map((r) => r.title)).toEqual(['Burning', 'Flaming Weapon', 'Other campaign'])
   })
 })

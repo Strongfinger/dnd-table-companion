@@ -3,6 +3,38 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+## Pass 8 — players read house rules (`houseRules` room message, lookup tab 📏 House rules), commit 4b34078, 2026-10-21
+**Result:** pass. vitest 771/771, `tsc -b`, lint, build clean. **Tested** (preview build of HEAD, Chromium; DM 1280 px,
+player 390 px; DM and player in **two separate browser contexts** = separate IndexedDB, local test-mode room with the
+BroadcastChannel relayed between contexts by the test script): import `house-rules-pack.json` → #/lookup/house shows 3
+rules; search (fire / Burning / trait / ไฟ / Thai two-word / no match "พบ 0 ข้อ"); expand shows all fields + body with
+[[links]] as plain text; no overflow at 390 px. Live room "Dragon of Icespire Peak": player with a character joins → saved
+`house-rules` = 3 rules (campaign `doip`), player lookup shows them, monsters tab hidden. DM changes Burning's effect and
+sets Investigate Monster to ⚪ เลิกใช้ → player's copy updates to 2 rules with the new effect. Player leaves, copy cleared,
+rejoins → rules re-sent; reload → re-sent. Untitled rule not sent. Rule in another campaign not sent; switching the room's
+campaign sends that campaign's rules, switching back restores. After leaving the room the player still reads the last copy.
+Old app + new `houseRules` kind: `parseEnvelope` (`src/sync/envelope.ts:45`) rejects unknown kinds → transports drop it
+silently (`localTransport.ts:46`, `firebaseTransport.ts:113`); no crash. No console errors.
+
+**Open (low):**
+- **Single search result can't be collapsed.** `isOpen = open === r.id || found.length === 1`
+  (`src/screens/HouseRuleSearch.tsx:38`) forces it open; tapping the header does nothing. Fix: auto-open only while
+  `open` is unset for that id, e.g. track a "closed" id, or drop the auto-open.
+- **Rule with an empty status (`status: ""`, e.g. from a pack) was not sent** while the editor shows 🟢 ใช้อยู่
+  (`isShared` used `??`, `src/model/houseRules.ts:30`). Already changed to `||` in the uncommitted working tree; add a test
+  (`rulesToShare([rule('X', { status: '' })], 'doip')` → 1 rule).
+- **DM's own lookup tab mixes rules from all campaigns** (`ownRules`, `HouseRuleSearch.tsx:14`): with 2 campaigns the DM
+  sees "Other Campaign Rule" next to DoIP rules, while players only get the room campaign's. Idea: filter to the current
+  campaign (or label each rule with its campaign).
+- **A player in the room without a character gets no rules** (nor campaign/pool/party): catch-up is sent only on the
+  player's `hello`, which needs a character (`src/app/lobby.tsx:394`, resync at `:229`). Picking a character later fixes it.
+  Pre-existing design; matters only for a "spectator" phone.
+- Body text shows Markdown raw (`- item` lines) in the player view; the notebook page renders the same text. Cosmetic.
+- At HEAD the DM gets no warning that rule pages (body, linked page names) are shown to players; the uncommitted working tree
+  adds `RuleSharedHint` in `Notebook.tsx`. Keep it.
+
+**Check with real phones:** rules arrive over Firebase (not tested, test mode only); offline reading after the room ends.
+
 ## Pass 7 — PR #23 house rule pages (`rule` kind), 2026-10-21
 **Result:** pass. vitest 765/765, `tsc -b`, lint, build all clean. **Tested** (preview build, Chromium, 1280 px + 390 px):
 import `house-rules-pack.json` (3 rules, preview shows "📏 House rule × 3"), filter chip, open each rule (labels, house-rule

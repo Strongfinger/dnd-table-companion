@@ -27,7 +27,7 @@ const MAX_BODY = 3000
 /** Characters of JSON per message (Thai text is up to 3 bytes a character; a message may be 64 KB). */
 const MAX_JSON = 20_000
 
-const isShared = (status: string | undefined) => SHARED_STATUS.includes(status ?? 'active')
+const isShared = (status: string | undefined) => SHARED_STATUS.includes(status || 'active')
 
 /** The house rules of a campaign that players may read, by title, as small as fits one room message. */
 export function rulesToShare(notes: Note[], campaignId: string | null): SharedRule[] {
@@ -93,8 +93,12 @@ export function mergeRules(own: SharedRule[], received: SharedRule[]): SharedRul
   return [...own, ...received.filter((r) => !ids.has(r.id))].sort((a, b) => a.title.localeCompare(b.title, 'th'))
 }
 
-/** Every rule players may read from these pages, from all campaigns (for this device's own lookup tab). */
-export function ownRules(notes: Note[]): SharedRule[] {
-  const campaigns = [...new Set(notes.filter((n) => n.kind === 'rule').map((n) => n.campaignId))]
+/**
+ * The rules players may read from these pages (for this device's own lookup tab): the selected campaign's,
+ * or every campaign's when none is selected.
+ */
+export function ownRules(notes: Note[], campaignId?: string | null): SharedRule[] {
+  const all = [...new Set(notes.filter((n) => n.kind === 'rule').map((n) => n.campaignId))]
+  const campaigns = campaignId && all.includes(campaignId) ? [campaignId] : all
   return campaigns.flatMap((c) => rulesToShare(notes, c))
 }
