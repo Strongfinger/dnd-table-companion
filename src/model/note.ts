@@ -6,11 +6,12 @@ import { newId } from './character'
 import { sceneTexts, type Scene } from './sessionPlan'
 import type { SyncMeta } from './sync'
 
-export const NOTE_KINDS = ['session', 'npc', 'place', 'quest', 'faction', 'item'] as const
+export const NOTE_KINDS = ['session', 'npc', 'place', 'quest', 'faction', 'item', 'rule'] as const
 export type NoteKind = (typeof NOTE_KINDS)[number]
 
 export const KIND_LABEL: Record<NoteKind, string> = {
   session: '📅 เซสชัน', npc: '🧑 NPC', place: '🏰 สถานที่', quest: '📜 ภารกิจ', faction: '🛡 กลุ่ม', item: '💎 ไอเทม',
+  rule: '📏 House rule',
 }
 
 /** A key field of a page type: free text, or one of a few choices. */
@@ -23,6 +24,14 @@ export interface FieldDef {
 
 const ATTITUDE = [
   { value: '', label: '—' }, { value: 'friendly', label: '😊 เป็นมิตร' }, { value: 'neutral', label: '😐 เป็นกลาง' }, { value: 'hostile', label: '😠 ไม่เป็นมิตร' },
+]
+/** House rules: the group's own rules, not the official ones (2024 SRD). */
+export const RULE_TYPES = [
+  { value: '', label: '—' }, { value: 'weapon', label: '⚔️ อาวุธ' }, { value: 'condition', label: '🔥 สถานะ' },
+  { value: 'trait', label: '✨ Trait พิเศษ' }, { value: 'other', label: '📌 อื่นๆ' },
+]
+export const RULE_STATUS = [
+  { value: 'active', label: '🟢 ใช้อยู่' }, { value: 'trial', label: '🧪 ลองใช้' }, { value: 'off', label: '⚪ เลิกใช้' },
 ]
 export const QUEST_STATUS = [
   { value: 'open', label: '🟡 กำลังทำ' }, { value: 'done', label: '✅ สำเร็จ' }, { value: 'failed', label: '❌ ล้มเหลว' },
@@ -62,6 +71,15 @@ export const KIND_FIELDS: Record<NoteKind, FieldDef[]> = {
     { key: 'rarity', label: 'ความหายาก', placeholder: 'เช่น Uncommon' },
     { key: 'effect', label: 'ทำอะไรได้' },
   ],
+  rule: [
+    { key: 'status', label: 'สถานะกฎ', choices: RULE_STATUS },
+    { key: 'type', label: 'ประเภท', choices: RULE_TYPES },
+    { key: 'trigger', label: 'ใช้เมื่อไร', placeholder: 'เช่น เมื่ออาวุธติดไฟ' },
+    { key: 'effect', label: 'ผล', placeholder: 'เช่น ดาเมจ +2 (Fire)' },
+    { key: 'duration', label: 'นานเท่าไร', placeholder: 'เช่น 2 เทิร์น' },
+    { key: 'who', label: 'ใครใช้ได้', placeholder: 'เช่น ทุกคน หรือ [[Gojo Satoru]]' },
+    { key: 'official', label: 'กฎทางการเดิม (SRD)', placeholder: 'กฎ 2024 ว่าอย่างไร ถ้ามี' },
+  ],
 }
 
 export interface Note extends SyncMeta {
@@ -82,7 +100,24 @@ export interface Note extends SyncMeta {
 
 /** Fill in what notes saved before the notebook don't have. */
 export function withNoteDefaults(stored: Partial<Note> & { id: string }): Note {
-  return { kind: 'session', fields: {}, scenes: [], ...stored } as Note
+  const note = { kind: 'session', fields: {}, scenes: [], ...stored } as Note
+  // A page type from a newer app version: show it as a session page instead of crashing.
+  return (NOTE_KINDS as readonly string[]).includes(note.kind) ? note : { ...note, kind: 'session' }
+}
+
+/**
+ * The page with another type. Choice fields (like a quest's or a house rule's status) keep their value
+ * only if the new type has the same choice; otherwise the new type's default is used.
+ */
+export function changeKind(note: Note, kind: NoteKind): Note {
+  const defaults = createNote(null, 0, kind).fields
+  const fields: Record<string, string> = {}
+  for (const [key, value] of Object.entries(note.fields ?? {})) {
+    const def = KIND_FIELDS[kind].find((f) => f.key === key)
+    if (def?.choices && !def.choices.some((c) => c.value === value)) continue
+    fields[key] = value
+  }
+  return { ...note, kind, fields: { ...defaults, ...fields } }
 }
 
 /** Today as YYYY-MM-DD in local time (not UTC, so a late-night session keeps its day). */
@@ -92,7 +127,7 @@ export function today(now = new Date()): string {
 }
 
 export function createNote(campaignId: string | null, now = Date.now(), kind: NoteKind = 'session', title = ''): Note {
-  const fields: Record<string, string> = kind === 'quest' ? { status: 'open' } : {}
+  const fields: Record<string, string> = kind === 'quest' ? { status: 'open' } : kind === 'rule' ? { status: 'active' } : {}
   return { id: newId(), campaignId, kind, title, fields, body: '', sessionDate: today(new Date(now)), scenes: [], createdAt: now, updatedAt: now, rev: 0, updatedBy: '' }
 }
 
@@ -161,6 +196,7 @@ export function pageSummary(n: Note): string {
     case 'quest': return [choice('status'), f.giver].filter(Boolean).join(' · ')
     case 'faction': return [f.leader, choice('attitude')].filter(Boolean).join(' · ')
     case 'item': return [f.rarity, f.holder].filter(Boolean).join(' · ')
+    case 'rule': return [choice('status'), choice('type'), f.effect].filter(Boolean).join(' · ')
     default: return ''
   }
 }

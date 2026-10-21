@@ -9,6 +9,7 @@
 // Dice rolls are shared with everyone in the room; the DM device writes them into the fight log.
 // The DM's reward pool (คลังกลาง) and coin requests go to players too; players take items and ask for coins through
 // the DM's device (model/rewards.ts, db/rewards.ts). Handing items or coins to a friend ('give') is done there too.
+// The campaign's house rules go to players as well ('houseRules'); phones keep a copy to read in the lookup tab.
 //
 // Nothing gets lost or applied twice (4.5): a player's changes wait in a saved outbox until the DM's
 // device confirms them ('ack'), and are re-sent until then; the DM's device saves the ids it has
@@ -39,7 +40,9 @@ import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type Outbo
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
 import { giveNow } from '../db/give'
 import { parseGive } from '../model/give'
+import { saveReceivedRules, watchRulesToShare } from '../db/houseRules'
 import { givePoolItem, receiveCoinRequest, watchCoinRequests, watchPool } from '../db/rewards'
+import { parseHouseRules } from '../model/houseRules'
 import { keepDmEconomy, parseCoinRequestBody, parseCoinRequests, parsePool, parseTake, type CoinRequest, type PoolItem } from '../model/rewards'
 import {
   isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet, takenBack,
@@ -102,6 +105,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [coinRequests, setCoinRequests] = useState<CoinRequest[]>([])
   const lastPool = useRef<string | null>(null)
   const lastRequests = useRef<string | null>(null)
+  /** DM: the house rules last sent (JSON), to skip repeats and resend on (re)join. */
+  const lastRules = useRef<string | null>(null)
   const fightRef = useRef<PlayerEncounterView | null>(null)
   const setFight = (f: PlayerEncounterView | null) => {
     fightRef.current = f
@@ -246,6 +251,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
     if (lastPool.current !== null) send('pool', { items: JSON.parse(lastPool.current) })
     if (lastRequests.current !== null) send('coinRequests', { requests: JSON.parse(lastRequests.current) })
+    if (lastRules.current !== null) send('houseRules', JSON.parse(lastRules.current))
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
     if (campaign) send('campaign', campaignMessage(campaign))
@@ -302,6 +308,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     } else if (e.kind === 'pool') {
       const items = parsePool(e.body)
       if (items) setPool(items)
+    } else if (e.kind === 'houseRules') {
+      const rules = parseHouseRules(e.body)
+      if (rules) void saveReceivedRules(rules)
     } else if (e.kind === 'coinRequests') {
       const list = parseCoinRequests(e.body)
       if (list) setCoinRequests(list)
@@ -494,6 +503,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     lastParty.current = null
     lastPool.current = null
     lastRequests.current = null
+    lastRules.current = null
     sentFights.current = null
     sentLogs.current = new Map()
     roomCampaign.current = null
@@ -638,6 +648,19 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
   }, [hostingRoom])
+
+  // DM: the room campaign's house rules go to players whenever a rule page changes.
+  useEffect(() => {
+    if (!hostingRoom || dmCampaign === null) return
+    const campaignId = dmCampaign || null
+    return watchRulesToShare(campaignId, (rules) => {
+      const json = JSON.stringify({ campaignId, rules })
+      if (json === lastRules.current) return
+      lastRules.current = json
+      send('houseRules', { campaignId, rules })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
+  }, [hostingRoom, dmCampaign])
 
   // DM: send the list of started fights and their new player-safe log lines whenever they change.
   useEffect(() => {

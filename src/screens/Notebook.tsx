@@ -8,7 +8,7 @@ import { go } from '../app/router'
 import { listCampaigns } from '../db/campaigns'
 import { deleteNote, getNote, listNotes, saveNote } from '../db/notes'
 import {
-  backlinks, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, plainText, searchNotes, thaiDate,
+  backlinks, changeKind, createNote, findPage, KIND_FIELDS, KIND_LABEL, NOTE_KINDS, noteTitle, pageSummary, plainText, searchNotes, thaiDate,
   type Note, type NoteKind,
 } from '../model/note'
 import { Button, TextInput } from '../ui/kit'
@@ -149,6 +149,8 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, on
       <header>
         <p className="text-xs text-stone-400">{KIND_LABEL[note.kind]}{note.kind === 'session' && ` · ${thaiDate(note.sessionDate)}`}</p>
         <h2 className="text-2xl font-bold text-amber-400">{noteTitle(note)}</h2>
+        {note.kind === 'rule' && <p className="text-xs text-sky-300">กฎของกลุ่มเรา (house rule) ไม่ใช่กฎทางการของ D&D 2024</p>}
+        {note.kind === 'rule' && <RuleSharedHint />}
       </header>
       {fields.length > 0 && (
         <dl className="space-y-1 rounded-lg bg-stone-900 p-3 text-sm">
@@ -233,7 +235,7 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
         <Button variant="primary" className="text-sm" onClick={done}>✓ เสร็จ</Button>
       </div>
       <div className="flex flex-wrap gap-2">
-        <select aria-label="ประเภทหน้า" className={select} value={note.kind} onChange={(e) => set({ kind: e.target.value as NoteKind })}>
+        <select aria-label="ประเภทหน้า" className={select} value={note.kind} onChange={(e) => { const { kind, fields } = changeKind(note, e.target.value as NoteKind); set({ kind, fields }) }}>
           {NOTE_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
         </select>
         <select aria-label="แคมเปญ" className={`min-w-0 flex-1 ${select}`} value={note.campaignId ?? ''} onChange={(e) => set({ campaignId: e.target.value || null })}>
@@ -245,6 +247,7 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
       {note.kind === 'session' && (
         <input type="date" aria-label="วันที่เล่น" className={select} value={note.sessionDate} onChange={(e) => set({ sessionDate: e.target.value })} />
       )}
+      {note.kind === 'rule' && <RuleSharedHint />}
       {KIND_FIELDS[note.kind].map((f) => (
         <label key={f.key} className="block text-sm">
           <span className="text-stone-400">{f.label}</span>
@@ -268,7 +271,9 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
         ref={bodyRef}
         aria-label="รายละเอียด"
         className="min-h-[40dvh] w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-base leading-relaxed"
-        placeholder={note.kind === 'session' ? 'แผนเซสชัน, สิ่งที่เกิดขึ้น, เบาะแส, ของที่ได้… พิมพ์ [[ชื่อ]] เพื่อลิงก์ไปหน้า NPC/สถานที่' : 'รายละเอียด ความสัมพันธ์ ความลับ… พิมพ์ [[ชื่อ]] เพื่อลิงก์'}
+        placeholder={note.kind === 'session' ? 'แผนเซสชัน, สิ่งที่เกิดขึ้น, เบาะแส, ของที่ได้… พิมพ์ [[ชื่อ]] เพื่อลิงก์ไปหน้า NPC/สถานที่'
+          : note.kind === 'rule' ? 'อธิบายกฎให้ผู้เล่นอ่าน… (ผู้เล่นในห้องออนไลน์เห็นข้อความนี้ทั้งหมด อย่าใส่ความลับ)'
+          : 'รายละเอียด ความสัมพันธ์ ความลับ… พิมพ์ [[ชื่อ]] เพื่อลิงก์'}
         value={note.body}
         onChange={(e) => set({ body: e.target.value })}
       />
@@ -278,4 +283,9 @@ function PageEditor({ note: start, pages, onDone, onDeleted }: { note: Note; pag
       </div>
     </div>
   )
+}
+
+/** Rule pages are read by players too (lookup tab), so the DM shouldn't write secrets there. */
+function RuleSharedHint() {
+  return <p className="text-xs text-amber-200/80">👀 ผู้เล่นในห้องออนไลน์อ่านกฎนี้ได้ที่แท็บ 📖 ค้นหา (ยกเว้นสถานะ ⚪ เลิกใช้) ชื่อหน้าที่ลิงก์ไว้ก็แสดงให้ผู้เล่นเห็นด้วย</p>
 }
