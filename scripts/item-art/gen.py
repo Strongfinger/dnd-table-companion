@@ -61,7 +61,7 @@ KIND = {
     "kind-item": "a small closed wooden treasure chest with iron bands",
     "wear-head": "a steel helmet", "wear-neck": "a gold amulet with a gemstone on a chain", "wear-hands": "a pair of leather gloves",
     "wear-ring": "a gold ring with a gemstone", "wear-cloak": "a folded dark green cloak with a brooch", "wear-body": "a cloth tunic",
-    "wear-legs": "a pair of leather thigh and shin guards (leg armor, not boots)", "wear-feet": "a pair of leather boots", "wear-back": "a leather backpack",
+    "wear-legs": "a pair of leather thigh and shin guards (leg armor, not boots)", "wear-feet": "a pair of leather boots", "wear-back": "a leather backpack", "wear-waist": "a coiled leather belt with a brass buckle",
 }
 
 def items():
