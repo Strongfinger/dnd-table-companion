@@ -9,7 +9,7 @@
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import { useDmRunsEconomy } from '../app/useRunsCampaign'
-import { addCustomItem, coinRequestLabel, type CustomItem, type PoolItem } from '../model/rewards'
+import { addCustomItem, coinRequestLabel, magicItemToCustom, type CustomItem, type PoolItem } from '../model/rewards'
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
@@ -17,7 +17,7 @@ import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
 import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
 import MiniMarkdown from '../ui/MiniMarkdown'
-import { useEquipment, useEquipmentTh } from './useSrdData'
+import { useEquipment, useEquipmentTh, useMagicItems, useMagicItemsTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
 import { useShowItemImages } from '../ui/useShowItemImages'
@@ -486,11 +486,19 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
   onAddCustom: AddCustom
 }) {
   const thai = useEquipmentTh().items
+  const magicItems = useMagicItems()
+  const magicTh = useMagicItemsTh()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState(0)
   const [added, setAdded] = useState<string | null>(null)
   if (!data) return <CustomItemForm initialName={query} onAdd={onAddCustom} />
-  const found = searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai)
+  // The last chip, after the SRD equipment kinds: SRD magic items, added as ✨ Magic Items (with slot and text).
+  const magicChip = filter === KIND_FILTERS.length
+  const found = magicChip && !query ? [] : searchItems(data, query, query ? undefined : KIND_FILTERS[filter].kinds, thai)
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const magicFound = (magicChip || query) && magicItems
+    ? magicItems.filter((i) => words.every((w) => i.name.toLowerCase().includes(w) || !!magicTh[i.id]?.name.includes(w)))
+    : []
 
   return (
     <div className="mb-3 space-y-2 rounded-lg bg-stone-900 p-3">
@@ -503,6 +511,10 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
               {f.label}
             </button>
           ))}
+          <button type="button" onClick={() => setFilter(KIND_FILTERS.length)}
+            className={`rounded-full border px-3 py-1 ${magicChip ? 'border-amber-400 bg-amber-800 font-bold' : 'border-stone-600'}`}>
+            ✨ ไอเทมเวท
+          </button>
         </div>
       )}
       <ul className="max-h-72 space-y-1 overflow-y-auto">
@@ -517,9 +529,21 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
               : <Button className="px-3 py-1 text-sm" onClick={() => { onAdd(i); setAdded(i.id) }}>+ เพิ่ม</Button>}
           </li>
         ))}
+        {magicFound.map((i) => (
+          <li key={`magic-${i.id}`} className="flex items-center justify-between gap-2 rounded bg-stone-800 px-2 py-1 text-sm">
+            <span className="min-w-0">
+              ✨ <span className="font-bold">{i.name}</span>{magicTh[i.id] && <span className="text-stone-400"> · {magicTh[i.id].name}</span>}
+              <span className="block text-xs text-stone-400">{i.rarity}{i.attunement && ' · Attune'} · Magic Item</span>
+            </span>
+            {added === `magic-${i.id}`
+              ? <span className="text-xs whitespace-nowrap text-emerald-400">✓ เพิ่มแล้ว</span>
+              : <Button className="px-3 py-1 text-sm" onClick={() => { onAddCustom(magicItemToCustom(i, magicTh[i.id]?.text)); setAdded(`magic-${i.id}`) }}>+ เพิ่ม</Button>}
+          </li>
+        ))}
       </ul>
-      {found.length === 0 && <p className="text-xs text-stone-500">ไม่พบใน SRD · เพิ่มเป็นของ custom ด้านล่างได้</p>}
-      <CustomItemForm key={found.length === 0 ? query : ''} initialName={found.length === 0 ? query : ''} onAdd={onAddCustom} />
+      {magicChip && !query && <p className="text-xs text-stone-500">ไอเทมเวทจาก SRD 5.2.1 ใส่เป็น ✨ Magic Item พร้อมช่องสวมใส่และคำอธิบาย · ตัวเลข (เช่น +1 AC) แอปไม่คิดให้</p>}
+      {found.length === 0 && magicFound.length === 0 && <p className="text-xs text-stone-500">ไม่พบใน SRD · เพิ่มเป็นของ custom ด้านล่างได้</p>}
+      <CustomItemForm key={found.length + magicFound.length === 0 ? query : ''} initialName={found.length + magicFound.length === 0 ? query : ''} onAdd={onAddCustom} />
     </div>
   )
 }
