@@ -1,16 +1,18 @@
-# Handoff — state on 2026-10-18
+# Handoff — state on 2026-10-21
 
 **Start here.** The app is feature-complete for the table. Phases 0–4 and 3 are done, plus the content plan in
-[docs/RESEARCH.md](RESEARCH.md) and the **Thai translation** of all SRD content (spells, feats, magic items, class
-features, species, Rules Glossary, equipment, monsters; DND-TH's text, with permission). A **playtest on
-2026-10-16** found five problems; they and two more were fixed on 2026-10-18 (PRs #1–#4, see "Phase 5" below). All 278 SRD magic items are in.
+[docs/RESEARCH.md](RESEARCH.md) and the **Thai translation** of all SRD content (DND-TH's text, with permission).
+A **playtest on 2026-10-16** found five problems; they were fixed on 2026-10-18 (PRs #1–#4). Then **Phase 6 (2026-10-19
+to 10-21, PRs #5–#18)** added table extras the owner asked for: coin purse and equipment slots, temporary buffs, full
+backup/restore, the journey chronicle, item pictures, Carrying Capacity, the reward pool with coin requests, magic items
+on the sheet and a waist slot (see "Phase 6" below). All 278 SRD magic items are in.
 **Suggested next:** the first real session with friends (*Dragon of Icespire Peak* Session 1), then a fix pass.
 Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local post-commit hook rebuilds it).
 
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (625 passing) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (749 passing, 94 files) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `content-reviewer` agent (was rules-reviewer) after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -42,8 +44,14 @@ Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local p
 | Notebook + planner | `src/screens/Notebook.tsx` (`#/dm/note/<id>`), `SessionPlan.tsx`, `src/ui/LinkedText.tsx`; `src/model/note.ts` (kinds, fields, `[[links]]`, backlinks), `sessionPlan.ts` |
 | Campaign pack import | `src/model/campaignPack.ts` (pure parse, stable ids `<campaign>-<id>`), `src/db/campaignPack.ts`, `src/screens/ImportPack.tsx` (`#/dm/import`). The owner's Icespire Peak pack + generator `make_pack.py` live in `docs/DM Scripts/` (private, git-ignored) |
 | Generators | `src/model/generators/` (`index.ts` pure with `rng`, `tables.ts` homebrew Thai content), `src/screens/Generators.tsx` |
-| DM tab | `src/screens/DmHome.tsx` (`#/dm`: party rest `PartyRest.tsx`, generators, notebook; hidden for players in a room). The SRD lookup is its own `📖 ค้นหา` tab for everyone |
-| Storage | `src/db/` — Dexie DB version 5: characters, log, encounters, campaigns, settings, notes |
+| DM tab | `src/screens/DmHome.tsx` (`#/dm`, in this order: notebook, party rest `PartyRest.tsx`, coin requests, reward pool, generators, chronicle; hidden for players in a room). The SRD lookup is its own `📖 ค้นหา` tab for everyone |
+| Storage | `src/db/` — Dexie DB version 6: characters, log, encounters, campaigns, settings, notes, chapters, storyCache |
+| Inventory, coins, slots | `src/model/inventory.ts` (13 slots: head, neck, hands, ring1/2, cloak, body, waist, legs, feet, main/off hand, back; one item per slot; custom items get a `wear` slot), `src/model/carrying.ts` + `src/rules/carrying.ts` (Carrying Capacity, Speed cut), `src/screens/Inventory.tsx` |
+| Item pictures | Painted `public/items/<srdId>.webp` (`scripts/item-art/gen.py`, Gemini) + game-icons.net icons (`scripts/item-icons/render.mjs`, CC BY 3.0, credited on About); `src/model/itemImage.ts` (custom items keep a small `image`), requirement in [ITEM-IMAGES.md](ITEM-IMAGES.md) |
+| Buffs | `src/rules/buffs.ts` (flat numbers added by `deriveSheet`; some end on rests), `src/screens/BuffPanel.tsx`; worn ✨ Magic Items with an effect text show here too |
+| Reward pool + coin requests | `src/model/rewards.ts` (pure), `src/db/rewards.ts` (pool saved in `settings` key `reward-pool`, transactions), `src/screens/RewardDesk.tsx`; room messages `pool`, `take`, `coinRequest`, `coinRequests`. A character run by another device can't add items/coins itself |
+| Backup | `src/model/backup.ts` (pure, record-by-record checks), `src/db/backup.ts`, `src/screens/Backup.tsx` (`#/backup`; also reads a hand-made console dump) |
+| Journey chronicle | `src/model/chronicle.ts` (`Chapter`, images ≤24, limits), `src/db/chronicle.ts` (tables `chapters`, `storyCache`), `src/sync/chronicleShare.ts` (Firebase `chronicles/{shareId}`), `src/screens/Chronicle.tsx` (shelf, book, manage, editor). The DM tab links to it |
 | Help/glossary | `src/model/glossary.ts` (incl. Thai help for the 18 skills), `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 | Action suggestions | `src/model/actionSuggestions.ts` (`actionKindFor`: spells by SRD casting time, features by `activation`; Focus/Sorcery Points also under Bonus Action), `src/screens/ActionChoiceDialog.tsx` |
 | Missing choices | `src/rules/missingChoices.ts` (subclass from level 3, empty ASI slots) → amber banner with "เลือก" on `CharacterSheet.tsx` |
@@ -102,6 +110,9 @@ and the 7 untranslated spells in `src/data/README.md`.
   opening and every 15 min (`cleanupOldMessages`). Rules published by the owner 2026-10-13. Old abandoned
   rooms the DM device was never in stay.
 
+- **Chronicle (2026-10-19):** `chronicles/{shareId}` (20-character id, any signed-in user reads, only its `owner` writes);
+  rules in `database.rules.json` — **re-publish them in the console if not done yet** (the owner publishes them by hand).
+
 ## Testing tips
 - Two tabs of one browser share IndexedDB **and** the Firebase sign-in, so they can't test sync. Use the
   fake devices in `scripts/lobby-test/` (each file's header says how): `player.cjs`, `dm.cjs`, `resync.cjs`,
@@ -154,10 +165,26 @@ and the 7 untranslated spells in `src/data/README.md`.
 5. **Not yet in the campaign pack:** follow-up quests (Butterskull Ranch, Loggers' Camp, Mountain's Toe, Axeholm,
    Dragon Barrow, Woodland Manse…) to add from the owner's own notes when they write them.
 
+## Phase 6: table extras (2026-10-19 to 10-21, PRs #5–#18)
+Requested by the owner (Tan) after the playtest. Written by parallel sessions; unit tests pass (749).
+- **Inventory:** coin purse, custom items, one item per slot, two rings, waist slot (belts on the legs move there),
+  edit/use/delete, tap a worn item to read it; worn/held items have no "use" button.
+- **Carrying Capacity:** Str × 15 lb (Goliath one size larger), coins 50 per lb; over it Speed ≤ 5 ft, over double it 0.
+- **Buffs:** DM-added flat effects (AC, Speed, attack, saves, skills, initiative); same-named penalties keep the biggest.
+- **Reward pool:** the DM puts SRD equipment, ✨ SRD magic items or custom items in the pool; players take them. Coin
+  changes by a player whose character a DM runs go through the DM as requests. The treasure generator can fill the pool.
+- **Magic items:** custom items can be ✨ Magic Item with an effect (mini markdown, ≤2000 chars) and a short `summary`;
+  `srd-magic-items-summary-th.json` has a Thai summary for all 278; "อ่านเพิ่มเติม" opens `#/c/<id>/item/<itemId>`.
+  Only the DM edits effects of characters it runs.
+- **Chronicle + backup:** see the code map. Chapters live on the DM's device and are included in backups.
+- **UI:** one ไทย/EN button in the top bar sets every card (the old per-card switches are gone; a section on the room tab too).
+- **Open/unknown:** Firebase rules for `chronicles/` published? Nobody has recorded checking the reward pool and chronicle over real Firebase. This handoff's older sections (Phase 5, Known limits) are still accurate.
+
 ## Next steps (suggested)
 1. **Icespire Session 1** with friends on several phones; keep a list of problems during play.
 2. **Fix pass** on that list (one commit per issue, like the playtest PR).
-3. Optional: our own Thai for the translation gaps; QR export
+3. Re-publish `database.rules.json` if the chronicle rules aren't live; check the pool and chronicle over Firebase.
+4. Optional: our own Thai for the translation gaps; QR export
    (the last "Later" item in `docs/ROADMAP.md`).
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
