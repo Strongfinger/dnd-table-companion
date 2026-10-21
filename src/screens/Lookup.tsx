@@ -1,5 +1,5 @@
 // SRD lookup (Phase 3.2): monsters (full stat blocks, DM only); spells, rules & conditions, equipment and
-// features (everyone).
+// features (everyone), and the group's house rules (the DM's notebook rules, sent to players in a room).
 // The data loads only when its tab opens.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
@@ -15,13 +15,14 @@ import { castingTimeLine, componentsLine, searchSpells, spellLevelLine, type Srd
 import MiniMarkdown from '../ui/MiniMarkdown'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { EquipmentSearch, FeatureSearch, MagicItemSearch } from './LookupMore'
+import HouseRuleSearch from './HouseRuleSearch'
 import { ThaiCredit } from '../ui/ThaiText'
 import { useTextLang } from '../ui/useTextLang'
 import { useGlossaryTh } from '../ui/useGlossaryTh'
 import { useMonsters, useMonstersTh, useSpells, useSpellsTh } from './useSrdData'
 import { Button, NumberInput, Section, TextInput } from '../ui/kit'
 
-export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'items' | 'features'
+export type LookupTab = 'monsters' | 'spells' | 'rules' | 'equipment' | 'items' | 'features' | 'house'
 
 const CR_FILTERS = [
   { value: 30, label: 'ทุก CR' }, { value: 0.25, label: 'CR ≤ 1/4' }, { value: 1, label: 'CR ≤ 1' },
@@ -42,6 +43,7 @@ export default function Lookup({ tab }: { tab: LookupTab | null }) {
     { id: 'equipment', label: '⚔️ อุปกรณ์' },
     { id: 'items', label: '🪄 ไอเทมเวท' },
     { id: 'features', label: '🧬 ความสามารถ' },
+    { id: 'house', label: '📏 House rules' },
   ]
   return (
     <div className="space-y-4">
@@ -57,7 +59,8 @@ export default function Lookup({ tab }: { tab: LookupTab | null }) {
         ))}
       </div>
       {current === 'monsters' ? <MonsterSearch /> : current === 'spells' ? <SpellSearch />
-        : current === 'equipment' ? <EquipmentSearch /> : current === 'items' ? <MagicItemSearch /> : current === 'features' ? <FeatureSearch /> : <RulesSearch />}
+        : current === 'equipment' ? <EquipmentSearch /> : current === 'items' ? <MagicItemSearch /> : current === 'features' ? <FeatureSearch />
+        : current === 'house' ? <HouseRuleSearch isPlayer={isPlayer} /> : <RulesSearch />}
     </div>
   )
 }
