@@ -28,6 +28,7 @@ export default function Tracker({ id }: { id: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [showPlayerView, setShowPlayerView] = useState(false)
   /** Why the last change was refused (e.g. giving back a slot spent in an earlier round). */
   const [notice, setNotice] = useState<string | null>(null)
@@ -191,6 +192,11 @@ export default function Tracker({ id }: { id: string }) {
   const waiting = enc.combatants.filter((c) => c.initiative === null)
   const monstersWaiting = waiting.some((c) => c.kind === 'monster')
   const rounds = groupByRound(fightLog)
+  // Turn bar and header: whose turn is next, and where we are in the round (fighters still in it).
+  const inFight = enc.combatants.filter((c) => !c.defeated)
+  const turnNumber = inFight.findIndex((c) => c.id === enc.activeId) + 1
+  const nextId = enc.status === 'active' && enc.activeId ? nextTurn(enc.combatants, { round: enc.round, activeId: enc.activeId }).state.activeId : null
+  const nextName = nextId && nextId !== enc.activeId ? enc.combatants.find((c) => c.id === nextId)?.name : undefined
 
   return (
     <div className="space-y-4 pb-24">
@@ -200,13 +206,38 @@ export default function Tracker({ id }: { id: string }) {
           <FightTitle name={enc.name} onRename={(name) => patch((x) => renameEncounter(x, name))} />
           <p className="text-stone-400">
             {enc.status === 'setup' && 'เตรียมการ: เพิ่มผู้ร่วมต่อสู้และทอย Initiative'}
-            {enc.status === 'active' && <span className="text-lg font-bold text-stone-100">รอบที่ {enc.round}</span>}
+            {enc.status === 'active' && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-stone-800 px-3 py-0.5 text-base">
+                <b className="text-stone-100">รอบที่ {enc.round}</b>
+                {turnNumber > 0 && <span className="text-stone-300">· เทิร์น {turnNumber}/{inFight.length}</span>}
+              </span>
+            )}
             {enc.status === 'ended' && `จบแล้ว (${enc.round} รอบ)`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="relative flex gap-2">
           <Button onClick={() => setShowPlayerView(!showPlayerView)}>{showPlayerView ? 'ปิดมุมมองผู้เล่น' : '👁 มุมมองผู้เล่น'}</Button>
           <Button onClick={() => setAdding(!adding)}>{adding ? 'ปิด' : '+ เพิ่มผู้ร่วมต่อสู้'}</Button>
+          <Button aria-label="เมนูเพิ่มเติม: ลบการต่อสู้" className="px-3" onClick={() => { setMenuOpen(!menuOpen); setConfirmDelete(false) }}>⋯</Button>
+          {/* Delete at any time (an unwanted or test fight), not only after it ended. Tucked in a menu and asks first. */}
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-72 space-y-2 rounded-xl border border-stone-600 bg-stone-900 p-2 shadow-xl">
+              {!confirmDelete ? (
+                <button type="button" className="block w-full rounded-lg px-3 py-2.5 text-left text-red-300 hover:bg-stone-800" onClick={() => setConfirmDelete(true)}>🗑 ลบการต่อสู้นี้…</button>
+              ) : (
+                <>
+                  <p className="px-1 text-sm text-stone-300">
+                    ลบการต่อสู้และบันทึกการต่อสู้นี้ทั้งหมด (บันทึกในใบตัวละครยังอยู่, HP ไม่ถูกย้อนกลับ)
+                    {enc.status !== 'ended' && ' · การต่อสู้นี้ยังไม่จบ: Condition จากการต่อสู้นี้จะถูกเอาออกจากใบตัวละคร'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="danger" className="flex-1" onClick={removeFight}>ยืนยันลบ</Button>
+                    <Button className="flex-1" onClick={() => { setConfirmDelete(false); setMenuOpen(false) }}>ไม่ลบ</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -266,20 +297,6 @@ export default function Tracker({ id }: { id: string }) {
         </div>
       </div>
 
-      {/* Delete at any time (an unwanted or test fight), not only after it ended. Asks first. */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => setConfirmDelete(!confirmDelete)}>{confirmDelete ? 'ไม่ลบ' : '🗑 ลบการต่อสู้นี้'}</Button>
-          {confirmDelete && <Button variant="danger" className="flex-1" onClick={removeFight}>ยืนยันลบ</Button>}
-        </div>
-        {confirmDelete && (
-          <p className="text-sm text-stone-400">
-            ลบการต่อสู้และบันทึกการต่อสู้นี้ทั้งหมด (บันทึกในใบตัวละครยังอยู่, HP ไม่ถูกย้อนกลับ)
-            {enc.status !== 'ended' && ' · การต่อสู้นี้ยังไม่จบ: Condition จากการต่อสู้นี้จะถูกเอาออกจากใบตัวละคร'}
-          </p>
-        )}
-      </div>
-
       {/* Turn controls stay at the bottom of the screen. */}
       {enc.status !== 'ended' && enc.combatants.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 border-t border-stone-700 bg-stone-900/95 p-3">
@@ -295,8 +312,10 @@ export default function Tracker({ id }: { id: string }) {
             ) : (
               <>
                 <Button className="px-3" onClick={previous}>◀</Button>
-                <Button variant="primary" className="flex-1" onClick={next}>ถัดไป ▶</Button>
-                <Button className="px-3" onClick={end}>🏁 จบ</Button>
+                <Button variant="primary" className="flex-1 text-lg" onClick={next}>
+                  ถัดไป ▶{nextName && <span className="ml-2 text-sm font-normal">{nextName}</span>}
+                </Button>
+                <Button className="px-3" onClick={end}>🏁 จบ<span className="hidden sm:inline">การต่อสู้</span></Button>
               </>
             )}
           </div>

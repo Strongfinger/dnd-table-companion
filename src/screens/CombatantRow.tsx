@@ -129,7 +129,8 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
 
   return (
     <div className={`rounded-xl border-2 ${active ? 'border-amber-400 bg-stone-800' : 'border-transparent bg-stone-800/70'} ${c.defeated ? 'opacity-50' : ''}`}>
-      <button type="button" onClick={onToggle} className="flex w-full items-center gap-3 p-3 text-left">
+      <div className="flex items-center">
+      <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left">
         <div className="w-10 text-center">
           <div className="text-xl font-bold">{c.initiative ?? '–'}</div>
           <div className="text-[10px] text-stone-500">INIT</div>
@@ -137,6 +138,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate font-bold">{active && '▶ '}{isPc ? '🧑' : '👹'} {c.name}</span>
+            <span className={`hidden shrink-0 rounded px-1.5 text-[10px] font-bold sm:inline ${isPc ? 'bg-sky-950 text-sky-200' : 'bg-rose-950 text-rose-200'}`}>{isPc ? 'ผู้เล่น' : 'มอนสเตอร์'}</span>
             {(c.defeated || dead) && <span className="text-xs">☠️</span>}
             {c.hidden && <span className="rounded bg-stone-700 px-1 text-xs" title="ซ่อนจากผู้เล่น">🙈 ซ่อน</span>}
           </div>
@@ -161,6 +163,23 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
           <div className="text-stone-400">AC {isPc && character ? buffedArmorClass(character.ac, character.buffs) : c.ac}</div>
         </div>
       </button>
+      {/* Laptop: damage / heal straight from the row, without opening it (the open row has the full controls). */}
+      {!open && c.initiative !== null && (
+        <div className="hidden shrink-0 items-center gap-1 pr-3 sm:flex">
+          <input
+            className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-1 py-1.5 text-center text-base"
+            inputMode="numeric"
+            placeholder="0"
+            aria-label={`จำนวน HP ของ ${c.name}`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={(e) => { if (e.key === 'Enter') damage() }}
+          />
+          <button type="button" aria-label={`ดาเมจ ${c.name}`} title="ดาเมจ (Enter)" onClick={damage} className="h-9 w-9 rounded-lg bg-red-800 font-bold text-white hover:bg-red-700">−</button>
+          <button type="button" aria-label={`ฮีล ${c.name}`} title="ฮีล" onClick={healing} className="h-9 w-9 rounded-lg bg-emerald-800 font-bold text-white hover:bg-emerald-700">+</button>
+        </div>
+      )}
+      </div>
 
       {/* Initiative entry: roll in the app, or type the total the player rolled at the table. */}
       {c.initiative === null && (
@@ -199,7 +218,7 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
               onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
             />
             <Button variant="danger" className="flex-1 whitespace-nowrap px-2" onClick={damage}>− ดาเมจ</Button>
-            <Button className="flex-1 whitespace-nowrap bg-emerald-800 px-2 hover:bg-emerald-700" onClick={healing}>+ ฮีล</Button>
+            <Button variant="heal" className="flex-1 whitespace-nowrap px-2" onClick={healing}>+ ฮีล</Button>
             <Button className="whitespace-nowrap px-2" onClick={temp}>Temp</Button>
           </div>
 
