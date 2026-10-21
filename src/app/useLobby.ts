@@ -9,6 +9,7 @@ import type { FightSummary, PlayerLogEntry } from '../sync/fights'
 import type { LobbySession } from '../sync/lobby'
 import type { PartyCard } from '../sync/party'
 import type { CoinRequest, PoolItem } from '../model/rewards'
+import type { GiveRequest } from '../model/give'
 import type { ConnectionStatus, Member } from '../sync/transport'
 
 export interface CharacterPick {
@@ -52,6 +53,8 @@ export interface LobbyApi {
   takeFromPool: (characterId: string, itemId: string, qty: number) => void
   /** Player: ask the DM to add or take coins from my character. */
   requestCoins: (characterId: string, request: Pick<CoinRequest, 'kind' | 'coin' | 'amount' | 'note'>) => void
+  /** Player: hand an item or coins from my character to another one in the room (the DM's device moves it). */
+  give: (request: GiveRequest) => void
   /** Player: every character this device plays in the room (the picked one + any the DM handed over). */
   myCharacterIds: string[]
   /** DM: hand a character to a player's device (null = take it back). */

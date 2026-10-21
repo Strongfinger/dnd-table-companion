@@ -4,7 +4,8 @@
 // or adds a custom item by name. Changes save at once; in a live room they go to the DM like other sheet edits.
 // A character run by a DM on another device (useDmRunsEconomy) can't add items or change coins: "+ หยิบจากคลังกลาง"
 // takes what the DM put in the reward pool, and coins are asked for (the DM approves on the DM tab, model/rewards.ts).
-// Tap an item in the pack to use one, rename it, change how many, or throw it away.
+// Tap an item in the pack to use one, rename it, change how many, throw it away, or give it to a friend
+// ("🤝 ส่งให้เพื่อน", GiveForm.tsx; coins too, under the purse).
 // A bar shows the weight carried against Carrying Capacity (Str × 15 lb, model/carrying.ts).
 import { useRef, useState } from 'react'
 import { useLobby } from '../app/useLobby'
@@ -25,6 +26,7 @@ import { MAX_ITEM_IMAGES, countItemImages, setItemImage } from '../model/itemIma
 import { characterLoad, formatLb, hasTypedWeight, itemUnitWeight, MAX_ITEM_WEIGHT, setItemWeight } from '../model/carrying'
 import { OVER_CAPACITY_SPEED } from '../rules'
 import { compressItemImage } from '../ui/imageResize'
+import { GiveCoinsForm, GiveItemForm } from './GiveForm'
 
 type Change = (fn: (latest: Character) => Character) => void
 
@@ -64,7 +66,7 @@ export default function Inventory({ c }: { c: Character }) {
           {pack.map((item) => {
             const srd = data && item.srdId ? findItem(data, item.srdId) : undefined
             return (
-              <ItemRow key={item.id} item={item} srd={srd} slots={slots}
+              <ItemRow key={item.id} c={c} item={item} srd={srd} slots={slots}
                 onEquip={(slot) => data && change((latest) => equipItem(latest, item.id, slot, data))} change={change} noMore={dmRuns} />
             )
           })}
@@ -135,6 +137,7 @@ function CoinPurse({ c, change }: { c: Character; change: Change }) {
       <p className={`mt-1 text-xs ${message ? (message.ok ? 'text-emerald-400' : 'text-red-400') : 'text-stone-500'}`}>
         {message?.text ?? `รวมมูลค่า ${gp.toLocaleString('en-US', { maximumFractionDigits: 2 })} GP · จ่ายเกินเหรียญที่มี จะแตกเหรียญใหญ่และทอนให้เอง`}
       </p>
+      <GiveCoinsForm c={c} />
     </Section>
   )
 }
@@ -190,6 +193,7 @@ function CoinRequestForm({ c }: { c: Character }) {
       <p className={`mt-1 text-xs ${message ? (message.ok ? 'text-emerald-400' : 'text-red-400') : 'text-stone-500'}`}>
         {message?.text ?? `รวมมูลค่า ${gp.toLocaleString('en-US', { maximumFractionDigits: 2 })} GP`}
       </p>
+      <GiveCoinsForm c={c} />
       {mine.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm">
           {mine.slice(0, 6).map((r) => (
@@ -293,7 +297,8 @@ function SlotRow({ slot, item, both, srd, onTakeOff }: {
   )
 }
 
-function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
+function ItemRow({ c, item, srd, slots, onEquip, change, noMore }: {
+  c: Character
   item: InventoryItem
   srd: SrdItem | undefined
   slots: Partial<Record<EquipSlot, InventoryItem>>
@@ -333,7 +338,7 @@ function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
           ))}
         </div>
       )}
-      {open && <ItemActions item={item} srd={srd} wearable={fits.length > 0} change={change} noMore={noMore} />}
+      {open && <ItemActions c={c} item={item} srd={srd} wearable={fits.length > 0} change={change} noMore={noMore} />}
       {open && srd && <ItemDetails srd={srd} item={item} />}
       {open && !srd && item.description && <CustomItemText item={item} />}
       {open && !srd && <ItemPictureField item={item} change={change} />}
@@ -345,8 +350,9 @@ function ItemRow({ item, srd, slots, onEquip, change, noMore }: {
  * Use one, rename / change the number, or throw away (tap ลบ twice: no pop-up).
  * Things worn or held (weapons, armor, a cloak…) aren't used up, so they only get แก้ไข and ลบ.
  */
-function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryItem; srd: SrdItem | undefined; wearable: boolean; change: Change; noMore: boolean }) {
+function ItemActions({ c, item, srd, wearable, change, noMore }: { c: Character; item: InventoryItem; srd: SrdItem | undefined; wearable: boolean; change: Change; noMore: boolean }) {
   const [editing, setEditing] = useState(false)
+  const [giving, setGiving] = useState(false)
   const [name, setName] = useState(item.name)
   const [qty, setQty] = useState(String(item.qty))
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
@@ -391,6 +397,7 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
       </div>
     )
   }
+  if (giving) return <GiveItemForm c={c} item={item} onDone={() => setGiving(false)} />
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
       {!wearable && (
@@ -398,6 +405,7 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
           ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
         </button>
       )}
+      <button type="button" className={`${pill} border-sky-700 text-sky-300`} onClick={() => setGiving(true)}>🤝 ส่งให้เพื่อน</button>
       <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(true) }}>แก้ไข</button>
       <button type="button" className={`${pill} ${confirmDelete ? 'border-red-500 bg-red-900 font-bold text-red-100' : 'border-red-800 text-red-400'}`}
         onClick={() => (confirmDelete ? change((latest) => removeItem(latest, item.id)) : setConfirmDelete(true))}>
