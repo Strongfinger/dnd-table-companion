@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { findItem, loadSrdEquipment } from './equipment'
-import { equippedMagicEffects, setItemDetails, MAX_ITEM_DESCRIPTION, addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
+import { equippedMagicEffects, setItemDetails, shortEffect, MAX_ITEM_DESCRIPTION, MAX_ITEM_SUMMARY, addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
 import { parseCharacterImport } from './io'
 
 const rogue = () => createCharacter({ name: 'Nyx', className: 'Rogue', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
@@ -173,6 +173,19 @@ describe('inventory', () => {
     expect(clash.inventory.map((i) => i.slot ?? null)).toEqual(['offHand', null])
   })
 
+  it('moves magic belts worn on the legs (before the waist slot) to the waist', async () => {
+    const data = await loadSrdEquipment()
+    const c = rogue()
+    c.inventory = [
+      { id: 'b', name: 'Belt of Dwarvenkind', qty: 1, magic: true, wear: 'legs', equipped: true, slot: 'legs' },
+      { id: 'p', name: 'Belt of Dwarvenkind', qty: 1, magic: true, wear: 'legs' },
+      { id: 'g', name: 'Greaves', qty: 1, wear: 'legs', equipped: true, slot: 'legs' },
+    ]
+    const n = normalizeEquipment(c, data)
+    expect(n.inventory.map((i) => [i.wear, i.slot ?? null])).toEqual([['waist', 'waist'], ['waist', null], ['legs', 'legs']])
+    expect(normalizeEquipment(n, data)).toBe(n)
+  })
+
   it('keeps slot and wear through export/import', async () => {
     const data = await loadSrdEquipment()
     let c = addPlainItem(rogue(), 'Boots', 1, 'feet')
@@ -244,15 +257,41 @@ describe('inventory', () => {
     expect(setItemDetails(withDagger, withDagger.inventory[1].id, { description: 'no' })).toBe(withDagger)
   })
 
+  it('keeps a short effect summary on one line, at most MAX_ITEM_SUMMARY long', () => {
+    let c = addPlainItem(rogue(), 'Cloak of Protection')
+    const id = c.inventory[0].id
+    c = setItemDetails(c, id, { description: 'Long text', summary: '  +1 AC\n และ Save ', magic: true })
+    expect(c.inventory[0]).toMatchObject({ summary: '+1 AC และ Save', magic: true })
+    expect(setItemDetails(c, id, { description: 'Long text', summary: '+1 AC และ Save', magic: true })).toBe(c)
+    expect(setItemDetails(c, id, { description: 'Long text', summary: 'x'.repeat(500), magic: true }).inventory[0].summary).toHaveLength(MAX_ITEM_SUMMARY)
+    expect(setItemDetails(c, id, { description: 'Long text', magic: true }).inventory[0].summary).toBeUndefined()
+  })
+
+  it('makes a stand-in summary from the first sentence line of an item text', () => {
+    expect(shortEffect('*Uncommon · Requires Attunement*\n\nขณะสวม **Critical Hit** จะกลายเป็นการโดนธรรมดา\n\n| ชื่อ | AC |')).toBe('ขณะสวม Critical Hit จะกลายเป็นการโดนธรรมดา')
+    expect(shortEffect('### Table\n| a | b |\n- one bullet')).toBe('one bullet')
+    expect(shortEffect('')).toBe('')
+    // Long text is cut to about two lines: at a space when there is one late enough, else where it falls (Thai).
+    const words = 'word '.repeat(60)
+    const cut = shortEffect(words)
+    expect(cut.endsWith('word…')).toBe(true)
+    expect(cut.length).toBeLessThanOrEqual(141)
+    expect(shortEffect('ก'.repeat(300))).toBe(`${'ก'.repeat(140)}…`)
+  })
+
   it('lists the effects of equipped magic items only', () => {
     const item = (id: string, over: object) => ({ id, name: id, qty: 1, wear: 'cloak' as const, ...over })
     const c = rogue()
     c.inventory = [
       item('worn', { magic: true, description: 'Resistance to Fire', equipped: true, slot: 'cloak' }),
+      item('summed', { magic: true, description: 'Long text', summary: 'Short', equipped: true, slot: 'feet' }),
       item('in-bag', { magic: true, description: 'Not worn' }),
       item('plain', { description: 'Not magic', equipped: true, slot: 'neck' }),
       item('no-text', { magic: true, equipped: true, slot: 'head' }),
     ]
-    expect(equippedMagicEffects(c)).toEqual([{ id: 'worn', name: 'worn', description: 'Resistance to Fire' }])
+    expect(equippedMagicEffects(c)).toEqual([
+      { id: 'worn', name: 'worn', description: 'Resistance to Fire' },
+      { id: 'summed', name: 'summed', summary: 'Short', description: 'Long text' },
+    ])
   })
 })

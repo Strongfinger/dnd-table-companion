@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { newId, type Character } from '../model/character'
 import { BUFF_ENDS_LABEL, BUFF_TARGET_LABEL, buffModsText, type CharacterAction } from '../model/characterActions'
 import { BUFF_ENDS, BUFF_LIMIT, BUFF_TARGETS, type Buff, type BuffEnds, type BuffTarget } from '../rules'
-import { equippedMagicEffects } from '../model/inventory'
+import { equippedMagicEffects, type MagicEffect } from '../model/inventory'
+import { effectSummary } from '../model/magicItemSummary'
 import { Button } from '../ui/kit'
-import MiniMarkdown from '../ui/MiniMarkdown'
+import { useMagicItemSummaries } from './useSrdData'
 
 /** SRD 5.2.1 spells that are common buffs. Dice bonuses (Bless) can't be added into a number, so they're a note. */
 const PRESETS: Omit<Buff, 'id'>[] = [
@@ -45,15 +46,18 @@ export function BuffChips({ buffs, onRemove }: { buffs: Buff[]; onRemove?: (id: 
 /**
  * Effects of the magic items the character wears or holds (custom items marked ✨ with an effect text). They last
  * while the item is equipped; numbers in them are a note for the table (not added to the sheet like a buff's).
+ * Each shows a short summary; "อ่านเพิ่มเติม" opens the item's full text (#/c/<id>/item/<itemId>).
  */
-export function MagicItemEffects({ effects }: { effects: { id: string; name: string; description: string }[] }) {
+export function MagicItemEffects({ characterId, effects }: { characterId: string; effects: MagicEffect[] }) {
+  const srd = useMagicItemSummaries()
   if (effects.length === 0) return null
   return (
     <div className="mt-1.5 space-y-1.5">
       {effects.map((e) => (
         <div key={e.id} className="rounded-lg border border-violet-600 bg-violet-950 px-2.5 py-1.5 text-xs">
           <p>✨ <b>{e.name}</b> <span className="text-stone-400">· Magic Item ที่สวมอยู่ · มีผลจนกว่าจะถอด</span></p>
-          <div className="text-stone-200"><MiniMarkdown text={e.description} /></div>
+          <p className="mt-0.5 text-stone-200">{effectSummary(e, srd)}</p>
+          <a href={`#/c/${characterId}/item/${e.id}`} className="mt-0.5 inline-block py-1 font-bold text-violet-300 underline">อ่านเพิ่มเติม →</a>
         </div>
       ))}
     </div>
@@ -100,7 +104,7 @@ export default function BuffPanel({ c, act, canAdd, canRemove }: {
         <p className="text-xs text-stone-500">{canAdd ? 'ยังไม่มี · เช่น Longstrider (Speed +10 ft.) หรือพรที่ +1 Skill Check จนพักยาว' : 'ยังไม่มี · DM เป็นคนใส่ให้'}</p>
       )}
       <BuffChips buffs={buffs} onRemove={canRemove ? (id) => act({ type: 'removeBuff', buffId: id }) : undefined} />
-      <MagicItemEffects effects={magic} />
+      <MagicItemEffects characterId={c.id} effects={magic} />
 
       {draft && (
         <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-3 text-sm">

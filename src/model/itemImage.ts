@@ -16,7 +16,7 @@ export const MAX_ITEM_IMAGES = 4
 /** Wear-slot icons for custom items; both rings share one, items held in a hand use the plain item icon. */
 const WEAR_ICON: Partial<Record<EquipSlot, string>> = {
   head: 'head', neck: 'neck', hands: 'hands', ring1: 'ring', ring2: 'ring', cloak: 'cloak',
-  body: 'body', legs: 'legs', feet: 'feet', back: 'back',
+  body: 'body', waist: 'waist', legs: 'legs', feet: 'feet', back: 'back',
 }
 
 /** Pictures to try, best first: the player's own, the item's art, its kind or wear icon, then the plain item icon. */

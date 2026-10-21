@@ -13,11 +13,11 @@ import { addCustomItem, coinRequestLabel, magicItemToCustom, type CustomItem, ty
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addSrdItem, MAX_ITEM_DESCRIPTION, MAX_ITEM_SUMMARY, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
 import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
 import MiniMarkdown from '../ui/MiniMarkdown'
-import { useEquipment, useEquipmentTh, useMagicItems, useMagicItemsTh } from './useSrdData'
+import { useEquipment, useEquipmentTh, useMagicItems, useMagicItemSummaries, useMagicItemsTh } from './useSrdData'
 import { WithThai } from '../ui/ThaiText'
 import { ItemImage } from '../ui/ItemImage'
 import { useShowItemImages } from '../ui/useShowItemImages'
@@ -351,6 +351,7 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   const [qty, setQty] = useState(String(item.qty))
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
   const [description, setDescription] = useState(item.description ?? '')
+  const [summary, setSummary] = useState(item.summary ?? '')
   const [magic, setMagic] = useState(!!item.magic)
   const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -373,18 +374,18 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
             change((latest) => {
               let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
               // The effect text and Magic Item mark are the DM's (a character the DM runs can't change them).
-              if (!srd && !noMore) next = setItemDetails(next, item.id, { description, magic })
+              if (!srd && !noMore) next = setItemDetails(next, item.id, { description, summary, magic })
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
           }}>บันทึก</Button>
           <Button className="px-3 text-sm" onClick={() => {
             setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : '')
-            setDescription(item.description ?? ''); setMagic(!!item.magic); setEditing(false)
+            setDescription(item.description ?? ''); setSummary(item.summary ?? ''); setMagic(!!item.magic); setEditing(false)
           }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
-        {!srd && !noMore && <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />}
+        {!srd && !noMore && <DetailsFields description={description} summary={summary} magic={magic} onDescription={setDescription} onSummary={setSummary} onMagic={setMagic} />}
         {!srd && noMore && <p className="text-xs text-stone-500">คำอธิบาย / Magic Item: DM เป็นคนแก้</p>}
         {qty === '0' && <p className="text-xs text-amber-300">จำนวน 0 = เอาของชิ้นนี้ออกจากเป้</p>}
       </div>
@@ -488,6 +489,7 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
   const thai = useEquipmentTh().items
   const magicItems = useMagicItems()
   const magicTh = useMagicItemsTh()
+  const summaries = useMagicItemSummaries()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState(0)
   const [added, setAdded] = useState<string | null>(null)
@@ -537,7 +539,7 @@ export function ItemPicker({ data, onAdd, onAddCustom }: {
             </span>
             {added === `magic-${i.id}`
               ? <span className="text-xs whitespace-nowrap text-emerald-400">✓ เพิ่มแล้ว</span>
-              : <Button className="px-3 py-1 text-sm" onClick={() => { onAddCustom(magicItemToCustom(i, magicTh[i.id]?.text)); setAdded(`magic-${i.id}`) }}>+ เพิ่ม</Button>}
+              : <Button className="px-3 py-1 text-sm" onClick={() => { onAddCustom(magicItemToCustom(i, magicTh[i.id]?.text, summaries[i.id]?.summary)); setAdded(`magic-${i.id}`) }}>+ เพิ่ม</Button>}
           </li>
         ))}
       </ul>
@@ -561,18 +563,20 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
   const [weight, setWeight] = useState('')
   const [wear, setWear] = useState<EquipSlot | ''>('')
   const [description, setDescription] = useState('')
+  const [summary, setSummary] = useState('')
   const [magic, setMagic] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
   const n = Math.max(1, Math.min(9999, Math.floor(Number(qty)) || 1))
   function add() {
     if (!name.trim()) return
-    onAdd({ name, qty: n, wear: wear || undefined, weight: weight === '' ? undefined : Number(weight), description, magic })
+    onAdd({ name, qty: n, wear: wear || undefined, weight: weight === '' ? undefined : Number(weight), description, summary, magic })
     setAdded(name.trim())
     setName('')
     setQty('1')
     setWeight('')
     setWear('')
     setDescription('')
+    setSummary('')
     setMagic(false)
   }
   return (
@@ -588,7 +592,7 @@ function CustomItemForm({ initialName, onAdd }: { initialName: string; onAdd: Ad
         <Button className="px-3 text-sm" onClick={add}>+ เพิ่ม</Button>
       </div>
       <WeightField value={weight} onChange={setWeight} />
-      <DetailsFields description={description} magic={magic} onDescription={setDescription} onMagic={setMagic} />
+      <DetailsFields description={description} summary={summary} magic={magic} onDescription={setDescription} onSummary={setSummary} onMagic={setMagic} />
       {added && <p className="text-xs text-emerald-400">✓ เพิ่ม {added} แล้ว</p>}
     </div>
   )
@@ -613,11 +617,13 @@ function CustomItemText({ item }: { item: InventoryItem }) {
   )
 }
 
-/** A custom item's effect text and the Magic Item mark (the custom form and the edit box). */
-function DetailsFields({ description, magic, onDescription, onMagic }: {
+/** A custom item's effect text, a magic item's short summary, and the Magic Item mark (the custom form and the edit box). */
+function DetailsFields({ description, summary, magic, onDescription, onSummary, onMagic }: {
   description: string
+  summary: string
   magic: boolean
   onDescription: (v: string) => void
+  onSummary: (v: string) => void
   onMagic: (v: boolean) => void
 }) {
   return (
@@ -625,6 +631,12 @@ function DetailsFields({ description, magic, onDescription, onMagic }: {
       <Checkbox checked={magic} onChange={onMagic} label="✨ Magic Item" />
       <p className="text-xs text-stone-400">คำอธิบาย / Effect (ไม่บังคับ) เช่น +1 AC ขณะสวม, ใช้ได้ 1 ครั้งต่อ Long Rest</p>
       <TextArea value={description} rows={3} onChange={(v) => onDescription(v.slice(0, MAX_ITEM_DESCRIPTION))} />
+      {magic && (
+        <>
+          <p className="text-xs text-stone-400">สรุปเอฟเฟกต์สั้นๆ (แสดงในบัฟ/เอฟเฟกต์ชั่วคราว · เว้นว่าง = ใช้สรุปของ SRD หรือต้นคำอธิบาย)</p>
+          <TextInput value={summary} placeholder="เช่น +1 AC และ +1 ทุก Saving Throw" onChange={(v) => onSummary(v.slice(0, MAX_ITEM_SUMMARY))} />
+        </>
+      )}
     </div>
   )
 }

@@ -16,6 +16,7 @@ describe('item pictures', () => {
 
   it('custom items: own picture first, then the icon for the slot they are worn in', () => {
     expect(itemImageUrls({ wear: 'ring2' })).toEqual(['/items/wear-ring.webp', '/items/kind-item.webp'])
+    expect(itemImageUrls({ wear: 'waist' })).toEqual(['/items/wear-waist.webp', '/items/kind-item.webp'])
     expect(itemImageUrls({ wear: 'mainHand' })).toEqual(['/items/kind-item.webp'])
     expect(itemImageUrls({ image: PIC, wear: 'cloak' })).toEqual([PIC, '/items/wear-cloak.webp', '/items/kind-item.webp'])
   })

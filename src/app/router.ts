@@ -37,6 +37,8 @@ export type Route =
   | { name: 'chapterEdit'; id: string }
   | { name: 'sheet'; id: string }
   | { name: 'edit'; id: string }
+  /** One item in a character's bag, with its full text (#/c/<id>/item/<itemId>), e.g. a magic item's effect. */
+  | { name: 'item'; id: string; itemId: string }
 
 export function parseRoute(hash: string): Route {
   const [first, id, action, extra] = hash.replace(/^#\/?/, '').split('/')
@@ -64,7 +66,10 @@ export function parseRoute(hash: string): Route {
     if (id === 'edit' && action) return { name: 'chapterEdit', id: action }
     return { name: 'stories' }
   }
-  if (first === 'c' && id) return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
+  if (first === 'c' && id) {
+    if (action === 'item' && extra) return { name: 'item', id, itemId: extra }
+    return action === 'edit' ? { name: 'edit', id } : { name: 'sheet', id }
+  }
   return { name: 'list' }
 }
 

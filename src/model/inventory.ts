@@ -71,26 +71,58 @@ function setItemQty(c: Character, itemId: string, qty: number): Character {
 /** Longest custom item text (a magic item's effect), so sheets stay small for room messages and backups. */
 export const MAX_ITEM_DESCRIPTION = 2000
 
+/** Longest effect summary (a line or two on a phone). */
+export const MAX_ITEM_SUMMARY = 200
+
 /**
- * A custom item's own text (e.g. a magic item's effect) and whether it is a magic item. Empty text removes it.
- * SRD items keep the SRD text instead.
+ * A custom item's own text (e.g. a magic item's effect), its short effect summary, and whether it is a magic item.
+ * Empty text removes it. SRD items keep the SRD text instead.
  */
-export function setItemDetails(c: Character, itemId: string, details: { description?: string; magic?: boolean }): Character {
+export function setItemDetails(c: Character, itemId: string, details: { description?: string; summary?: string; magic?: boolean }): Character {
   const item = c.inventory.find((i) => i.id === itemId)
   if (!item || item.srdId) return c
   const description = details.description?.trim().slice(0, MAX_ITEM_DESCRIPTION) || undefined
+  const summary = details.summary?.trim().replace(/\s+/g, ' ').slice(0, MAX_ITEM_SUMMARY) || undefined
   const magic = details.magic ? (true as const) : undefined
-  if (description === item.description && magic === item.magic) return c
-  const { description: _d, magic: _m, ...rest } = item
-  const next: InventoryItem = { ...rest, ...(description ? { description } : {}), ...(magic ? { magic } : {}) }
+  if (description === item.description && summary === item.summary && magic === item.magic) return c
+  const { description: _d, summary: _s, magic: _m, ...rest } = item
+  const next: InventoryItem = { ...rest, ...(description ? { description } : {}), ...(summary ? { summary } : {}), ...(magic ? { magic } : {}) }
   return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? next : i)) }
 }
 
+/** An equipped magic item's effect, as the buffs list shows it. */
+export interface MagicEffect {
+  id: string
+  name: string
+  /** The item's own summary, if it has one (else the SRD summary by name, or the start of the text). */
+  summary?: string
+  description: string
+}
+
 /** Equipped (worn or held) custom magic items with an effect text: shown with the buffs on the play panel. */
-export function equippedMagicEffects(c: Pick<Character, 'inventory'>): { id: string; name: string; description: string }[] {
+export function equippedMagicEffects(c: Pick<Character, 'inventory'>): MagicEffect[] {
   return c.inventory
     .filter((i) => i.magic && (i.equipped || i.slot) && i.description)
-    .map((i) => ({ id: i.id, name: i.name, description: i.description! }))
+    .map((i) => ({ id: i.id, name: i.name, ...(i.summary ? { summary: i.summary } : {}), description: i.description! }))
+}
+
+/** Longest summary made from the start of an item's text. */
+const SHORT_EFFECT = 140
+
+/**
+ * A stand-in summary for an item with none: the first line of its text that is a sentence (not the
+ * "*Rarity · Requires Attunement*" line, a heading or a table), without markdown, cut to about two lines.
+ */
+export function shortEffect(description: string): string {
+  const line = description.split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !l.startsWith('|') && !l.startsWith('#') && !/^\*[^*].*\*$/.test(l))
+  const text = (line ?? '').replace(/^[-•]\s+/, '').replace(/\*\*|\*/g, '').replace(/\s+/g, ' ').trim()
+  if (text.length <= SHORT_EFFECT) return text
+  // Cut at a space when there's one near the end (Thai has none between words, so then cut where it falls).
+  const cut = text.slice(0, SHORT_EFFECT)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > SHORT_EFFECT * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`
 }
 
 /** Throw an item away. */
@@ -102,7 +134,7 @@ export function removeItem(c: Character, itemId: string): Character {
 /** Thai names of the slots, in the order the sheet shows them. */
 export const SLOT_LABEL: Record<EquipSlot, string> = {
   head: 'หัว', neck: 'คอ', hands: 'ถุงมือ', ring1: 'แหวน 1', ring2: 'แหวน 2', cloak: 'ผ้าคลุม', body: 'เกราะ/ชุด',
-  legs: 'ขา', feet: 'เท้า', mainHand: 'มือหลัก', offHand: 'มือรอง', back: 'สะพายหลัง',
+  waist: 'เอว', legs: 'ขา', feet: 'เท้า', mainHand: 'มือหลัก', offHand: 'มือรอง', back: 'สะพายหลัง',
 }
 
 const HANDS: EquipSlot[] = ['mainHand', 'offHand']
@@ -141,6 +173,7 @@ const takeOff = ({ slot: _slot, equipped: _equipped, ...rest }: InventoryItem): 
  * Returns the same character when nothing changes.
  */
 export function normalizeEquipment(c: Character, data: SrdEquipment): Character {
+  c = beltsToWaist(c)
   const used = new Set<EquipSlot>()
   const place = new Map<string, EquipSlot | null>()
   const tryPlace = (item: InventoryItem, slot: EquipSlot) => {
@@ -175,6 +208,16 @@ export function normalizeEquipment(c: Character, data: SrdEquipment): Character 
     return takeOff(i)
   })
   return changed ? { ...c, inventory } : c
+}
+
+/** Magic belts added before the waist slot existed were worn on the legs: move them to the waist. */
+function beltsToWaist(c: Character): Character {
+  const old = (i: InventoryItem) => i.magic && /^Belt\b/.test(i.name) && i.wear === 'legs'
+  if (!c.inventory.some(old)) return c
+  return {
+    ...c,
+    inventory: c.inventory.map((i) => (old(i) ? { ...i, wear: 'waist' as const, ...(i.slot === 'legs' ? { slot: 'waist' as const } : {}) } : i)),
+  }
 }
 
 /** What is in each slot (a Two-Handed weapon shows in both hands). */

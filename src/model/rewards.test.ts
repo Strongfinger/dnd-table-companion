@@ -4,7 +4,7 @@ import { loadSrdEquipment } from './equipment'
 import {
   addCustomItem, addCoinRequest, addToPool, applyCoinRequest, coinRequestLabel, decideCoinRequest, dmRunsEconomy, keepDmEconomy, KEEP_DECIDED, parseCoinRequestBody,
   parseCoinRequests, parsePool, parseTake, receivePoolItem, setPoolQty, takeFromPool, type CoinRequest,
-  magicItemToCustom, magicItemWear,
+  lootToPool, magicItemToCustom, magicItemWear,
 } from './rewards'
 import { MAX_ITEM_DESCRIPTION, toggleEquipped } from './inventory'
 import type { LootItem } from './generators'
@@ -56,14 +56,14 @@ describe('reward pool', () => {
 
   it('keeps a custom magic item\'s effect text from the pool to the sheet', async () => {
     const data = await loadSrdEquipment()
-    let pool = addToPool([], { name: 'Cloak of Embers', qty: 1, wear: 'cloak', description: '  Resistance to Fire  ', magic: true })
+    let pool = addToPool([], { name: 'Cloak of Embers', qty: 1, wear: 'cloak', description: '  Resistance to Fire  ', summary: ' Fire Resistance ', magic: true })
     // Same name, different text: another item.
     pool = addToPool(pool, { name: 'Cloak of Embers', qty: 1, wear: 'cloak' })
     expect(pool).toHaveLength(2)
-    expect(pool[0]).toMatchObject({ description: 'Resistance to Fire', magic: true })
+    expect(pool[0]).toMatchObject({ description: 'Resistance to Fire', summary: 'Fire Resistance', magic: true })
     expect(parsePool(JSON.parse(JSON.stringify({ items: pool })))).toEqual(pool)
     const c = receivePoolItem(hero(), pool[0], data)
-    expect(c.inventory[0]).toMatchObject({ name: 'Cloak of Embers', wear: 'cloak', description: 'Resistance to Fire', magic: true })
+    expect(c.inventory[0]).toMatchObject({ name: 'Cloak of Embers', wear: 'cloak', description: 'Resistance to Fire', summary: 'Fire Resistance', magic: true })
   })
 
   it('checks pool and take messages from the network', () => {
@@ -176,7 +176,7 @@ describe('SRD magic items as rewards', () => {
     expect(magicItemWear(loot('Boots of Speed', 'Wondrous Items'))).toBe('feet')
     expect(magicItemWear(loot('Gauntlets of Ogre Power', 'Wondrous Items'))).toBe('hands')
     expect(magicItemWear(loot('Helm of Telepathy', 'Wondrous Items'))).toBe('head')
-    expect(magicItemWear(loot('Belt of Giant Strength', 'Wondrous Items'))).toBe('legs')
+    expect(magicItemWear(loot('Belt of Giant Strength', 'Wondrous Items'))).toBe('waist')
     expect(magicItemWear(loot('Bag of Holding', 'Wondrous Items'))).toBe('back')
     expect(magicItemWear(loot('Potion of Healing', 'Potions'))).toBeUndefined()
     expect(magicItemWear(loot('Bag of Tricks', 'Wondrous Items'))).toBeUndefined()
@@ -187,6 +187,7 @@ describe('SRD magic items as rewards', () => {
     const armor = loot('Adamantine Armor', 'Armor', { desc: 'Critical Hits become normal hits.' })
     const custom = magicItemToCustom(armor, '  ข้อความภาษาไทย ')
     expect(custom).toEqual({ name: 'Adamantine Armor', qty: 1, wear: 'body', magic: true, description: '*Uncommon*\n\nข้อความภาษาไทย' })
+    expect(magicItemToCustom(armor, undefined, 'สรุปสั้น').summary).toBe('สรุปสั้น')
     expect(magicItemToCustom(loot('Ring of X', 'Rings', { attunement: true, desc: 'x'.repeat(3000) })).description).toHaveLength(MAX_ITEM_DESCRIPTION)
     const { magic, ...rest } = custom
     const pool = addToPool([], { ...rest, ...(magic ? { magic: true as const } : {}) })
@@ -201,5 +202,21 @@ describe('SRD magic items as rewards', () => {
       expect(ci.description!.length).toBeGreaterThan(10)
       if (ci.wear) expect(EQUIP_SLOTS).toContain(ci.wear)
     }
+  })
+})
+
+describe('lootToPool', () => {
+  it('puts the rolled valuables and magic items in the pool; the same gem twice stacks', () => {
+    const scroll: LootItem = { id: 'spell-scroll-common', name: 'Spell Scroll (Cantrip or Level 1)', rarity: 'Common', category: 'Wondrous Items', attunement: false, desc: 'Scroll text' }
+    const loot = { valuables: [{ value: 10, text: 'หินโมรา' }, { value: 10, text: 'หินโมรา' }], items: [scroll] }
+    const list = lootToPool(loot, { 'spell-scroll-common': { text: 'ข้อความไทย' } }, { 'spell-scroll-common': { summary: 'สรุป' } })
+    expect(list).toEqual([
+      { name: 'หินโมรา (10 gp)', qty: 1, description: 'ของมีค่า ขายได้ประมาณ 10 gp' },
+      { name: 'หินโมรา (10 gp)', qty: 1, description: 'ของมีค่า ขายได้ประมาณ 10 gp' },
+      { name: 'Spell Scroll (Cantrip or Level 1)', qty: 1, description: '*Common*\n\nข้อความไทย', summary: 'สรุป', magic: true },
+    ])
+    const pool = list.reduce(addToPool, [] as ReturnType<typeof addToPool>)
+    expect(pool.map((p) => [p.name, p.qty])).toEqual([['หินโมรา (10 gp)', 2], ['Spell Scroll (Cantrip or Level 1)', 1]])
+    expect(lootToPool({ valuables: [], items: [] })).toEqual([])
   })
 })

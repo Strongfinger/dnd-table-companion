@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { go } from '../app/router'
 import { saveEncounter } from '../db/encounters'
 import { saveNote } from '../db/notes'
+import { updatePool } from '../db/rewards'
 import { addMonstersToFight } from '../db/turns'
 import { createEncounter, createMonsters, type Combatant, type Encounter } from '../model/encounter'
 import {
@@ -14,9 +15,10 @@ import {
 } from '../model/generators'
 import { formatCR, monsterInput } from '../model/monsters'
 import { createNote, KIND_FIELDS, QUEST_STATUS } from '../model/note'
+import { addToPool, lootToPool } from '../model/rewards'
 import { sortByInitiative } from '../rules'
 import { Button } from '../ui/kit'
-import { useMagicItems, useMagicItemsTh, useMonsters } from './useSrdData'
+import { useMagicItems, useMagicItemSummaries, useMagicItemsTh, useMonsters } from './useSrdData'
 import { MagicItemText } from './LookupMore'
 
 type GenTab = 'npc' | 'tavern' | 'hook' | 'loot' | 'encounter' | 'weather'
@@ -150,16 +152,26 @@ function HookGen({ campaignId }: { campaignId: string | null }) {
 function LootGen({ campaignId }: { campaignId: string | null }) {
   const items = useMagicItems()
   const thai = useMagicItemsTh()
+  const summaries = useMagicItemSummaries()
   const [band, setBand] = useState(0)
   const [hoard, setHoard] = useState(true)
   const [loot, setLoot] = useState<GenLoot | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [saved, setSaved] = useState('')
+  const [pooled, setPooled] = useState('')
   if (!items) return <p className="text-sm text-stone-400">กำลังโหลดไอเทมเวท…</p>
 
   const roll = () => {
     setLoot(genLoot(items, band, hoard, rng))
     setSaved('')
+    setPooled('')
+  }
+  // The same pool as "+ ของรางวัล" (คลังกลาง): players take the items from there.
+  async function addToRewards() {
+    if (!loot) return
+    const list = lootToPool(loot, thai, summaries)
+    await updatePool((pool) => list.reduce(addToPool, pool))
+    setPooled(`✓ ใส่คลังกลางแล้ว ${list.length} อย่าง${coinText ? ` · เงิน (${coinText}) แจกเองที่ใบตัวละคร` : ''}`)
   }
   async function saveItems() {
     if (!loot) return
@@ -194,6 +206,9 @@ function LootGen({ campaignId }: { campaignId: string | null }) {
               {open === `${i}` && <div className="mt-1 rounded bg-stone-800 p-2"><MagicItemText item={it} th={thai[it.id]?.text} /></div>}
             </div>
           ))}
+          {loot.valuables.length + loot.items.length > 0 && (pooled
+            ? <p className="text-emerald-300">{pooled}</p>
+            : <Button variant="primary" className="mt-2 w-full text-sm" onClick={addToRewards}>🎁 ใส่สมบัติเข้าคลังกลาง (ของรางวัล)</Button>)}
           {loot.items.length > 0 && (saved ? <p className="text-emerald-300">{saved}</p> : <Button className="mt-2 w-full text-sm" onClick={saveItems}>📒 บันทึกไอเทมเวทลงสมุด</Button>)}
         </div>
       )}
