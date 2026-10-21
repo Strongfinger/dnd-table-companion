@@ -86,6 +86,18 @@ export function setItemDetails(c: Character, itemId: string, details: { descript
   return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? next : i)) }
 }
 
+/**
+ * Where a custom item in the pack can be worn (undefined = not worn), e.g. a magic cloak added without a slot.
+ * SRD items get their slots from the SRD, and an item that is worn now must be taken off first.
+ */
+export function setItemWear(c: Character, itemId: string, wear: EquipSlot | undefined): Character {
+  const item = c.inventory.find((i) => i.id === itemId)
+  if (!item || item.srdId || item.equipped || item.slot || item.wear === wear) return c
+  const { wear: _w, ...rest } = item
+  const next: InventoryItem = { ...rest, ...(wear ? { wear } : {}) }
+  return { ...c, inventory: c.inventory.map((i) => (i.id === itemId ? next : i)) }
+}
+
 /** Equipped (worn or held) custom magic items with an effect text: shown with the buffs on the play panel. */
 export function equippedMagicEffects(c: Pick<Character, 'inventory'>): { id: string; name: string; description: string }[] {
   return c.inventory

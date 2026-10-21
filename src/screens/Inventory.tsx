@@ -13,7 +13,7 @@ import { addCustomItem, coinRequestLabel, type CustomItem, type PoolItem } from 
 import { updateCharacter } from '../db/characters'
 import { EQUIP_SLOTS, type Character, type EquipSlot, type InventoryItem } from '../model/character'
 import { armorClassLine, costLine, findItem, KIND_FILTERS, searchItems, weaponPropertiesLine, type SrdEquipment, type SrdItem } from '../model/equipment'
-import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
+import { addSrdItem, MAX_ITEM_DESCRIPTION, setItemDetails, setItemWear, consumeItem, editItem, equipItem, removeItem, normalizeEquipment, SLOT_LABEL, slotContents, slotsFor, unequipItem } from '../model/inventory'
 import { COIN_VALUE_CP, gainCoins, spendCoins, totalCopper, type Coin } from '../rules'
 import { Button, Checkbox, Section, Select, TextArea, TextInput } from '../ui/kit'
 import MiniMarkdown from '../ui/MiniMarkdown'
@@ -352,6 +352,7 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   const [weight, setWeight] = useState(item.weight ? String(item.weight) : '')
   const [description, setDescription] = useState(item.description ?? '')
   const [magic, setMagic] = useState(!!item.magic)
+  const [wear, setWear] = useState<EquipSlot | ''>(item.wear ?? '')
   const typed = hasTypedWeight(srd)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pill = 'rounded-full border px-3 py-1 text-sm'
@@ -367,6 +368,7 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
               setQty(noMore && v !== '' && Number(v) > item.qty ? String(item.qty) : v)
             }} />
         </div>
+        {!srd && <Select value={wear} options={WEAR_OPTIONS} onChange={setWear} />}
         {noMore && <p className="text-xs text-stone-500">ลดจำนวนได้ · ของเพิ่มต้องหยิบจากคลังกลางของ DM</p>}
         <div className="flex gap-2">
           <Button variant="primary" className="px-3 text-sm" onClick={() => {
@@ -374,13 +376,14 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
               let next = editItem(latest, item.id, name, qty === '' ? item.qty : Number(qty))
               // The effect text and Magic Item mark are the DM's (a character the DM runs can't change them).
               if (!srd && !noMore) next = setItemDetails(next, item.id, { description, magic })
+              if (!srd) next = setItemWear(next, item.id, wear || undefined)
               return typed ? setItemWeight(next, item.id, weight === '' ? undefined : Number(weight)) : next
             })
             setEditing(false)
           }}>บันทึก</Button>
           <Button className="px-3 text-sm" onClick={() => {
             setName(item.name); setQty(String(item.qty)); setWeight(item.weight ? String(item.weight) : '')
-            setDescription(item.description ?? ''); setMagic(!!item.magic); setEditing(false)
+            setDescription(item.description ?? ''); setMagic(!!item.magic); setWear(item.wear ?? ''); setEditing(false)
           }}>ยกเลิก</Button>
         </div>
         {typed && <WeightField value={weight} onChange={setWeight} />}
@@ -392,12 +395,13 @@ function ItemActions({ item, srd, wearable, change, noMore }: { item: InventoryI
   }
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
+      {!wearable && item.magic && <p className="w-full text-xs text-amber-300">ยังไม่ได้เลือกช่องสวมใส่ · กด "แก้ไข" แล้วเลือกว่าสวมที่ไหน เพื่อให้ใส่ได้</p>}
       {!wearable && (
         <button type="button" className={`${pill} border-emerald-600 text-emerald-300`} onClick={() => change((latest) => consumeItem(latest, item.id))}>
           ใช้ 1 {item.qty > 1 ? `(เหลือ ${item.qty - 1})` : '(หมด)'}
         </button>
       )}
-      <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setEditing(true) }}>แก้ไข</button>
+      <button type="button" className={`${pill} border-stone-600 text-stone-300`} onClick={() => { setName(item.name); setQty(String(item.qty)); setWear(item.wear ?? ''); setEditing(true) }}>แก้ไข</button>
       <button type="button" className={`${pill} ${confirmDelete ? 'border-red-500 bg-red-900 font-bold text-red-100' : 'border-red-800 text-red-400'}`}
         onClick={() => (confirmDelete ? change((latest) => removeItem(latest, item.id)) : setConfirmDelete(true))}>
         {confirmDelete ? 'แตะอีกครั้งเพื่อลบ' : 'ลบ'}

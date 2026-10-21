@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from './character'
 import { findItem, loadSrdEquipment } from './equipment'
-import { equippedMagicEffects, setItemDetails, MAX_ITEM_DESCRIPTION, addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
+import { equippedMagicEffects, setItemDetails, setItemWear, slotsFor, MAX_ITEM_DESCRIPTION, addPlainItem, addSrdItem, editItem, removeItem, consumeItem, applyAutoAC, characterArmorClass, equipItem, equippedWeapons, normalizeEquipment, slotContents, toggleEquipped, unequipItem } from './inventory'
+import { addCustomItem } from './rewards'
 import { parseCharacterImport } from './io'
 
 const rogue = () => createCharacter({ name: 'Nyx', className: 'Rogue', scores: { str: 10, dex: 16, con: 14, int: 12, wis: 10, cha: 8 } })
@@ -242,6 +243,33 @@ describe('inventory', () => {
     expect(setItemDetails(c, id, { description: 'x'.repeat(MAX_ITEM_DESCRIPTION + 50) }).inventory[0].description).toHaveLength(MAX_ITEM_DESCRIPTION)
     const withDagger = addSrdItem(c, findItem(data, 'dagger')!, data)
     expect(setItemDetails(withDagger, withDagger.inventory[1].id, { description: 'no' })).toBe(withDagger)
+  })
+
+  it('a magic item added without a wear slot can be given one, then worn', async () => {
+    const data = await loadSrdEquipment()
+    let c = addCustomItem(rogue(), { name: 'Cloak of Protection', qty: 1, description: '+1 AC and saving throws', magic: true })
+    const id = c.inventory[0].id
+    expect(slotsFor(c.inventory[0], undefined)).toEqual([])
+    expect(toggleEquipped(c, id, data)).toBe(c)
+    c = setItemWear(c, id, 'cloak')
+    expect(c.inventory[0]).toMatchObject({ wear: 'cloak', magic: true, description: '+1 AC and saving throws' })
+    c = toggleEquipped(c, id, data)
+    expect(c.inventory[0]).toMatchObject({ equipped: true, slot: 'cloak' })
+    expect(equippedMagicEffects(c)).toEqual([{ id, name: 'Cloak of Protection', description: '+1 AC and saving throws' }])
+    // Worn now: take it off before changing where it goes.
+    expect(setItemWear(c, id, 'neck')).toBe(c)
+    // A magic ring fits either ring slot.
+    c = addCustomItem(c, { name: 'Ring of Warmth', qty: 1, magic: true })
+    const ring = c.inventory[1].id
+    c = setItemWear(c, ring, 'ring1')
+    expect(slotsFor(c.inventory[1], undefined)).toEqual(['ring1', 'ring2'])
+    c = equipItem(c, ring, 'ring2', data)
+    expect(c.inventory[1]).toMatchObject({ equipped: true, slot: 'ring2' })
+    // Back to "not worn"; SRD items keep their SRD slots.
+    c = unequipItem(c, ring, data)
+    expect(setItemWear(c, ring, undefined).inventory[1].wear).toBeUndefined()
+    const withDagger = addSrdItem(c, findItem(data, 'dagger')!, data)
+    expect(setItemWear(withDagger, withDagger.inventory.at(-1)!.id, 'neck')).toBe(withDagger)
   })
 
   it('lists the effects of equipped magic items only', () => {
