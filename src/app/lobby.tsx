@@ -38,8 +38,9 @@ import {
 } from '../sync/fights'
 import { OUTBOX_LIMIT, outboxFor, parseAck, removeAcked, resendRound, type OutboxItem } from '../sync/outbox'
 import { parseParty, partyCards, type PartyCard } from '../sync/party'
-import { giveNow } from '../db/give'
+import { acceptGiveOffer, clearGiveOffers, getGiveOffers, receiveGiveOffer, removeGiveOffer, watchGiveOffers } from '../db/giveOffers'
 import { parseGive } from '../model/give'
+import { parseGiveOffers, parseOfferId, type GiveOffer } from '../model/giveOffer'
 import { saveReceivedRules, watchRulesToShare } from '../db/houseRules'
 import { givePoolItem, receiveCoinRequest, watchCoinRequests, watchPool } from '../db/rewards'
 import { parseHouseRules } from '../model/houseRules'
@@ -105,6 +106,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [coinRequests, setCoinRequests] = useState<CoinRequest[]>([])
   const lastPool = useRef<string | null>(null)
   const lastRequests = useRef<string | null>(null)
+  /** Player: pending party gives from the DM (offers). DM: the list last sent, as JSON. */
+  const [giveOffers, setGiveOffers] = useState<GiveOffer[]>([])
+  const lastOffers = useRef<string | null>(null)
   /** DM: the house rules last sent (JSON), to skip repeats and resend on (re)join. */
   const lastRules = useRef<string | null>(null)
   const fightRef = useRef<PlayerEncounterView | null>(null)
@@ -184,6 +188,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     setRestSince(null)
     setPool(null)
     setCoinRequests([])
+    setGiveOffers([])
   }
 
   function onMessage(e: Envelope) {
@@ -251,6 +256,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (lastParty.current !== null) send('party', { cards: JSON.parse(lastParty.current) })
     if (lastPool.current !== null) send('pool', { items: JSON.parse(lastPool.current) })
     if (lastRequests.current !== null) send('coinRequests', { requests: JSON.parse(lastRequests.current) })
+    if (lastOffers.current !== null) send('giveOffers', { offers: JSON.parse(lastOffers.current) })
     if (lastRules.current !== null) send('houseRules', JSON.parse(lastRules.current))
     send('rest', { since: sessionRef.current?.shortRestSince ?? null })
     const campaign = s.campaignId ? await getCampaign(s.campaignId) : undefined
@@ -314,6 +320,9 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     } else if (e.kind === 'coinRequests') {
       const list = parseCoinRequests(e.body)
       if (list) setCoinRequests(list)
+    } else if (e.kind === 'giveOffers') {
+      const list = parseGiveOffers(e.body)
+      if (list) setGiveOffers(list)
     } else if (e.kind === 'rest') {
       const since = (e.body as { since?: unknown } | null)?.since
       setRestSince(Number.isFinite(since) ? (since as number) : null)
@@ -469,11 +478,27 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (!t || !(await allowed(e.from, t.characterId))) return
       if (markApplied(e.id, s)) await givePoolItem(t.characterId, t.itemId, t.qty)
       send('ack', { ids: [e.id] })
-    } else if (s.role === 'dm' && e.kind === 'give') {
-      // A player hands an item or coins to another character played in the room (model/give.ts).
+    } else if (s.role === 'dm' && (e.kind === 'giveOffer' || e.kind === 'give')) {
+      // A player offers an item or coins to another character played in the room (model/giveOffer.ts).
+      // Nothing moves yet: the receiver has to accept. (An older phone's plain 'give' becomes an offer too.)
       const g = parseGive(e.body)
       if (!g || !(await allowed(e.from, g.fromId))) return
-      if (markApplied(e.id, s) && playedNow().includes(g.toId)) await giveNow(g)
+      if (markApplied(e.id, s)) await receiveGiveOffer(e.id, e.at, g, playedNow().includes(g.toId))
+      send('ack', { ids: [e.id] })
+    } else if (s.role === 'dm' && (e.kind === 'giveAccept' || e.kind === 'giveDecline' || e.kind === 'giveCancel')) {
+      // The receiver accepts or declines, the sender cancels. Each device may only answer for its own characters.
+      const offerId = parseOfferId(e.body)
+      if (!offerId) return
+      const offers = (await getGiveOffers()).find((o) => o.id === offerId)
+      const side = e.kind === 'giveCancel' ? offers?.fromId : offers?.toId
+      if (!offers || !side || !(await allowed(e.from, side))) {
+        send('ack', { ids: [e.id] })
+        return
+      }
+      if (markApplied(e.id, s)) {
+        if (e.kind === 'giveAccept') await acceptGiveOffer(offerId)
+        else await removeGiveOffer(offerId, () => true)
+      }
       send('ack', { ids: [e.id] })
     } else if (s.role === 'dm' && e.kind === 'coinRequest') {
       // A player asks for a coin change: listed for the DM to approve (the DM tab).
@@ -505,6 +530,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     lastParty.current = null
     lastPool.current = null
     lastRequests.current = null
+    lastOffers.current = null
     lastRules.current = null
     sentFights.current = null
     sentLogs.current = new Map()
@@ -644,9 +670,16 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       lastRequests.current = json
       send('coinRequests', { requests })
     })
+    const stopOffers = watchGiveOffers((offers) => {
+      const json = JSON.stringify(offers)
+      if (json === lastOffers.current) return
+      lastOffers.current = json
+      send('giveOffers', { offers })
+    })
     return () => {
       stopPool()
       stopRequests()
+      stopOffers()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- send reads refs
   }, [hostingRoom])
@@ -751,8 +784,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     requestCoins: (characterId, request) => {
       if (sessionRef.current?.role === 'player' && mine(characterId)) queue('coinRequest', { characterId, ...request })
     },
+    giveOffers,
+    // Player: offer something to a friend (nothing moves until they accept), and answer the offers on the table.
     give: (request) => {
-      if (sessionRef.current?.role === 'player' && mine(request.fromId)) queue('give', request)
+      if (sessionRef.current?.role === 'player' && mine(request.fromId)) queue('giveOffer', request)
+    },
+    answerOffer: (offerId, answer) => {
+      const o = giveOffers.find((x) => x.id === offerId)
+      if (sessionRef.current?.role !== 'player' || !o) return
+      if (answer === 'cancel' ? mine(o.fromId) : mine(o.toId)) queue(answer === 'accept' ? 'giveAccept' : answer === 'decline' ? 'giveDecline' : 'giveCancel', { offerId })
     },
     myCharacterIds: session?.role === 'player' ? [...(session.characterId ? [session.characterId] : []), ...controlled] : [],
     grant: (characterId, deviceId) => {
@@ -765,8 +805,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       send('control', { grants })
     },
     campaignId: session?.role === 'dm' ? session.campaignId : session ? roomCampaignId : null,
-    create: (campaignId, local) =>
-      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null, grants: [] }),
+    create: (campaignId, local) => {
+      void clearGiveOffers() // a new room starts without gives left over from an old one
+      connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null, grants: [] })
+    },
     setCampaign: async (campaignId) => {
       const s = sessionRef.current
       if (s?.role !== 'dm' || s.campaignId === campaignId) return
@@ -791,6 +833,8 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       if (s?.role === 'dm') {
         // Leaving ends a running short rest (players' "roll Hit Dice" banner goes away).
         if (s.shortRestSince) send('rest', { since: null })
+        // The room ends: pending gives go away (the items never left their senders).
+        void clearGiveOffers()
         // Remember the room, so the DM can come back to the same code with the same players.
         const last = lastHostedRoom(s)
         store(LAST_HOSTED, last, s.local)
