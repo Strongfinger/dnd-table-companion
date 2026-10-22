@@ -24,3 +24,4 @@ docs/Owlbear-Rodeo/
 
 # UX/UI kit gate receipts (local only)
 .ds-receipts/
+__pycache__/

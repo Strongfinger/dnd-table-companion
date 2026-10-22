@@ -1,0 +1,528 @@
+<title>ทีม Agent ของ Tan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: one night-time guild hall "stage" where an agent's place = its status (team bench = working, Tan's desk = waiting,
+   hearth = idle); below it: who is doing what + recent events. Single deliberate dark look (lamplit tavern).
+   The same file runs in two places: the claude.ai board (reads the shared db) and on Tan's Mac (server.py, Claude Code hooks). */
+:root {
+  color-scheme: dark;
+  --bg: #15121b;
+  --floor: #221c29;
+  --floor-2: #2a2232;
+  --wood: #6b4630;
+  --wood-hi: #8a5c3e;
+  --panel: #1d1824;
+  --line: #3a3043;
+  --fg: #f0e7d8;
+  --muted: #ab9f90;
+  --work: #73d394;
+  --wait: #ffb64a;
+  --idle: #8e93ad;
+  --fire: #ff8a3d;
+  --t-app: #6f8cff; --t-qa: #ef6f78; --t-know: #a98bff; --t-dm: #4fc3bd; --t-main: #e8875b; --t-help: #b7aea3;
+  --font-body: "Noto Sans Thai", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+  --font-pixel: "Pixelify Sans", "Noto Sans Thai", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body { color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 22px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-size: 1.65rem; text-wrap: balance; }
+.src { font-family: var(--font-pixel); font-size: .78rem; letter-spacing: .06em; margin-left: 8px; vertical-align: middle; border: 1px solid currentColor; padding: 1px 8px; border-radius: 4px; color: var(--muted); }
+.src.live { color: var(--work); }
+.src.demo { color: var(--wait); }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+.counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.count { display: flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; font-weight: 500; font-variant-numeric: tabular-nums; border: 1px solid currentColor; font-size: .9rem; }
+.count b { font-size: 1.1rem; }
+.c-working { color: var(--work); } .c-waiting { color: var(--wait); } .c-idle { color: var(--idle); }
+
+/* ---------- stage ---------- */
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); container-type: inline-size;
+  background:
+    radial-gradient(ellipse at 82% 80%, rgba(255,138,61,.22), transparent 38%),
+    radial-gradient(ellipse at 35% 30%, rgba(255,214,150,.07), transparent 55%),
+    repeating-linear-gradient(90deg, var(--floor) 0 7.5%, var(--floor-2) 7.5% 7.7%);
+}
+.stage.tall { aspect-ratio: 3 / 4; }
+.zone { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; display: grid; justify-items: center; }
+.zone .lbl { font-family: var(--font-pixel); font-size: max(10px, 1.25cqw); letter-spacing: .08em; text-transform: uppercase; color: var(--zc, var(--muted)); white-space: nowrap; }
+.stage.tall .zone .lbl { font-size: max(10px, 2.6cqw); }
+.below-lbl .lbl { margin-top: 1.4cqw; }
+.bench { width: 26cqw; height: 3.2cqw; background: linear-gradient(var(--wood-hi), var(--wood)); border-radius: 3px; box-shadow: 0 .8cqw 0 #3d281c, 0 0 0 2px var(--zc) inset; }
+.stage.tall .bench { width: 40cqw; height: 5cqw; }
+.desk { width: 15cqw; height: 4cqw; background: linear-gradient(var(--wood-hi), var(--wood)); border-radius: 3px; box-shadow: 0 .8cqw 0 #3d281c; position: relative; margin-top: .6cqw; }
+.stage.tall .desk { width: 30cqw; height: 6.5cqw; }
+.bell { position: absolute; right: 12%; top: -1.6cqw; width: 2.2cqw; height: 1.8cqw; background: #e8c463; border-radius: 50% 50% 2px 2px; }
+.stage.tall .bell { width: 4cqw; height: 3.2cqw; top: -3cqw; }
+.bell.ring { animation: ring .7s ease-in-out 2; }
+@keyframes ring { 25% { transform: rotate(-22deg); } 75% { transform: rotate(22deg); } }
+.hearth { width: 13cqw; height: 9cqw; margin-top: .6cqw; background: #3b3140; border-radius: 6px 6px 0 0; position: relative; box-shadow: 0 0 0 .6cqw #2c2431 inset; }
+.stage.tall .hearth { width: 26cqw; height: 18cqw; }
+.flame { position: absolute; left: 50%; bottom: 12%; width: 45%; height: 55%; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 85%, #ffe08a 0 22%, var(--fire) 45%, transparent 72%); border-radius: 50% 50% 40% 40%; animation: flick .35s infinite alternate; }
+@keyframes flick { to { transform: translateX(-50%) scale(1.06, .9); opacity: .85; } }
+
+.agent { position: absolute; width: 4.6cqw; transform: translate(-50%, -100%); transition: left 1.5s ease-in-out, top 1.5s ease-in-out; z-index: 2; }
+.stage.tall .agent { width: 8.5cqw; }
+.agent svg { display: block; width: 100%; height: auto; shape-rendering: crispEdges; overflow: visible; }
+.tag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; font-family: var(--font-pixel); font-size: max(9px, 1.05cqw); white-space: nowrap; color: var(--fg); background: rgba(21,18,27,.78); padding: 0 5px; border-radius: 3px; border-bottom: 2px solid var(--tc); }
+.stage.tall .tag { font-size: max(9px, 2.2cqw); }
+.bub { position: absolute; left: 62%; bottom: 92%; min-width: 1.9cqw; padding: .1cqw .5cqw; border-radius: 6px; font-family: var(--font-pixel); font-size: max(10px, 1.2cqw); line-height: 1.3; text-align: center; background: var(--fg); color: var(--bg); }
+.stage.tall .bub { font-size: max(10px, 2.4cqw); }
+.agent.waiting .bub { background: var(--wait); animation: hop .6s infinite alternate; }
+.agent.idle .bub { background: transparent; color: var(--idle); animation: zz 2.4s infinite; }
+.say { position: absolute; left: 50%; bottom: 135%; transform: translateX(-50%); width: max-content; max-width: 22cqw; padding: .3cqw .8cqw; border-radius: 6px; background: var(--fg); color: var(--bg); font-size: max(10px, 1.15cqw); line-height: 1.35; text-align: center; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; }
+.stage.tall .say { max-width: 44cqw; font-size: max(10px, 2.4cqw); }
+.agent.saying .say { opacity: 1; }
+.agent.saying .bub { opacity: 0; }
+@keyframes hop { to { transform: translateY(-30%); } }
+@keyframes zz { 0% { opacity: 0; transform: translate(0, 20%); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(40%, -60%); } }
+.dots i { display: inline-block; width: .32em; height: .32em; margin: 0 .06em; background: currentColor; animation: blink 1s infinite; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 50% { opacity: .2; } }
+
+.fig { transform-box: fill-box; }
+.agent.working .fig { animation: bob .45s infinite alternate ease-in-out; }
+.agent.idle .fig { animation: breathe 2.6s infinite ease-in-out; }
+.arm { transform-box: fill-box; transform-origin: 50% 8%; }
+.agent.working .arm { animation: swing .45s infinite alternate ease-in-out; }
+.agent.waiting .arm { transform: rotate(180deg); }
+.leg { transform-box: fill-box; }
+.agent.walking .leg-l { animation: step .3s infinite alternate; }
+.agent.walking .leg-r { animation: step .3s infinite alternate-reverse; }
+.agent.walking .fig { animation: bob .3s infinite alternate; }
+.agent.idle .eye { transform: scaleY(.2); transform-box: fill-box; transform-origin: center; }
+@keyframes bob { to { transform: translateY(-1.5px); } }
+@keyframes breathe { 50% { transform: translateY(1px); } }
+@keyframes swing { from { transform: rotate(-35deg); } to { transform: rotate(30deg); } }
+@keyframes step { to { transform: translateY(-2px); } }
+.spark { position: absolute; width: .5cqw; height: .5cqw; background: #ffe08a; pointer-events: none; z-index: 3; animation: spark .7s ease-out forwards; }
+@keyframes spark { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+
+.toast { position: absolute; left: 50%; top: 3%; transform: translateX(-50%); font-size: max(11px, 1.3cqw); background: rgba(21,18,27,.88); border: 1px solid var(--line); padding: .3cqw 1cqw; border-radius: 6px; white-space: nowrap; max-width: 94%; overflow: hidden; text-overflow: ellipsis; z-index: 4; }
+.stage.tall .toast { display: none; }
+
+/* ---------- panels ---------- */
+.below { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 760px) { .below { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.panel h2 { margin: 0 0 8px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.rows { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; font-size: .9rem; }
+.row .id { font-family: var(--font-pixel); color: var(--tc); overflow-wrap: anywhere; }
+.row .tk { overflow-wrap: anywhere; display: grid; }
+.row .tk a { color: inherit; text-underline-offset: 3px; }
+.row .tk a:focus-visible { outline: 2px solid var(--wait); outline-offset: 2px; }
+.row .act { color: var(--muted); font-size: .84rem; }
+.row .when { color: var(--muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr) auto; } .row .tk { grid-column: 1 / -1; grid-row: 2; } .row .tk:empty { display: none; } }
+.pill { font-size: .75rem; padding: 0 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.p-working { color: var(--work); } .p-waiting { color: var(--wait); } .p-idle { color: var(--idle); }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; max-height: 22em; overflow-y: auto; }
+.log time { font-variant-numeric: tabular-nums; color: var(--muted); margin-right: 6px; }
+.log b { font-family: var(--font-pixel); font-weight: 500; }
+.empty { color: var(--muted); font-size: .86rem; margin: 0; }
+.note { color: var(--muted); font-size: .85rem; margin: 0; max-width: 90ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .agent { transition: none; }
+  .agent *, .flame, .bell, .bub, .spark { animation: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ทีม Agent ของ Tan <span class="src" id="src">กำลังเชื่อมต่อ…</span></h1>
+      <p class="sub">ยืนที่โต๊ะทีม = กำลังทำงาน · เดินมาที่โต๊ะ Tan = รอ Tan · นั่งพักหน้าเตาผิง = ว่าง · <span id="updated"></span></p>
+    </div>
+    <div class="counts" aria-live="polite">
+      <div class="count c-working">กำลังทำงาน <b id="n-working">0</b></div>
+      <div class="count c-waiting">รอ Tan <b id="n-waiting">0</b></div>
+      <div class="count c-idle">ว่าง <b id="n-idle">10</b></div>
+    </div>
+  </header>
+
+  <div class="stage" id="stage" aria-label="ห้องกิลด์ แสดง agent ตามสถานะ">
+    <div class="toast" id="toast">กำลังโหลดสถานะ…</div>
+  </div>
+
+  <div class="below">
+    <section class="panel">
+      <h2>ใครทำอะไรอยู่</h2>
+      <div class="rows" id="rows"></div>
+    </section>
+    <section class="panel">
+      <h2 id="log-title">เหตุการณ์ล่าสุด</h2>
+      <ul class="log" id="log"></ul>
+      <p class="empty" id="log-empty">ยังไม่มีเหตุการณ์</p>
+    </section>
+  </div>
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+// ---------- team (docs/TEAM.md) ----------
+const TEAMS = {
+  app:  { th: "ทีมแอป",     en: "App",       color: "--t-app" },
+  qa:   { th: "ทีมตรวจสอบ", en: "Quality",   color: "--t-qa" },
+  know: { th: "ทีมความรู้",  en: "Knowledge", color: "--t-know" },
+  dm:   { th: "ทีม DM",     en: "DM",        color: "--t-dm" },
+  main: { th: "Claude",     en: "Claude",    color: "--t-main" },
+};
+// short = name on the stage, tool = colour of the prop in the hand.
+const AGENTS = [
+  { id: "business-analyst", short: "BA",      team: "app",  tool: "#f3e3b5" },
+  { id: "developer",        short: "Dev",     team: "app",  tool: "#c9ced8" },
+  { id: "ux-ui-designer",   short: "UX",      team: "app",  tool: "#ff9ad5" },
+  { id: "qa-tester",        short: "QA",      team: "qa",   tool: "#9fe0ff" },
+  { id: "content-reviewer", short: "Content", team: "qa",   tool: "#ffe08a" },
+  { id: "tech-researcher",  short: "Tech",    team: "know", tool: "#b8f0a0" },
+  { id: "dnd-specialist",   short: "D&D",     team: "know", tool: "#e05b4b" },
+  { id: "dm-assistant",     short: "DM",      team: "dm",   tool: "#f0b04e" },
+  { id: "campaign-bard",    short: "Bard",    team: "dm",   tool: "#ffffff" },
+  { id: "artist",           short: "Artist",  team: "dm",   tool: "#ff7a59" },
+];
+const BY_ID = Object.fromEntries(AGENTS.map(a => [a.id, a]));
+const STATUS_TH = { working: "กำลังทำงาน", waiting: "รอ Tan", idle: "ว่าง" };
+const PROJECT = "chan_01Tfp5P9Ls8YuN9chK3Abf5f";
+
+// ---------- actors: everything drawn on the stage ----------
+// key -> { key, kind: "team" | "main" | "helper", agent (team id), label, status, task, activity, thread, updated (ms) }
+const actors = new Map();
+for (const a of AGENTS) actors.set(a.id, { key: a.id, kind: "team", agent: a.id, label: a.short, status: "idle" });
+
+const stage = document.getElementById("stage");
+const NS = "http://www.w3.org/2000/svg";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let tall = false, withClaude = false, bell = null;
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function teamOf(act) { return act.kind === "team" ? BY_ID[act.agent].team : "main"; }
+function colorOf(act) { return act.kind === "helper" ? "--t-help" : TEAMS[teamOf(act)].color; }
+function nameOf(act) { return act.kind === "team" ? act.agent : act.kind === "main" ? `Claude (${act.project || "session"})` : act.agentType; }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function fmt(ms, withDay) {
+  const d = new Date(ms); if (isNaN(d)) return "";
+  return d.toLocaleString("th-TH", withDay ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" } : { hour: "2-digit", minute: "2-digit" });
+}
+
+// A small pixel adventurer: hood + tunic in team colour, prop in the working arm.
+function sprite(color, tool) {
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 24 30");
+  const fig = document.createElementNS(NS, "g"); fig.setAttribute("class", "fig"); svg.append(fig);
+  const px = (g, x, y, w, h, fill, cls) => { const r = document.createElementNS(NS, "rect");
+    for (const [k, v] of Object.entries({ x, y, width: w, height: h, fill })) r.setAttribute(k, v);
+    if (cls) r.setAttribute("class", cls); g.append(r); };
+  px(fig, 7, 26, 10, 2, "rgba(0,0,0,.35)");
+  px(fig, 8, 20, 3, 6, "#3a2f45", "leg leg-l"); px(fig, 13, 20, 3, 6, "#3a2f45", "leg leg-r");
+  px(fig, 6, 11, 12, 10, color); px(fig, 6, 16, 12, 2, "#2b2233"); px(fig, 4, 12, 2, 6, color);
+  px(fig, 8, 3, 8, 8, "#e9bb8f");
+  px(fig, 7, 1, 10, 4, color); px(fig, 7, 5, 2, 5, color); px(fig, 15, 5, 2, 5, color);
+  px(fig, 10, 7, 1, 2, "#1b1520", "eye"); px(fig, 13, 7, 1, 2, "#1b1520", "eye");
+  const arm = document.createElementNS(NS, "g"); arm.setAttribute("class", "arm");
+  px(arm, 18, 12, 2, 6, color); px(arm, 19, 17, 2, 2, "#e9bb8f"); px(arm, 20, 13, 2, 5, tool); px(arm, 19, 12, 4, 2, tool);
+  fig.append(arm);
+  return svg;
+}
+
+// ---------- scene geometry (percent of the stage) ----------
+function geometry() {
+  if (tall) return withClaude
+    ? { bench: { main: [50, 13], app: [27, 30], qa: [73, 30], know: [27, 47], dm: [73, 47] }, desk: [50, 64], hearth: [50, 79], gap: 13, deskGap: 9.5, hearthGap: 17, up: 2 }
+    : { bench: { app: [27, 14], qa: [73, 14], know: [27, 34], dm: [73, 34] }, desk: [50, 54], hearth: [50, 74], gap: 13, deskGap: 9.5, hearthGap: 17, up: 2 };
+  return withClaude
+    ? { bench: { main: [35, 21], app: [20, 50], qa: [50, 50], know: [20, 81], dm: [50, 81] }, desk: [82, 34], hearth: [82, 72], gap: 8.5, deskGap: 5, hearthGap: 5.2, up: 3 }
+    : { bench: { app: [20, 34], qa: [50, 34], know: [20, 76], dm: [50, 76] }, desk: [82, 34], hearth: [82, 72], gap: 8.5, deskGap: 5, hearthGap: 5.2, up: 3 };
+}
+
+function zone(x, y, cls, label, color, inner) {
+  const z = el("div", "zone " + cls); z.style.left = x + "%"; z.style.top = y + "%";
+  if (color) z.style.setProperty("--zc", `var(${color})`);
+  const l = el("div", "lbl", label);
+  if (cls === "below-lbl") z.append(inner, l); else z.append(l, inner);
+  stage.append(z);
+}
+
+function buildScene() {
+  stage.querySelectorAll(".zone").forEach(z => z.remove());
+  const G = geometry();
+  for (const [k, [x, y]] of Object.entries(G.bench)) {
+    const t = TEAMS[k];
+    zone(x, y + (tall ? 3 : 4), "below-lbl", k === "main" ? "Claude Code บน Mac" : t.en + " · " + t.th, t.color, el("div", "bench"));
+  }
+  const d = el("div", "desk"); bell = el("div", "bell"); d.append(bell);
+  zone(G.desk[0], G.desk[1] - (tall ? 6 : 14), "", "โต๊ะ Tan", "--wait", d);
+  const h = el("div", "hearth"); h.append(el("div", "flame"));
+  zone(G.hearth[0], G.hearth[1] - (tall ? 3 : 4), "", "เตาผิง · ว่าง", "--fire", h);
+}
+
+// ---------- drawing actors ----------
+const sprites = new Map(); // key -> { el, bub, say, pos, t, sayT }
+
+function spriteFor(act) {
+  let s = sprites.get(act.key);
+  if (s) return s;
+  const e = el("div", "agent idle");
+  e.style.setProperty("--tc", `var(${colorOf(act)})`);
+  const tool = act.kind === "team" ? BY_ID[act.agent].tool : act.kind === "main" ? "#ffd7a8" : "#e8e2d8";
+  const bub = el("div", "bub"), say = el("div", "say");
+  e.append(sprite(css(colorOf(act)), tool), bub, say, el("span", "tag", act.label));
+  stage.append(e);
+  s = { el: e, bub, say, pos: null };
+  sprites.set(act.key, s);
+  return s;
+}
+
+function visible() {
+  const now = Date.now();
+  // helpers (Explore, Plan, ...) leave the hall two minutes after they finish
+  return [...actors.values()].filter(a => a.kind !== "helper" || a.status !== "idle" || now - (a.updated || 0) < 120000);
+}
+
+function place() {
+  const list = visible();
+  const needClaude = list.some(a => a.kind !== "team");
+  if (needClaude !== withClaude) { withClaude = needClaude; buildScene(); }
+  const G = geometry();
+  const at = { working: {}, waiting: [], idle: [] };
+  for (const a of list) {
+    // non-team characters (Claude, Explore, ...) doze at their own bench instead of crowding the hearth
+    if (a.status === "working" || (a.status === "idle" && a.kind !== "team")) { const b = teamOf(a); (at.working[b] ||= []).push(a); }
+    else (a.status === "waiting" ? at.waiting : at.idle).push(a);
+  }
+  const seen = new Set();
+  for (const a of list) {
+    let x, y;
+    if (a.status === "working" || (a.status === "idle" && a.kind !== "team")) {
+      const row = at.working[teamOf(a)], i = row.indexOf(a), n = row.length;
+      const gap = Math.min(G.gap, (tall ? 38 : 24) / Math.max(1, n - 1));
+      x = G.bench[teamOf(a)][0] + (i - (n - 1) / 2) * gap;
+      y = G.bench[teamOf(a)][1] + G.up;
+    } else if (a.status === "waiting") {
+      const i = at.waiting.indexOf(a);
+      x = G.desk[0] + (i % 4 - 1.5) * G.deskGap;
+      y = G.desk[1] + (tall ? 6 : 8) + Math.floor(i / 4) * (tall ? 10 : 16);
+    } else {
+      const i = at.idle.indexOf(a), row = Math.floor(i / 5), col = i % 5;
+      x = G.hearth[0] + (col - 2) * G.hearthGap + (row % 2 ? G.hearthGap / 2 : 0);
+      y = G.hearth[1] + (tall ? 6 : 7) + row * (tall ? 9.5 : 13);
+      y = Math.min(y, 98);
+    }
+    const s = spriteFor(a); seen.add(a.key);
+    const key = x.toFixed(1) + "," + y.toFixed(1);
+    if (s.pos && s.pos !== key && !reduced) {
+      s.el.classList.add("walking"); clearTimeout(s.t); s.t = setTimeout(() => s.el.classList.remove("walking"), 1500);
+    }
+    s.pos = key;
+    s.el.style.left = x + "%"; s.el.style.top = y + "%"; s.el.style.zIndex = Math.round(y * 10);
+    s.el.classList.remove("working", "waiting", "idle"); s.el.classList.add(a.status);
+    s.el.title = nameOf(a) + (a.activity ? " · " + a.activity : a.task ? " · " + a.task : "");
+    s.bub.replaceChildren();
+    if (a.status === "working") { const d = el("span", "dots"); d.append(el("i"), el("i"), el("i")); s.bub.append(d); }
+    else s.bub.textContent = a.status === "waiting" ? "!" : "z";
+  }
+  for (const [k, s] of sprites) if (!seen.has(k)) { s.el.remove(); sprites.delete(k); }
+}
+
+// Speech bubble with the new activity for a few seconds, plus sparks when work starts or ends.
+function announce(act, text, sparkle) {
+  const s = sprites.get(act.key);
+  if (!s || !text) return;
+  s.say.textContent = text; s.el.classList.add("saying");
+  clearTimeout(s.sayT); s.sayT = setTimeout(() => s.el.classList.remove("saying"), 4000);
+  if (act.status === "waiting" && bell && !reduced) { bell.classList.remove("ring"); void bell.offsetWidth; bell.classList.add("ring"); }
+  if (sparkle && !reduced) setTimeout(() => {
+    for (let i = 0; i < 6; i++) {
+      const p = el("div", "spark");
+      p.style.left = s.el.style.left; p.style.top = `calc(${s.el.style.top} - 3cqw)`;
+      p.style.setProperty("--dx", (Math.random() * 6 - 3) + "cqw"); p.style.setProperty("--dy", (Math.random() * -4 - 1) + "cqw");
+      stage.append(p); setTimeout(() => p.remove(), 750);
+    }
+  }, 1500);
+}
+
+// ---------- side panels ----------
+function rows() {
+  const box = document.getElementById("rows"); box.replaceChildren();
+  const order = { waiting: 0, working: 1, idle: 2 };
+  const list = visible().sort((p, q) => order[p.status] - order[q.status] || (q.updated || 0) - (p.updated || 0));
+  const n = { working: 0, waiting: 0, idle: 0 }; let newest = 0;
+  for (const a of list) {
+    n[a.status]++; newest = Math.max(newest, a.updated || 0);
+    const r = el("div", "row"); r.style.setProperty("--tc", `var(${colorOf(a)})`);
+    const tk = el("span", "tk");
+    if (a.status !== "idle" && a.task) {
+      if (typeof a.thread === "string" && /^cmsg_[A-Za-z0-9]+$/.test(a.thread)) {
+        const link = el("a", null, a.task);
+        link.href = `https://claude.ai/code/project/${PROJECT}?thread=${a.thread}`; link.target = "_blank"; link.rel = "noopener";
+        tk.append(link);
+      } else tk.append(el("span", null, a.task));
+    }
+    if (a.status !== "idle" && a.activity) tk.append(el("span", "act", a.activity));
+    if (a.updated && (a.status !== "idle" || source === "board")) tk.append(el("span", "when", "อัปเดต " + fmt(a.updated, true)));
+    r.append(el("span", "id", nameOf(a)), tk, el("span", "pill p-" + a.status, STATUS_TH[a.status]));
+    box.append(r);
+  }
+  for (const k in n) document.getElementById("n-" + k).textContent = n[k];
+  document.getElementById("updated").textContent = newest ? "อัปเดตล่าสุด " + fmt(newest, true) : "";
+}
+
+function logLine(ms, act, status, text) {
+  const li = el("li");
+  const b = el("b", null, nameOf(act)); b.style.color = `var(${colorOf(act)})`;
+  li.append(el("time", null, fmt(ms)), b, document.createTextNode(` → ${STATUS_TH[status] || status}${text ? " · " + text : ""}`));
+  const log = document.getElementById("log"); log.prepend(li);
+  while (log.children.length > 40) log.lastChild.remove();
+  document.getElementById("log-empty").hidden = true;
+  document.getElementById("toast").textContent = `${nameOf(act)} → ${STATUS_TH[status] || status}${text ? " · " + text : ""}`;
+}
+
+function render() { place(); rows(); }
+
+// ---------- data sources ----------
+let source = "";
+function setSource(kind, label, note) {
+  source = kind;
+  const s = document.getElementById("src"); s.textContent = label; s.className = "src " + (kind === "demo" ? "demo" : kind ? "live" : "");
+  document.getElementById("note").textContent = note;
+}
+
+// 1) claude.ai board: rows written by each project thread (collection "agents", one doc per agent id).
+async function fromBoard(db) {
+  setSource("board", "สด · thread ในโปรเจกต์",
+    "สถานะมาจาก Claude ในแต่ละ thread ที่เขียนลงบอร์ดตอนเริ่มงาน ระหว่างขั้นตอนหลัก รอ Tan และเสร็จงาน หน้าจะขยับภายในไม่กี่วินาทีหลังมีการเขียน ถ้า thread ลืมเขียน ตัวละครจะยืนนิ่ง ทีมและหน้าที่ตาม docs/TEAM.md");
+  document.getElementById("log-title").textContent = "เหตุการณ์ล่าสุด";
+  let first = true;
+  db.collection("agents").onSnapshot(snap => {
+    const seeded = [];
+    for (const d of snap.docs) {
+      if (!d.exists || !BY_ID[d.id]) continue;
+      const row = d.data() || {}, act = actors.get(d.id);
+      const prev = { status: act.status, task: act.task, activity: act.activity };
+      act.status = STATUS_TH[row.status] ? row.status : "idle";
+      act.task = typeof row.task === "string" ? row.task : "";
+      act.activity = typeof row.activity === "string" ? row.activity : "";
+      act.thread = row.thread_id;
+      act.updated = Date.parse(row.updated_at) || 0;
+      const text = act.activity || act.task;
+      if (first) { if (act.updated) seeded.push([act.updated, act, act.status, text]); }
+      else if (prev.status !== act.status || prev.task !== act.task || prev.activity !== act.activity) {
+        render(); logLine(act.updated || Date.now(), act, act.status, text);
+        announce(act, text || STATUS_TH[act.status], prev.status !== act.status && (act.status === "working" || prev.status === "working"));
+      }
+    }
+    if (first) {
+      seeded.sort((p, q) => p[0] - q[0]).forEach(e => logLine(...e));
+      if (!seeded.length) document.getElementById("toast").textContent = "ยังไม่มี thread ไหนเขียนสถานะ";
+      first = false;
+    }
+    render();
+  }, () => { document.getElementById("toast").textContent = "โหลดสถานะไม่สำเร็จ ลองเปิดหน้าใหม่"; });
+}
+
+// 2) Tan's Mac: server.py relays Claude Code hook events (Server-Sent Events).
+function fromMac() {
+  setSource("mac", "สด · Claude Code บน Mac",
+    "ข้อมูลมาจาก hook ของ Claude Code บนเครื่องนี้ ขยับทุกครั้งที่ Claude เรียก tool เห็นเฉพาะ session บน Mac และ subagent ของมัน (agent ในทีมจะไปยืนที่โต๊ะทีมของตัวเอง) ไม่เห็น thread ในโปรเจกต์บน cloud ข้อมูลอยู่ในเครื่องเท่านั้น");
+  document.getElementById("log-title").textContent = "เหตุการณ์ล่าสุดบน Mac";
+  const toActor = (a) => {
+    const team = a.kind === "agent" && BY_ID[a.agent_type];
+    const key = team ? a.agent_type : a.key;   // one character per team agent, even across sessions
+    let act = actors.get(key);
+    if (!act) {
+      act = team ? actors.get(a.agent_type) : a.kind === "main"
+        ? { key, kind: "main", label: "Claude" }
+        : { key, kind: "helper", label: String(a.agent_type || "ผู้ช่วย").slice(0, 12) };
+      actors.set(key, act);
+    }
+    act.status = STATUS_TH[a.status] ? a.status : "idle";
+    act.activity = a.activity || ""; act.task = a.project ? "โปรเจกต์ " + a.project : "";
+    act.project = a.project; act.agentType = a.agent_type || "ผู้ช่วย";
+    act.updated = (a.updated || 0) * 1000;
+    return act;
+  };
+  // A past log entry, drawn in the log without changing anyone's current state.
+  const logActor = (e) => e.kind === "agent" && BY_ID[e.agent_type] ? actors.get(e.agent_type)
+    : e.kind === "main" ? { kind: "main", project: e.project } : { kind: "helper", agentType: e.agent_type || "ผู้ช่วย" };
+  const es = new EventSource("/events");
+  es.onmessage = (m) => {
+    const msg = JSON.parse(m.data);
+    if (msg.type === "snapshot") {
+      for (const [k, a] of actors) if (a.kind !== "team") actors.delete(k);
+      for (const a of AGENTS) Object.assign(actors.get(a.id), { status: "idle", activity: "", task: "" });
+      msg.actors.forEach(toActor);
+      render();
+      document.getElementById("log").replaceChildren();
+      for (const e of msg.log) logLine(e.t * 1000, logActor(e), e.status, e.text);
+      if (!msg.log.length) document.getElementById("toast").textContent = "รอ Claude Code บน Mac เริ่มทำงาน…";
+      return;
+    }
+    const a = msg.actor;
+    if (a.status === "gone") { actors.delete(a.key); render(); if (msg.log) document.getElementById("toast").textContent = "ปิด session " + (a.project || ""); return; }
+    const before = actors.get(BY_ID[a.agent_type] && a.kind === "agent" ? a.agent_type : a.key);
+    const prevStatus = before ? before.status : "idle";
+    const act = toActor(a);
+    render();
+    if (msg.log) logLine(msg.log.t * 1000, act, act.status, msg.log.text);
+    if (msg.log || prevStatus !== act.status) announce(act, act.activity, prevStatus !== act.status && (act.status === "working" || prevStatus === "working"));
+  };
+  es.onerror = () => { document.getElementById("toast").textContent = "ขาดการเชื่อมต่อกับ server.py กำลังลองใหม่…"; };
+}
+
+// 3) Opened as a plain file: play a marked example so the page can be previewed.
+function demo() {
+  setSource("demo", "ข้อมูลจำลอง", "หน้านี้เปิดเป็นไฟล์ธรรมดา จึงเล่นเหตุการณ์ตัวอย่างวนไปเรื่อย ๆ ข้อมูลจริงจะมาเมื่อเปิดบนบอร์ดใน claude.ai หรือผ่าน server.py บน Mac");
+  const SCRIPT = [
+    ["business-analyst", "working", "spec หน้า bestiary", "อ่านโค้ดหน้า lookup เดิม"],
+    ["developer", "working", "PR #27 หน้า bestiary", "รันเทสต์"],
+    ["artist", "waiting", "ภาพบทที่ 2", "ขออนุญาตใช้ Gemini 6 ภาพ"],
+    ["business-analyst", "waiting", "spec หน้า bestiary", "รอ Tan ตกลง spec"],
+    ["developer", "working", "PR #27 หน้า bestiary", "เปิด PR แล้ว รอ CI"],
+    ["qa-tester", "working", "ทดสอบ PR #27", "ทดสอบบนจอมือถือ"],
+    ["business-analyst", "idle"],
+    ["content-reviewer", "working", "ตรวจ PR #27", "ตรวจคำแปลภาษาไทย"],
+    ["developer", "waiting", "PR #27 หน้า bestiary", "รอ Tan merge"],
+    ["qa-tester", "idle"], ["content-reviewer", "idle"],
+    ["artist", "working", "ภาพบทที่ 2", "สร้างภาพที่ 3 จาก 6"],
+    ["campaign-bard", "working", "บทที่ 2", "เขียนฉากถ้ำ Gnomengarde"],
+    ["developer", "idle"], ["artist", "idle"], ["campaign-bard", "idle"],
+  ];
+  let i = 0;
+  const step = () => {
+    const [id, status, task = "", activity = ""] = SCRIPT[i]; i = (i + 1) % SCRIPT.length;
+    const act = actors.get(id), prev = act.status;
+    Object.assign(act, { status, task, activity, updated: Date.now() });
+    render(); logLine(Date.now(), act, status, activity || task);
+    announce(act, activity || STATUS_TH[status], prev !== status && (status === "working" || prev === "working"));
+  };
+  step(); step(); step();
+  setInterval(step, 3200);
+}
+
+// ---------- start ----------
+function layout() {
+  const t = stage.clientWidth < 620;
+  if (t !== tall || !bell) { tall = t; stage.classList.toggle("tall", tall); buildScene(); }
+  place();
+}
+new ResizeObserver(layout).observe(stage);
+layout(); rows();
+setInterval(render, 30000); // let finished helpers leave the hall
+
+(async () => {
+  let db = null;
+  try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+  if (db) return fromBoard(db);
+  if (window.claude) {
+    setSource("", "ออฟไลน์", "หน้านี้ต่อฐานข้อมูลสถานะไม่ได้ (ต้องเปิดใน claude.ai และล็อกอิน) จึงแสดงทุก agent เป็น \"ว่าง\"");
+    document.getElementById("toast").textContent = "ดูสถานะสดไม่ได้ในหน้านี้";
+    return;
+  }
+  if (/^https?:$/.test(location.protocol) && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return fromMac();
+  demo();
+})();
+</script>

@@ -32,8 +32,15 @@ Tan watches the team on a live board: [ทีม Agent ของ Tan](https://cl
 
 - **Start of work:** `status: "working"`, `task` (short Thai text), `thread_id` (the thread's `cmsg_…` id), `updated_at` (ISO time).
 - **Waiting on Tan** (a PR to merge, a yes for Gemini, a decision): `status: "waiting"`, same fields.
-- **Done:** `status: "idle"`, remove `task` and `thread_id`, set `updated_at`.
+- **Main steps in between:** `activity` (short Thai text of the current step, e.g. "อ่านโค้ดเดิม", "รันเทสต์", "เปิด PR แล้ว รอ CI"), plus `updated_at`. Write it when the step changes, a few times per task, not every tool call. The board shows it as a speech bubble.
+- **Done:** `status: "idle"`, remove `task`, `activity` and `thread_id`, set `updated_at`.
 
 Update every agent role the thread is acting as. Read the document first and pass its `version` as `if_version`.
+
+The board draws the team as a guild hall: an agent stands at its team bench while working, walks to Tan's desk when waiting, and rests by the hearth when idle. The page source is `tools/agent-guild/guild.html`; republish the board from that file after changing it.
+
+## Agent guild on Tan's Mac
+
+`tools/agent-guild/` also runs on Tan's Mac with Claude Code hooks, for second-by-second movement of local sessions and their subagents (a subagent named after a team agent stands at that agent's bench). It cannot see project threads in the cloud. See `tools/agent-guild/README.md` to install, start or remove it.
 
 All agents: reply to Tan in Thai, keep D&D terms in English, SRD 5.2.1 content only, no AI inside the app, no secret keys in code.
