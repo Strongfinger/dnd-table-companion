@@ -27,6 +27,18 @@ describe('SRD stat blocks', () => {
   })
 })
 
+describe('Mule (SRD 5.2.1 p. 357)', () => {
+  it('matches the official stat block and is not the Octopus', async () => {
+    const mule = (await loadFullMonsters()).find((m) => m.id === 'mule')!
+    expect(mule).toMatchObject({ size: 'Medium', type: 'beast', ac: 10, hp: 11, hpRoll: '2d8 + 2', speed: '40 ft.', scores: [14, 10, 13, 2, 10, 5], init: 0, cr: 0.125, xp: 25, pb: 2, passivePerception: 10 })
+    expect(mule.traits.map((t) => t.name)).toEqual(['Beast of Burden'])
+    expect(mule.actions.map((a) => a.name)).toEqual(['Hooves'])
+    expect(mule.actions[0].text).toContain('4 (1d4 + 2) Bludgeoning')
+    expect(mule.reactions).toEqual([])
+    expect(JSON.stringify(mule).toLowerCase()).not.toContain('octopus')
+  })
+})
+
 describe('findMonsterForCombatant', () => {
   const list = [{ name: 'Goblin Warrior' }, { name: 'Goblin Boss' }, { name: 'Werewolf, Hybrid Form' }]
   it('matches tracker names, with or without the copy number', () => {
