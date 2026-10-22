@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacter } from '../model/character'
-import { isEditHello, mayChange, parseControl, takenBack, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
+import { helloBody, isEditHello, mayChange, parseControl, takenBack, parseEndTurn, mergeEdit, parseActionBody, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet } from './sheets'
 import type { Member } from './transport'
 
 const nyx = createCharacter({ name: 'Nyx', className: 'Rogue', level: 3, scores: { str: 8, dex: 17, con: 14, int: 12, wis: 10, cha: 13 }, rev: 7 })
@@ -104,6 +104,13 @@ describe('mergeEdit', () => {
   it('tells edits from plain syncs', () => {
     expect(isEditHello({ character: {}, edit: true })).toBe(true)
     expect(isEditHello({ character: {} })).toBe(false)
+  })
+
+  it('a hello from a phone with no character is plain, carries no sheet, and saves nothing on the DM', () => {
+    const body = helloBody(null)
+    expect(isEditHello(body)).toBe(false)
+    expect(parseSheetBody(body)).toBeNull()
+    expect(parseSheetBody(helloBody(nyx))?.id).toBe(nyx.id)
   })
 })
 

@@ -1,5 +1,7 @@
 // Character sheet sync in a live lobby (Phase 4.2). The DM device is the source of truth:
 //   player → DM  'hello'  { character }            the full sheet when (re)connecting with nothing pending
+//   player → DM  'hello'  { character: null }      a phone with no character yet: the DM still sends it the room's
+//                                                 house rules, pool and party (no sheet is saved from it)
 //   player → DM  'hello'  { character, edit: true } the sheet after the player saved the edit screen
 //   player → DM  'action' { characterId, action }  one play change (damage, slot, condition...)
 //   DM → all     'state'  { character }            the DM's copy after any change to a played character
@@ -92,6 +94,9 @@ export function playedCharacterIds(members: Member[], isRemoved: (deviceId: stri
   const granted = grants.filter((g) => !isRemoved(g.deviceId)).map((g) => g.characterId)
   return [...new Set([...ids, ...granted])].sort()
 }
+
+/** The plain 'hello' body: my full sheet, or null when this phone has no character yet. */
+export const helloBody = (character: Character | null) => ({ character })
 
 /** Is this 'hello' an edit from the edit screen (merged by field) rather than a plain sync? */
 export const isEditHello = (body: unknown) => typeof body === 'object' && body !== null && (body as Record<string, unknown>).edit === true
