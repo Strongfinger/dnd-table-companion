@@ -1,20 +1,19 @@
-# Handoff — state on 2026-10-22
+# Handoff — state on 2026-10-22 (evening)
 
-> **Updated 2026-10-22** for handing work to Claude Code on the owner's Mac. New: "Before you start", "Working rules",
-> Phase 7 (PRs #19–#27), Session 1 played, new next steps. Removed as outdated: "Suggested next: the first real session"
-> (it was played 2026-10-18) and "Reply in English" under owner preferences (the team rule is now Thai).
+> **Updated 2026-10-22 (evening)** after Phase 8 (PRs #29–#34, all merged): quick fixes, faster fight tracker,
+> pinned notes + quick search, party give with accept, the "ใช้ได้เลย" section on the player sheet.
+> `main` was at the PR #34 merge (`e6055c7`). 889 tests pass.
 
 ## Before you start (Claude Code on the Mac)
 - This folder (`/Users/mac/Claude Project/DND`) **is the git clone** of https://github.com/Strongfinger/dnd-table-companion.
-  On 2026-10-22 it sat at `55d28ca` (PR #26); `origin/main` is at `1db62e0` (PR #27). Run `git pull` first
-  (PR #27 adds `tools/agent-guild/` and changes only `docs/TEAM.md`, so the uncommitted edits in ROADMAP/HANDOFF/QA pull cleanly).
-- The 2026-10-22 edits to `docs/ROADMAP.md`, `docs/HANDOFF.md`, `docs/QA.md` are **not committed**. Commit them on a
-  branch + PR (the repo is public), don't push to `main`.
-- Untracked folders, **do not commit**: `agent-guild/` (the owner's local copy of `tools/agent-guild/`, used by
-  `install.py` hooks) and `docs/Character Art/` (new party looks based on real friends' faces; ask the owner, or add it
-  to `.gitignore` with his OK).
+  Run `git pull` first. No PR is open.
+- Untracked or ignored, **do not commit**: `agent-guild/` (the owner's local copy of `tools/agent-guild/`) and
+  `docs/Character Art/` (new party looks based on real friends' faces; ask the owner, or add it to `.gitignore` with his OK).
 - Private, git-ignored: `docs/DM Scripts/` (campaign packs, session scripts, backups), `docs/Character Sheets/`,
   `docs/Owlbear-Rodeo/`, `docs/DND-TH/`, `.env.local`.
+- Parallel work uses git worktrees under `.claude/worktrees/` (git-ignored). Gotchas: `preview_start` serves the **main**
+  checkout, not the worktree (run `npx vite` inside the worktree); don't symlink `node_modules` from the main checkout
+  (Vite then refuses to serve fonts), run `npm install` in the worktree instead.
 
 ## Working rules (owner's standing rules, see [TEAM.md](TEAM.md))
 - **Merge a PR only when Tan says so** ("merge", "merge เลย"). `main` deploys to Vercel at once.
@@ -38,14 +37,16 @@ backup/restore, the journey chronicle, item pictures, Carrying Capacity, the rew
 on the sheet and a waist slot (see "Phase 6" below). All 278 SRD magic items are in.
 **Session 1** of *Dragon of Icespire Peak* was played 2026-10-18 (5 players); its feedback became PRs #5–#9. Then
 **Phase 7 (2026-10-21 to 10-22)**: party give, house rules, sheet tabs + fight tracker redesign, party overview
-redesign, plus the agent team, UX kit and agent guild (PRs #19–#27, all merged). No PR is open.
-**Suggested next:** Session 2, then a fix pass; see "Next steps" at the bottom.
+redesign, plus the agent team, UX kit and agent guild (PRs #19–#27, all merged). Then **Phase 8 (2026-10-22, PRs #29–#34)**,
+planned with the business analyst after Session 1: faster DM fights, pinned notes, party give with accept, a "usable now"
+section on the player sheet (see "Phase 8" below). No PR is open.
+**Suggested next:** verify on real phones, then Session 2, then a fix pass; see "Next steps" at the bottom.
 Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local post-commit hook rebuilds it).
 
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (781 passing after PR #26) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (889 passing after PR #34) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `content-reviewer` agent (was rules-reviewer) after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -67,6 +68,9 @@ Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local p
 | Reward pool + coin requests | Model `src/model/rewards.ts` (pool, take, coin requests, `dmRunsEconomy`, `keepDmEconomy`), storage `src/db/rewards.ts` (DM device settings `reward-pool`, `coin-requests`), UI `src/screens/RewardDesk.tsx` (DM tab "🎁 คลังกลาง" with "+ ของรางวัล", "💰 คำขอเงิน", bar under the tabs), sheet `Inventory.tsx` (`PoolPicker`, `CoinRequestForm`). A character run by a DM on another device (player in a room, or filed under another device's campaign) takes items only from the pool and asks the DM for coin changes; the DM's device keeps coins and refuses extra items in incoming sheets. Room messages `pool`, `coinRequests` (DM → all), `take`, `coinRequest` (player → DM, through the outbox) |
 | Give to a friend (ส่งของในปาร์ตี้) | Model `src/model/give.ts` (`giveItem` pack items only, keeps name/slot/weight/text/✨/picture, stacks on the same item; `giveCoins` breaks bigger coins like paying; `parseGive`), storage `src/db/give.ts` (`giveNow`: both sheets in one transaction + a 🤝 log line on each), UI `src/screens/GiveForm.tsx` ("🤝 ส่งให้เพื่อน" on an item, "🤝 ส่งเงินให้เพื่อน" under the purse). Player in a room: friends = party cards, room message `give` (player → DM, through the outbox); the DM's device moves it only if the receiver is played in the room. Elsewhere: other characters saved on the same device in the same campaign, moved at once. A DM-run character outside the room can't give. **Phase 3 (2026-10-22): in a room a give is a pending OFFER, nothing moves until the receiver taps accept.** Pure model `src/model/giveOffer.ts` (create / accept / remove, failed offers with a Thai reason), DM-device storage `src/db/giveOffers.ts` (settings key `give-offers`, not in backups; accept = one transaction, a second accept does nothing; cleared when the DM leaves or opens a room), room messages `giveOffer`, `giveAccept`, `giveDecline`, `giveCancel` (player → DM through the outbox) and `giveOffers` (DM → all, resent on join), UI `src/screens/GiveOffers.tsx` (incoming notice on every page, "🤝 รอ X รับ" under the item or purse with ยกเลิก; give sheet shows waiting). Offers never expire. An older phone's plain `give` message is treated as an offer. Characters on one device (no room, or the DM's device) still move at once. No DM approval |
 | DM panel (next to tracker) | `src/screens/DmPanel.tsx`: stat block following the turn (`findMonsterForCombatant`), lookup, 🎲 generators, 📒 notebook, fight log |
+| Fight speed (PR #30) | Hotkeys `src/ui/hotkeys.ts` (N/Space next turn, P, D, Z, `/`, Esc, `?`; match `e.code`; ignored while typing, in dialogs, on IME; guard via `advanceTurn`'s `expect`), cheat sheet + ON/OFF switch `src/screens/ShortcutSheet.tsx` (localStorage). Turn Card `src/screens/TurnCard.tsx` (top of the middle column, sticky, ≤168 px; monster: Multiattack, parsed attacks with 🎯/💥, save DCs, Recharge chips, Legendary counters, Spellcasting DC/to-hit; PC: conditions, Concentration, action economy). Parser `src/model/statBlockActions.ts` (pure; every attack has all damage parts; falls back to plain text). Multi-select + batch: `src/screens/BatchBar.tsx`, `src/model/batch.ts` (plan damage/heal/condition, `halfDamage` in `src/rules/play.ts`, one-step undo that expires on Next/Previous/End and skips creatures changed since), `restoreVitals` in `characterActions.ts` (app-only; a phone can't send it). Optional fields `Combatant.legendaryUsed` / `spent` (not restored from backups). Monster HP stays DM-only |
+| Pinned notes + quick search (PR #32) | `src/model/pins.ts` (pure), `src/db/pins.ts` (settings keys `pins:<campaign>` (≤8) and `recent:<campaign>`; **not in backups**, no campaign = `pins:all`), `src/screens/PanelNotes.tsx` (strip above the DM panel tabs + always-visible search; `/` focuses it, Enter opens, Shift+Enter pins), `PinButton.tsx` (📌 on page headers and scene rows). Notes + scenes only, not SRD |
+| Usable now (PR #34) | Player sheet play tab: `src/screens/UsableNow.tsx` (economy bar + jump chips, Attacks, slots left, features by recharge, spells by Action/Bonus/Reaction, 18 tap-to-roll skills), pure `src/model/usableNow.ts` (modifiers come from `deriveSheet`); slots/features/economy/death saves moved out of `PlayPanel.tsx`. Marks: ● proficient, ★ Expertise, ✓ ready to cast |
 | Player view | `src/model/playerView.ts`, `src/screens/PlayerViewPanel.tsx`, `LiveFightBar.tsx`, `PlayerFights.tsx` (read-only combat tab) |
 | Live room | `src/app/lobby.tsx` (LobbyProvider: connection, sync, outbox, rest), `src/app/useLobby.ts`, `src/screens/Lobby.tsx` (`#/lobby`, QR `#/lobby/CODE`) |
 | Sync protocol (pure) | `src/sync/` — `envelope.ts` (kinds, Deduper, RateLimiter), `sheets.ts`, `outbox.ts`, `fights.ts` (fight list, log diffs), `lobby.ts`; transports `firebaseTransport.ts`, `localTransport.ts` |
@@ -232,6 +236,24 @@ Requested by the owner (Tan) after the playtest. Written by parallel sessions; u
   `docs/Character Art/คำบรรยายตัวละครใหม่ (สำหรับ prompt ภาพบทต่อไป).md` (the old chapter-1 reference sheet is outdated).
 - **Chronicle:** chapter 1 with 14 pictures is live (Firebase `chronicles/` rules published by the owner, sharing works).
 
+## Phase 8: after Session 1 (2026-10-22, PRs #29–#34)
+Planned with the business analyst from the owner's answers (laptop first; hurts: applying damage/conditions, finding
+notes mid-fight, finding actions/skills/spells and what is left on phones). Design: `docs/design/phase2-sketch.md`.
+- **PR #29 quick fixes:** Mule stat block fixed from the PDF (its printed Str save +4 is in the official text, kept);
+  house rules render as Markdown on phones; a phone with no character now sends a plain hello so it gets house rules,
+  reward pool and party view.
+- **PR #30 fight speed:** one-key Next Turn, Turn Card, multi-select damage/conditions with ½ Save and one undo; parser
+  fixes after content review (parenthetical to-hit, all damage parts, Spellcasting DC/to-hit, Unicode minus, flat damage).
+- **PR #32 pinned notes + quick search** (DM side, see code map).
+- **PR #33 party give with receiver accept** (see the give row in the code map; QA pass 9; fake player
+  `scripts/lobby-test/give-player.cjs`).
+- **PR #34 usable now** on the player sheet (see code map).
+- **PR #31** the design sketch (docs only).
+- Owner tested #32–#34 in the browser/phone on 2026-10-22: all passed. **Not yet checked over real Firebase with two or
+  more phones:** party give between phones, an offline receiver, a kicked receiver, DM closing the room with offers
+  pending, the Recharge d6 flow, real Thai keyboard for the hotkeys, contrast.
+- Not built from the sketch: the optional one-tap condition chips (2d), long-press unpin, Ctrl/Cmd+Z.
+
 ## Campaign state (for DM work)
 - Party (all level 1 after Session 1, level 2 planned in Session 2): HypenosZ (Orc Paladin), PetchKung (Dwarf Cleric),
   Mobius (Elf Rogue), Griffith (Human Fighter), Gojo Satoru (Elf Ranger). All male.
@@ -241,13 +263,13 @@ Requested by the owner (Tan) after the playtest. Written by parallel sessions; u
 - After each session: ask the owner to export a backup (`#/backup`), then recap → chronicle chapter → pictures (ask first).
 
 ## Next steps (suggested)
-1. **Session 2** with friends; keep a list of problems during play. Confirm the real-phone checks in [QA.md](QA.md)
-   ("Real-phone checklist").
-2. **Fix pass** on that list (one commit per issue, like the playtest PR).
-3. **Mule data bug:** English Mule in `src/data/srd-monster-details.json` is the Octopus stat block (5e-bits error);
-   fix from the SRD 5.2.1 PDF (and check the Thai entry), run `content-reviewer`.
+1. **Verify on real phones** before Session 2 (Session 2 is more than a week away; the owner has 1 laptop + 1 phone,
+   ask one friend for 10 minutes to cover party give and kick): see [QA.md](QA.md) "Real-phone checklist" and pass 9.
+2. **Session 2** with friends; keep a list of problems during play, then a **fix pass** (one commit per issue).
+3. Optional DM-screen follow-ups: one-tap condition chips (2d), search over SRD from the quick search, Ctrl/Cmd+Z.
 4. **Chapter 2** of the chronicle after Session 2 with the new character looks (Gemini only after Tan's yes).
-5. Optional: our own Thai for the translation gaps; QR export; DM approval / receiver accept for party give.
+5. Our own Thai for the translation gaps (7 spells, 4 magic items, 16 equipment items, Mule/Beast of Burden and
+   other empty monster entries); QR export of a character.
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
 - Reply in Thai (updated 2026-10-22); UI in Thai with English game terms; generated proper names in English.
