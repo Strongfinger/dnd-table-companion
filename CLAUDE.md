@@ -27,6 +27,7 @@ The DM runs it on a laptop or tablet. Players use phones for their own character
 - Put game-rule logic in `src/rules/` as pure functions, separate from UI.
 - After changing anything in `src/rules/` or game content, run the `content-reviewer` agent.
 - Team of 10 agents and the work process: see [docs/TEAM.md](docs/TEAM.md).
+- **Agent status board (every thread, every task):** Tan watches https://claude.ai/artifact/3yEQREAwjGXPvKyQtFvxdP and it only moves when a thread writes to it. With the `ArtifactData` tool (collection `agents`, doc = agent id, read first and pass `if_version`): set `status: "working"` + `task` + `thread_id` + `updated_at` before the first real step; `activity` at main steps; `"waiting"` when blocked on Tan; `"idle"` (remove `task`, `thread_id`, `activity`) when done. Details in docs/TEAM.md.
 
 ## Roadmap
 See [docs/ROADMAP.md](docs/ROADMAP.md). Latest state and next steps: [docs/HANDOFF.md](docs/HANDOFF.md).
