@@ -40,12 +40,14 @@ export interface LobbyApi {
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
-  /** DM: the room this device hosted last (after leaving it), or null. */
-  lastHosted: LobbySession | null
+  /** DM: the rooms this device hosted and left, newest first (a few). */
+  recentHosted: LobbySession[]
   /** DM: every character played in the room right now (players' picks and handed-over characters). */
   playedIds: string[]
-  /** DM: open the last hosted room again with the same code, campaign and players. */
-  rejoinLast: () => void
+  /** DM: open one of the recent rooms again with the same code, campaign and players. */
+  rejoin: (code: string) => void
+  /** DM: take a room off the recent list (the room itself is not touched). */
+  forgetHosted: (code: string) => void
   /** Player: the DM's reward pool right now (null until the DM's device has sent it). */
   pool: PoolItem[] | null
   /** Player: the DM's coin requests list (open and recently decided; the screen shows my characters'). */

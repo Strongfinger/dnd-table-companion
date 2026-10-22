@@ -76,7 +76,7 @@ function Start({ linkCode }: { linkCode: string | null }) {
         <TextInput value={name} placeholder="เช่น ต้น (DM)" onChange={setName} />
       </Section>
 
-      {lobby.lastHosted && <LastRoom />}
+      {lobby.recentHosted.length > 0 && <RecentRooms />}
 
       <Section title="🎲 DM: เปิดห้อง">
         <p className="mb-2 text-xs text-stone-400">ห้องเป็นการเล่นสดของแคมเปญหนึ่ง เลือกหรือสร้างแคมเปญก่อน</p>
@@ -122,19 +122,28 @@ function Start({ linkCode }: { linkCode: string | null }) {
   )
 }
 
-/** DM: go back to the room left last (same code, campaign and players; players' phones reconnect by themselves). */
-function LastRoom() {
+/** DM: go back to one of the rooms left lately (same code, campaign and players; players' phones reconnect by themselves). */
+function RecentRooms() {
   const lobby = useLobby()
-  const last = lobby.lastHosted!
   const campaigns = useLiveQuery(listCampaigns) ?? []
-  const campaign = campaigns.find((c) => c.id === last.campaignId)
   return (
     <Section title="🔁 DM: กลับเข้าห้องเดิม">
-      <p className="mb-2 text-xs text-stone-400">
-        ห้อง <b className="font-mono text-stone-200">{last.code}</b>{campaign && <> · 🗺 {campaign.name}</>}
-        {last.local && ' · โหมดทดสอบในเครื่อง'} · ผู้เล่นที่ยังอยู่ในห้องจะเชื่อมต่อกลับเอง ไม่ต้องพิมพ์รหัสใหม่
-      </p>
-      <Button variant="primary" className="w-full" onClick={lobby.rejoinLast}>กลับเข้าห้อง {last.code}</Button>
+      <p className="mb-2 text-xs text-stone-400">ผู้เล่นที่ยังอยู่ในห้องจะเชื่อมต่อกลับเอง ไม่ต้องพิมพ์รหัสใหม่ · ห้องล่าสุดอยู่บนสุด</p>
+      <ul className="space-y-2">
+        {lobby.recentHosted.map((room, i) => {
+          const campaign = campaigns.find((c) => c.id === room.campaignId)
+          return (
+            <li key={room.code} className="flex items-center gap-2">
+              <Button variant={i === 0 ? 'primary' : undefined} className="flex-1 text-left" onClick={() => lobby.rejoin(room.code)}>
+                กลับเข้าห้อง <b className="font-mono">{room.code}</b>
+                {campaign && <span className="text-sm"> · 🗺 {campaign.name}</span>}
+                {room.local && <span className="text-sm"> · โหมดทดสอบ</span>}
+              </Button>
+              <Button className="text-sm" aria-label={`ลบห้อง ${room.code} ออกจากรายการ`} onClick={() => lobby.forgetHosted(room.code)}>✕</Button>
+            </li>
+          )
+        })}
+      </ul>
     </Section>
   )
 }
