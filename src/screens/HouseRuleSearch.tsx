@@ -8,6 +8,7 @@ import { listNotes } from '../db/notes'
 import { mergeRules, ownRules, searchRules } from '../model/houseRules'
 import { KIND_FIELDS, RULE_STATUS } from '../model/note'
 import { TextInput } from '../ui/kit'
+import MiniMarkdown from '../ui/MiniMarkdown'
 
 const FIELDS = KIND_FIELDS.rule.filter((f) => f.key !== 'status')
 
@@ -53,7 +54,7 @@ export default function HouseRuleSearch({ isPlayer }: { isPlayer: boolean }) {
                       </div>
                     ))}
                   </dl>
-                  {r.body && <p className="whitespace-pre-wrap">{r.body}</p>}
+                  {r.body && <div className="space-y-2"><MiniMarkdown text={r.body} /></div>}
                 </div>
               )}
             </li>
