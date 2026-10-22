@@ -18,17 +18,23 @@ function useOffers() {
 /** Incoming offers and failed gives, as a small notice at the top of every page. */
 export function GiveOfferNotice() {
   const { offers, mine, answer, online } = useOffers()
-  // Offers I just answered, hidden until the DM's list catches up (so a second tap can't happen).
+  // Offers I just answered stay hidden until the DM's list catches up (so a second tap can't happen);
+  // failed gives I just closed likewise (kept apart: an accepted offer that fails comes back as a failed one).
   const [answered, setAnswered] = useState<string[]>([])
+  const [closed, setClosed] = useState<string[]>([])
   const incoming = incomingOffers(offers, mine).filter((o) => !answered.includes(o.id))
   // Failed gives: the ones I made (any reason) and the ones I tried to accept. A failed offer is closed with ปิด.
   const failed = [...outgoingOffers(offers, mine).filter((o) => o.status === 'failed'), ...failedForReceiver(offers, mine)]
-    .filter((o, i, all) => all.findIndex((x) => x.id === o.id) === i && !answered.includes(o.id))
+    .filter((o, i, all) => all.findIndex((x) => x.id === o.id) === i && !closed.includes(o.id))
   if (incoming.length === 0 && failed.length === 0) return null
 
-  const respond = (o: GiveOffer, a: 'accept' | 'decline' | 'cancel') => {
+  const respond = (o: GiveOffer, a: 'accept' | 'decline') => {
     answer(o.id, a)
     setAnswered((old) => [...old, o.id])
+  }
+  const close = (o: GiveOffer) => {
+    answer(o.id, mine.includes(o.fromId) ? 'cancel' : 'decline')
+    setClosed((old) => [...old, o.id])
   }
   return (
     <div className="mx-auto max-w-xl space-y-2 px-4 pt-3" role="region" aria-label="ของที่เพื่อนส่งมา">
@@ -49,7 +55,7 @@ export function GiveOfferNotice() {
             🤝 ส่ง <b>{offerLabel(o)}</b> {mine.includes(o.fromId) ? `ให้ ${o.toName || 'เพื่อน'}` : `จาก ${o.fromName || 'เพื่อน'}`} ไม่สำเร็จ
             <span className="block text-red-300">{o.reason}</span>
           </p>
-          <Button className="px-3 text-xs" onClick={() => respond(o, mine.includes(o.fromId) ? 'cancel' : 'decline')}>ปิด</Button>
+          <Button className="px-3 text-xs" onClick={() => close(o)}>ปิด</Button>
         </div>
       ))}
     </div>
