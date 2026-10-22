@@ -13,6 +13,7 @@ import {
 } from '../model/note'
 import { Button, TextInput } from '../ui/kit'
 import LinkedText from '../ui/LinkedText'
+import PinButton from './PinButton'
 import { ScenesEditor, ScenesView } from './SessionPlan'
 
 const SAVE_AFTER_MS = 700
@@ -58,7 +59,7 @@ export function NotebookList({ campaignId, onOpen }: { campaignId: string | null
           </button>
         ))}
       </div>
-      {inCampaign.length > 3 && <TextInput value={query} placeholder="ค้นหา เช่น ชื่อ NPC เมือง ภารกิจ" onChange={setQuery} />}
+      <TextInput value={query} placeholder="ค้นหา เช่น ชื่อ NPC เมือง ภารกิจ" onChange={setQuery} />
       {all && shown.length === 0 && (
         <p className="text-sm text-stone-500">{query || kind !== 'all' ? 'ไม่พบหน้าที่ตรงกัน' : 'ยังไม่มีหน้า · เลือกประเภทแล้วกด "+ หน้าใหม่" (เช่น NPC ที่ปาร์ตี้เพิ่งเจอ)'}</p>
       )}
@@ -81,8 +82,10 @@ export function NotebookList({ campaignId, onOpen }: { campaignId: string | null
 }
 
 /** One page: view mode with links, or edit mode (a page just created starts in edit mode). */
-export function NotebookPage({ id, onBack, onOpen, backLabel }: {
+export function NotebookPage({ id, onBack, onOpen, backLabel, sceneId }: {
   id: string
+  /** Open a session page at this scene (a pinned scene). */
+  sceneId?: string
   onBack: () => void
   onOpen: (id: string) => void
   backLabel: string
@@ -121,13 +124,15 @@ export function NotebookPage({ id, onBack, onOpen, backLabel }: {
         onEdit={() => setEditing(true)}
         onFollow={follow}
         onOpen={onOpen}
+        sceneId={sceneId}
         // Ticks during play (scenes, checklist) show at once and save in the background.
         onChange={(n) => { setNote(n); void saveNote(n) }}
       />
     )
 }
 
-function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, onChange }: {
+function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, onChange, sceneId }: {
+  sceneId?: string
   note: Note
   pages: Note[]
   backLabel: string
@@ -144,7 +149,10 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, on
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={onBack} className="text-sm text-stone-400">{backLabel}</button>
-        <Button className="text-sm" onClick={onEdit}>✏️ แก้ไข</Button>
+        <div className="flex items-center gap-1">
+          <PinButton campaignId={note.campaignId} pin={{ noteId: note.id }} />
+          <Button className="text-sm" onClick={onEdit}>✏️ แก้ไข</Button>
+        </div>
       </div>
       <header>
         <p className="text-xs text-stone-400">{KIND_LABEL[note.kind]}{note.kind === 'session' && ` · ${thaiDate(note.sessionDate)}`}</p>
@@ -162,7 +170,7 @@ function PageView({ note, pages, backLabel, onBack, onEdit, onFollow, onOpen, on
           ))}
         </dl>
       )}
-      {note.kind === 'session' && <ScenesView note={note} pages={pages} onChange={onChange} onFollow={onFollow} onOpen={onOpen} />}
+      {note.kind === 'session' && <ScenesView note={note} pages={pages} onChange={onChange} onFollow={onFollow} onOpen={onOpen} focusSceneId={sceneId} />}
       {note.body
         ? <div className="whitespace-pre-line leading-relaxed">{linked(note.body)}</div>
         : note.scenes.length === 0 && <p className="text-sm text-stone-500">ยังไม่มีรายละเอียด · กด ✏️ แก้ไข{note.kind === 'session' && ' เพื่อวางแผนเป็นฉาก ๆ'}</p>}

@@ -361,7 +361,7 @@ export default function Tracker({ id }: { id: string }) {
       previous: () => void previous(),
       damage: focusAmount,
       undo: () => void undoBatch(),
-      search: () => requestPanelTab('lookup'),
+      search: () => requestPanelTab('search'),
       help: () => (sheetOpen ? closeSheet() : setSheetOpen(true)),
     }),
   }

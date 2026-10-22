@@ -3,19 +3,25 @@
 // - Lookup: monsters, spells and rules, opened right here
 // - Generators: NPCs, places, loot, encounters (added to this fight)…
 // - Notebook: this campaign's pages (sessions, NPCs, places, quests…), read and edited in place
+// - Above the tabs, always: pinned pages/scenes (one tap) and a quick search of notes and scenes ("/")
 // - Fight log
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { onPanelRequest } from '../ui/dmPanelBus'
 import { dockRoller, openRoller } from '../ui/rollerBus'
+import { listNotes } from '../db/notes'
+import { markOpened } from '../db/pins'
 import { addMonstersToFight } from '../db/turns'
 import type { Encounter } from '../model/encounter'
 import { findMonsterForCombatant, type FullMonster } from '../model/monsterDetails'
 import { monsterInput } from '../model/monsters'
+import type { Pin } from '../model/pins'
 import MonsterStatBlock from '../ui/MonsterStatBlock'
 import { Button } from '../ui/kit'
 import { MonsterSearch, RulesSearch, SpellCard, SpellSearch, type OpenResult } from './Lookup'
 import Generators from './Generators'
 import { NotebookList, NotebookPage } from './Notebook'
+import { PinnedStrip, QuickSearch } from './PanelNotes'
 import { useMonsters, useMonstersTh, useSpells } from './useSrdData'
 
 type PanelTab = 'stats' | 'lookup' | 'gen' | 'notes' | 'log'
@@ -41,14 +47,28 @@ function savedTab(): PanelTab {
 export default function DmPanel({ encounter, log }: { encounter: Encounter; log: ReactNode }) {
   const [tab, setTab] = useState<PanelTab>(savedTab)
   const panel = useRef<HTMLElement>(null)
-  // The Turn Card ("ดู Stat block เต็ม") and the "/" key ask for a tab; "/" also puts the cursor in the search box.
+  // A notebook page (or scene) opened from the pinned strip, the quick search or the notebook list. It shows in
+  // place of the tab; "← กลับ" returns to the tab the DM came from.
+  const [page, setPage] = useState<Pin | null>(null)
+  const campaignId = encounter.campaignId
+  const notes = (useLiveQuery(listNotes) ?? []).filter((n) => !campaignId || n.campaignId === campaignId)
+  const openPage = (p: Pin) => {
+    setPage(p)
+    void markOpened(campaignId, p.noteId)
+  }
+  // The Turn Card ("ดู Stat block เต็ม") asks for a tab; the "/" key puts the cursor in the quick search.
   useEffect(() => onPanelRequest((t) => {
+    if (t === 'search') {
+      panel.current?.querySelector<HTMLInputElement>('[data-quick-search]')?.focus()
+      return
+    }
+    setPage(null)
     setTab(t)
-    if (t === 'lookup') setTimeout(() => panel.current?.querySelector<HTMLInputElement>('input[type="text"], input:not([type])')?.focus(), 50)
   }), [])
   // This panel has its own 🎲 button (laptop), so the floating one steps aside.
   useEffect(() => dockRoller(), [])
   const choose = (t: PanelTab) => {
+    setPage(null)
     setTab(t)
     try {
       localStorage.setItem(TAB_KEY, t)
@@ -80,12 +100,26 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
           🎲
         </button>
       </div>
+      <div className="border-b border-stone-700">
+        <PinnedStrip campaignId={campaignId} notes={notes} onOpen={openPage} />
+        <QuickSearch campaignId={campaignId} notes={notes} onOpen={openPage} />
+      </div>
       <div className="p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-        {tab === 'stats' && <StatsTab encounter={encounter} />}
-        {tab === 'lookup' && <LookupTab encounter={encounter} />}
-        {tab === 'gen' && <Generators campaignId={encounter.campaignId} encounter={encounter} />}
-        {tab === 'notes' && <NotesTab campaignId={encounter.campaignId} />}
-        {tab === 'log' && log}
+        {page && (
+          <NotebookPage
+            key={`${page.noteId}/${page.sceneId ?? ''}`}
+            id={page.noteId}
+            sceneId={page.sceneId}
+            onBack={() => setPage(null)}
+            onOpen={(id) => openPage({ noteId: id })}
+            backLabel="← กลับ"
+          />
+        )}
+        {!page && tab === 'stats' && <StatsTab encounter={encounter} />}
+        {!page && tab === 'lookup' && <LookupTab encounter={encounter} />}
+        {!page && tab === 'gen' && <Generators campaignId={encounter.campaignId} encounter={encounter} />}
+        {!page && tab === 'notes' && <NotebookList campaignId={campaignId} onOpen={(id) => openPage({ noteId: id })} />}
+        {!page && tab === 'log' && log}
       </div>
     </section>
   )
@@ -180,11 +214,4 @@ function LookupTab({ encounter }: { encounter: Encounter }) {
       {sub === 'rules' && <RulesSearch />}
     </div>
   )
-}
-
-/** This campaign's notebook (all pages if the fight has no campaign); pages open and edit in place. */
-function NotesTab({ campaignId }: { campaignId: string | null }) {
-  const [open, setOpen] = useState<string | null>(null)
-  if (open) return <NotebookPage key={open} id={open} onBack={() => setOpen(null)} onOpen={setOpen} backLabel="← สมุดแคมเปญ" />
-  return <NotebookList campaignId={campaignId} onOpen={setOpen} />
 }
