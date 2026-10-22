@@ -175,7 +175,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
             <p className="mb-1 text-xs text-stone-400">เหลือ/ทั้งหมด · แตะชื่อเพื่อดูรายละเอียด{asPlayer ? ' · DM เป็นคนคืน' : ''}</p>
             {features.map((g) => (
               <div key={g.recharge} className="mt-2">
-                <div className="text-xs font-bold text-amber-400">{g.recharge === 'short' ? 'คืนเมื่อ Short Rest' : 'คืนเมื่อ Long Rest'}</div>
+                <div className="text-xs font-bold text-amber-400">{g.recharge === 'short' ? 'คืนเมื่อ Short Rest / Long Rest' : 'คืนเมื่อ Long Rest'}</div>
                 {g.items.map(({ feature: f, left, spent }) => (
                   <div key={f.id} className={spent ? 'opacity-60' : ''}>
                     <div className="flex flex-wrap items-center gap-x-2">
@@ -208,7 +208,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
       {spells.length > 0 && (
         <div id="un-spells" className="scroll-mt-40">
           <Section title="คาถาที่ใช้ได้">
-            <p className="mb-1 text-xs text-stone-400">★ เตรียมไว้แล้ว · สีเทา = ไม่มี Slot เหลือ · แตะ "ร่าย" เพื่อเลือก Slot</p>
+            <p className="mb-1 text-xs text-stone-400">✓ พร้อมร่าย (Cantrip หรือเตรียมไว้แล้ว) · สีเทา = ไม่มี Slot เหลือ · แตะ "ร่าย" เพื่อเลือก Slot</p>
             {!srd && <p className="min-h-6 text-xs text-stone-400">กำลังโหลดเวลาร่ายของคาถา…</p>}
             {spells.map((g) => (
               <div key={g.kind} className="mt-2">
@@ -226,11 +226,11 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
 
       <div id="un-skills" className="scroll-mt-40">
         <Section title="Skills (แตะเพื่อทอย d20)">
-          <p className="mb-2 text-xs text-stone-400">● ถนัด · ★ Expertise · ตัวเลขรวม Proficiency และ Exhaustion แล้ว · วิธีใช้แต่ละ Skill ดูที่แท็บ ความสามารถ</p>
+          <p className="mb-2 text-xs text-stone-400">● ชำนาญ (Proficient) · ★ Expertise · ตัวเลขรวม Proficiency และ Exhaustion แล้ว · วิธีใช้แต่ละ Skill ดูที่แท็บ ความสามารถ</p>
           <ul className="grid grid-cols-1 gap-x-3 min-[360px]:grid-cols-2">
             {skills.map((s) => {
               const mark = s.level === 'expertise' ? '★' : s.level === 'proficient' ? '●' : ''
-              const levelText = s.level === 'expertise' ? ' Expertise' : s.level === 'proficient' ? ' ถนัด' : ''
+              const levelText = s.level === 'expertise' ? ' Expertise' : s.level === 'proficient' ? ' ชำนาญ (Proficient)' : ''
               return (
                 <li key={s.skill}>
                   <button
@@ -277,7 +277,7 @@ function SpellLine({ c, row, open, onToggle, onDone }: { c: Character; row: Spel
   return (
     <div className="border-b border-stone-700/60 py-0.5">
       <div className="flex items-center gap-2">
-        <span className={`w-4 shrink-0 text-center ${ready ? 'text-amber-300' : 'text-stone-500'}`} aria-label={ready ? 'เตรียมไว้แล้ว' : 'ยังไม่ได้เตรียม'}>{ready ? '★' : '○'}</span>
+        <span className={`w-4 shrink-0 text-center ${ready ? 'text-amber-300' : 'text-stone-500'}`} aria-label={ready ? 'พร้อมร่าย' : 'ยังไม่ได้เตรียม'}>{ready ? '✓' : '○'}</span>
         <span className={`min-w-0 flex-1 text-sm ${grey ? 'text-stone-400' : ''}`}>
           <b>{spell.name}</b>
           <span className="ml-1 text-xs text-stone-400">{spell.level === 0 ? 'Cantrip' : `L${spell.level}`}</span>

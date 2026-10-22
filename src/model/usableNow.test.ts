@@ -66,6 +66,16 @@ describe('spellGroups', () => {
     // Higher slots count: Magic Missile (1) is castable with the 2nd/3rd-level slots left
     expect(spellGroups(c, list)[0].items.find((r) => r.spell.name === 'Magic Missile')?.noSlot).toBe(false)
   })
+  it('does not grey a ritual spell that can still be cast as a Ritual', () => {
+    const noSlots = { ...c, spellSlots: c.spellSlots.map(() => ({ max: 0, used: 0 })) }
+    const ritual = { ...srd('Identify', '1 minute'), ritual: true } as SrdSpell
+    const rl = [...list.filter((x) => x.name !== 'Identify'), ritual]
+    const row = (cl: typeof noSlots, prepared: boolean) =>
+      spellGroups({ ...cl, spells: [{ id: 'r', name: 'Identify', level: 1, prepared }] }, rl)[0].items[0]
+    expect(row(noSlots, true).noSlot).toBe(false)
+    expect(row({ ...noSlots, className: 'Cleric' }, false).noSlot).toBe(true) // unprepared, not a Wizard
+    expect(row(noSlots, false).noSlot).toBe(false) // Wizard spellbook
+  })
   it('puts everything under Action while the SRD list loads, and homebrew under Action', () => {
     expect(spellGroups(c, null).map((x) => x.kind)).toEqual(['action'])
     const home = spellGroups({ ...c, spells: [{ id: 'h', name: 'My Spell', level: 1, prepared: true }] }, list)

@@ -74,8 +74,8 @@ How to try it (phone, or a 360 px window): open a character sheet, tab ต่อ
 2. Attacks are the first block (same 🎯 / 💥 buttons as before). They are no longer under "ระหว่างเล่น".
 3. Spell slots: one row per level, `left/max` text, tap a full circle = use one, empty circle = give one back (a player in a room cannot give back: the circle is disabled). A level at 0 is dimmed with "หมด".
 4. Limited-use features: grouped "คืนเมื่อ Short Rest" / "คืนเมื่อ Long Rest". A used-up feature is dimmed and says when it comes back. Pool features (Lay On Hands) keep the amount box + ใช้ / คืน (คืน only for DM or offline play).
-5. Spells: grouped Action / Bonus Action / Reaction (and "อื่นๆ" for 1 minute+). Prepared (★) first, unprepared (○) after; a leveled spell with no slot at its level or higher is grey with "ช่อง Level N ขึ้นไปหมด" but still opens the cast panel. Cast one: the slot count above updates at once, the Action turns used.
-6. Skills: 18 cells, modifier on the left, ● proficient / ★ Expertise. Tap one: the dice roller opens with `1d20+N` and the skill name; try both the roll button and typing a real dice result.
+5. Spells: grouped Action / Bonus Action / Reaction (and "อื่นๆ" for 1 minute+). Ready (✓: cantrips and prepared) first, unprepared (○) after; a ritual spell with no slot is not grey; a leveled spell with no slot at its level or higher is grey with "ช่อง Level N ขึ้นไปหมด" but still opens the cast panel. Cast one: the slot count above updates at once, the Action turns used.
+6. Skills: 18 cells, modifier on the left, ● Proficient (ชำนาญ) / ★ Expertise. Tap one: the dice roller opens with `1d20+N` and the skill name; try both the roll button and typing a real dice result.
 7. Check nothing important is hidden under the 🎲 button when each block is scrolled to its last row (the page has room at the bottom), and that all targets are 44 px or more.
 8. Live room: have the DM start a Long Rest / give back a slot; the section on the player's phone should update without reload. At 0 HP, Death Saves appear above the section.
 9. "ระหว่างเล่น" (below) now only has Concentration, Hit Dice and rests, Exhaustion, Conditions, Buffs.

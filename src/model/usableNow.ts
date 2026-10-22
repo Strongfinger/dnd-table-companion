@@ -70,16 +70,19 @@ const GROUP_ORDER: SpellGroupKind[] = ['action', 'bonusAction', 'reaction', 'oth
  * level and name. While the SRD list is still loading (srd null), every spell sits under Action.
  * A spell not found in the SRD (homebrew) counts as an Action, like the cast panel does.
  */
-export function spellGroups(c: Pick<Character, 'spells' | 'spellSlots'>, srd: SrdSpell[] | null): SpellGroup[] {
+export function spellGroups(c: Pick<Character, 'spells' | 'spellSlots' | 'className'>, srd: SrdSpell[] | null): SpellGroup[] {
   const groups = new Map<SpellGroupKind, SpellRow[]>()
   for (const spell of c.spells) {
     const info = srd ? findSpellByName(srd, spell.name) ?? null : null
     const kind: SpellGroupKind = info ? actionKindFor(info.castingTime) ?? 'other' : 'action'
+    const ready = spell.level === 0 || spell.prepared
+    // A Ritual needs no slot: prepared, or a Wizard casting from the spellbook (same rule as castPlan).
+    const ritualOk = !!info?.ritual && (spell.prepared || c.className === 'Wizard')
     const row: SpellRow = {
       spell,
       info,
-      ready: spell.level === 0 || spell.prepared,
-      noSlot: spell.level > 0 && castableSlotLevels(c, spell.level).length === 0,
+      ready,
+      noSlot: spell.level > 0 && !ritualOk && castableSlotLevels(c, spell.level).length === 0,
     }
     groups.set(kind, [...(groups.get(kind) ?? []), row])
   }
