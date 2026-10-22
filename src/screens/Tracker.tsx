@@ -1,24 +1,46 @@
 // The DM's initiative tracker for one fight: order, turns, HP, effects and the fight log.
 // Rules live in src/rules (turns, play) and src/model (encounter, actions); this file wires them up.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { go } from '../app/router'
-import { listCharacters } from '../db/characters'
+import { getCharacter, listCharacters } from '../db/characters'
 import { deleteEncounter, getEncounter, updateEncounter } from '../db/encounters'
 import { addLog, listEncounterLog } from '../db/log'
 import { playAction } from '../db/play'
 import { advanceTurn, makeCharacterFromCombatant } from '../db/turns'
 import { isDead } from '../model/actions'
 import type { CharacterAction } from '../model/characterActions'
-import { conditionsToClear, MAX_FIGHT_NAME, renameEncounter, rollInitiative, type Combatant, type Encounter, type MonsterResult } from '../model/encounter'
-import { nextTurn, previousTurn, sortByInitiative, startCombat, startOfTurn } from '../rules'
+import {
+  planCondition, planHp, planUndo, rangeIds, readVitals, snapshotsOf, toggleGroup, withCondition,
+  type BatchTarget, type DamageMode, type Snapshot, type Vitals,
+} from '../model/batch'
+import {
+  conditionsToClear, damageMonster, healMonster, isConditionName, MAX_FIGHT_NAME, renameEncounter, rollInitiative, startMonsterTurn,
+  type Combatant, type Encounter, type MonsterResult,
+} from '../model/encounter'
+import { nextTurn, previousTurn, sortByInitiative, startCombat } from '../rules'
 import { Button } from '../ui/kit'
+import { requestPanelTab } from '../ui/dmPanelBus'
+import { saveHotkeysOn, savedHotkeysOn, useHotkeys, type HotkeyHandlers } from '../ui/hotkeys'
+import type { Condition } from '../rules'
 import { playerView } from '../model/playerView'
 import LogLine from '../ui/LogLine'
 import AddCombatants from './AddCombatants'
 import PlayerViewPanel from './PlayerViewPanel'
+import BatchBar from './BatchBar'
 import CombatantRow from './CombatantRow'
 import DmPanel from './DmPanel'
+import ShortcutSheet from './ShortcutSheet'
+import TurnCard, { LegendaryStrip } from './TurnCard'
+import { saveCollapsed, savedCollapsed } from './turnCardPrefs'
+
+/** One step of undo for the last batch: what it did, where the fight was, and the creatures' states before and after. */
+interface BatchUndo {
+  text: string
+  round: number
+  activeId: string | null
+  entries: Snapshot[]
+}
 
 
 export default function Tracker({ id }: { id: string }) {
@@ -32,6 +54,17 @@ export default function Tracker({ id }: { id: string }) {
   const [showPlayerView, setShowPlayerView] = useState(false)
   /** Why the last change was refused (e.g. giving back a slot spent in an earlier round). */
   const [notice, setNotice] = useState<string | null>(null)
+  // Several creatures at once (2b)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [condOpen, setCondOpen] = useState(false)
+  const [undo, setUndo] = useState<BatchUndo | null>(null)
+  const anchor = useRef<string | null>(null)
+  const amountRef = useRef<HTMLInputElement>(null)
+  // Keyboard shortcuts and the Turn Card (2a)
+  const [hotkeysOn, setHotkeysOn] = useState(savedHotkeysOn)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [cardCollapsed, setCardCollapsed] = useState(savedCollapsed)
+  const shortcutBtn = useRef<HTMLButtonElement>(null)
 
   if (e === undefined) return null
   if (e === null) return <p className="text-center text-stone-400">ไม่พบการต่อสู้นี้</p>
@@ -132,12 +165,21 @@ export default function Tracker({ id }: { id: string }) {
     if (who?.kind === 'pc' && who.characterId) await pcAction(who.characterId, { type: 'resetTurn' }, true)
   }
   const freshMonster = (list: Combatant[], activeId: string | null) =>
-    list.map((c) => (c.id === activeId && c.kind === 'monster' ? { ...c, turn: startOfTurn() } : c))
+    list.map((c) => (c.id === activeId && c.kind === 'monster' ? startMonsterTurn(c) : c))
 
-  /** Next turn (shared with players ending their own turn from a phone in a live room). */
-  const next = () => advanceTurn(enc.id)
+  /**
+   * Next turn (shared with players ending their own turn from a phone in a live room).
+   * Only if it is still this creature's turn in this round, so a double press (or a key held down) moves once.
+   */
+  const next = () => {
+    setSelectedIds([])
+    setUndo(null)
+    return advanceTurn(enc.id, enc.activeId ? { activeId: enc.activeId, round: enc.round } : undefined)
+  }
 
   async function previous() {
+    setSelectedIds([])
+    setUndo(null)
     const s2 = await update((x) => {
       const st = previousTurn(x.combatants, { round: x.round, activeId: x.activeId })
       return { encounter: { ...x, round: st.round, activeId: st.activeId }, result: st }
@@ -147,6 +189,8 @@ export default function Tracker({ id }: { id: string }) {
   }
 
   async function end() {
+    setSelectedIds([])
+    setUndo(null)
     await patch(() => ({ status: 'ended', activeId: null }))
     await clearPcConditions(enc.combatants)
     // Out of combat: everyone's Action / Bonus Action / Reaction is available again.
@@ -189,6 +233,139 @@ export default function Tracker({ id }: { id: string }) {
     go('/fights')
   }
 
+  // --- Several creatures at once (select, one damage number, one condition, one undo) ---
+
+  /** Selected ids that are still in the fight. */
+  const selected = selectedIds.filter((id) => enc.combatants.some((c) => c.id === id))
+  /** The undo is only good in the same turn of the same round: it expires on Next Turn. */
+  const undoValid = !!undo && enc.status === 'active' && undo.round === enc.round && undo.activeId === enc.activeId
+
+  function selectRow(id: string, range: boolean) {
+    const order = enc.combatants.map((c) => c.id)
+    setSelectedIds((prev) => {
+      if (range && anchor.current) return [...new Set([...prev, ...rangeIds(order, anchor.current, id)])]
+      return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    })
+    anchor.current = id
+  }
+
+  /** The newest saved state of these creatures (fight and sheets), not the screen's copy. */
+  async function freshTargets(ids: string[]): Promise<BatchTarget[]> {
+    const latest = await getEncounter(enc.id)
+    const out: BatchTarget[] = []
+    for (const id of ids) {
+      const c = latest?.combatants.find((x) => x.id === id)
+      if (c) out.push({ combatant: c, character: c.kind === 'pc' && c.characterId ? await getCharacter(c.characterId) : undefined })
+    }
+    return out
+  }
+  const vitalsOf = (list: BatchTarget[]): Record<string, Vitals> => Object.fromEntries(list.map((t) => [t.combatant.id, readVitals(t.combatant, t.character)]))
+  const linkedPc = (c: Combatant) => c.kind === 'pc' && !!c.characterId && byId.has(c.characterId)
+
+  /** Remember a batch so it can be undone (one level: a new batch replaces it). */
+  async function rememberBatch(before: BatchTarget[], text: string) {
+    const after = vitalsOf(await freshTargets(before.map((t) => t.combatant.id)))
+    const entries = snapshotsOf(before, after)
+    setUndo(entries.length > 0 ? { text, round: enc.round, activeId: enc.activeId, entries } : null)
+  }
+
+  /** Damage or heal everyone selected. Monsters change in ONE write; PCs go through their sheet like any single change. */
+  async function applyHp(kind: 'damage' | 'heal', amount: number, modes: Record<string, DamageMode>) {
+    const before = await freshTargets(selected)
+    const plans = planHp(kind, before, amount, modes).filter((p) => p.amount > 0)
+    if (plans.length === 0) return
+    const monsterLines = await update((x) => {
+      const lines: string[] = []
+      const combatants = x.combatants.map((c) => {
+        const p = plans.find((q) => q.id === c.id)
+        if (!p || linkedPc(c)) return c
+        const r = kind === 'damage' ? damageMonster(c, p.amount) : healMonster(c, p.amount)
+        lines.push(r.text)
+        return r.combatant
+      })
+      return { encounter: { ...x, combatants: sortByInitiative(combatants) }, result: lines }
+    })
+    for (const p of plans) {
+      const c = enc.combatants.find((x) => x.id === p.id)
+      if (c?.characterId && linkedPc(c)) await pcAction(c.characterId, kind === 'damage' ? { type: 'damage', amount: p.amount, critical: false } : { type: 'heal', amount: p.amount })
+    }
+    const label = kind === 'damage' ? 'ดาเมจ' : 'ฮีล'
+    // DM-only line: it holds monsters' exact HP, so it is never marked for players.
+    if (monsterLines?.length) await log(`${kind === 'damage' ? '💥' : '💚'} ${label} ${amount} ให้ ${plans.length} ตัว — ${monsterLines.join(' | ')}`)
+    await rememberBatch(before, `${label} ${amount} → ${plans.length} ตัว`)
+  }
+
+  /** A condition on everyone selected who doesn't have it yet. */
+  async function applyCondition(name: Condition, rounds: number | null) {
+    const before = await freshTargets(selected)
+    const { apply, skipped } = planCondition(before, name)
+    const ids = new Set(apply.map((t) => t.combatant.id))
+    if (ids.size > 0) {
+      await update((x) => ({ encounter: { ...x, combatants: x.combatants.map((c) => (ids.has(c.id) ? withCondition(c, name, rounds) : c)) }, result: null }))
+      for (const t of apply) {
+        if (t.character && isConditionName(name)) await pcAction(t.character.id, { type: 'setCondition', condition: name, on: true })
+      }
+      await log(`🌀 ${name} ให้ ${apply.map((t) => t.combatant.name).join(', ')}${rounds ? ` (${rounds} รอบ)` : ''}`)
+    }
+    const text = `ใส่ ${name} ให้ ${apply.length} ตัว${skipped.length ? ` (ข้าม ${skipped.length}: มีอยู่แล้ว)` : ''}`
+    if (apply.length === 0) setNotice(`${text}: ${skipped.join(', ')}`)
+    else await rememberBatch(before, text)
+  }
+
+  /**
+   * Undo the last batch in one step. A creature that changed since (a player used their phone, or the DM
+   * edited it) is skipped and named. Earlier log lines stay: a "เลิกทำ" line is added.
+   */
+  async function undoBatch() {
+    const u = undo
+    if (!u || !undoValid) return
+    setUndo(null)
+    const { restore, skipped } = planUndo(u.entries, vitalsOf(await freshTargets(u.entries.map((x) => x.id))))
+    const back = new Map(restore.map((r) => [r.id, r.before]))
+    await update((x) => ({
+      encounter: {
+        ...x,
+        combatants: sortByInitiative(x.combatants.map((c) => {
+          const v = back.get(c.id)
+          if (!v) return c
+          // A PC's HP lives on its sheet (put back below); only its tracker effects are here.
+          return v.deathSaves ? { ...c, effects: v.effects } : { ...c, hp: { ...c.hp, current: v.hp.current, temp: v.hp.temp }, defeated: v.defeated, concentration: v.concentration, effects: v.effects }
+        })),
+      },
+      result: null,
+    }))
+    for (const r of restore) {
+      if (r.characterId && r.before.deathSaves && r.before.conditions) {
+        await playAction(r.characterId, { type: 'restoreVitals', hp: r.before.hp, deathSaves: r.before.deathSaves, conditions: r.before.conditions, concentration: r.before.concentration }, 'system')
+      }
+    }
+    const skippedText = skipped.length ? ` · ข้าม ${skipped.join(', ')} (มีการเปลี่ยนแปลงหลังจากนั้น)` : ''
+    await log(`↩︎ เลิกทำ: ${u.text}${skippedText}`)
+    if (skipped.length) setNotice(`เลิกทำแล้ว · ข้าม ${skipped.join(', ')} (มีการเปลี่ยนแปลงหลังจากนั้น)`)
+  }
+
+  function closeSheet() {
+    setSheetOpen(false)
+    shortcutBtn.current?.focus()
+  }
+  function focusAmount() {
+    if (selected.length === 0 && enc.activeId) setSelectedIds([enc.activeId])
+    setTimeout(() => amountRef.current?.focus(), 0)
+  }
+  // Keys only work while a fight is running (the cheat sheet says so); Esc always closes things.
+  const fighting = enc.status === 'active'
+  const keys: HotkeyHandlers = {
+    escape: () => { if (sheetOpen) closeSheet(); else if (condOpen) setCondOpen(false); else if (selected.length > 0) setSelectedIds([]) },
+    ...(fighting && {
+      next: () => void next(),
+      previous: () => void previous(),
+      damage: focusAmount,
+      undo: () => void undoBatch(),
+      search: () => requestPanelTab('lookup'),
+      help: () => (sheetOpen ? closeSheet() : setSheetOpen(true)),
+    }),
+  }
+
   const waiting = enc.combatants.filter((c) => c.initiative === null)
   const monstersWaiting = waiting.some((c) => c.kind === 'monster')
   const rounds = groupByRound(fightLog)
@@ -196,6 +373,7 @@ export default function Tracker({ id }: { id: string }) {
   const inFight = enc.combatants.filter((c) => !c.defeated)
   const turnNumber = inFight.findIndex((c) => c.id === enc.activeId) + 1
   const nextId = enc.status === 'active' && enc.activeId ? nextTurn(enc.combatants, { round: enc.round, activeId: enc.activeId }).state.activeId : null
+  const activeCombatant = enc.combatants.find((c) => c.id === enc.activeId)
   const nextName = nextId && nextId !== enc.activeId ? enc.combatants.find((c) => c.id === nextId)?.name : undefined
 
   return (
@@ -252,6 +430,38 @@ export default function Tracker({ id }: { id: string }) {
       {/* Laptop: combatants on the left, the DM panel (stat block, lookup, notes, log) on the right. */}
       <div className="gap-4 space-y-4 lg:grid lg:grid-cols-5 lg:items-start lg:space-y-0">
         <div className="space-y-2 lg:col-span-3">
+          {fighting && activeCombatant && (
+            <TurnCard
+              active={activeCombatant}
+              character={activeCombatant.characterId ? byId.get(activeCombatant.characterId) : undefined}
+              nextName={nextName}
+              collapsed={cardCollapsed}
+              onCollapse={(v) => { setCardCollapsed(v); saveCollapsed(v) }}
+              hotkeysOn={hotkeysOn}
+              onShortcuts={() => setSheetOpen(true)}
+              onUpdate={(fn) => updateCombatant(activeCombatant.id, fn)}
+            />
+          )}
+          {fighting && <LegendaryStrip combatants={enc.combatants} activeId={enc.activeId} onUpdate={updateCombatant} />}
+          {fighting && (
+            <BatchBar
+              combatants={enc.combatants}
+              characters={byId}
+              selectedIds={selected}
+              onGroup={(ids) => setSelectedIds(toggleGroup(selected, ids))}
+              onSelectAll={setSelectedIds}
+              onClear={() => setSelectedIds([])}
+              amountRef={amountRef}
+              condOpen={condOpen}
+              onCondOpen={setCondOpen}
+              onDamage={(amount, modes) => applyHp('damage', amount, modes)}
+              onHeal={(amount) => applyHp('heal', amount, {})}
+              onCondition={applyCondition}
+              undoText={undoValid && undo ? undo.text : ''}
+              onUndo={() => void undoBatch()}
+              onDismissUndo={() => setUndo(null)}
+            />
+          )}
           {enc.combatants.length === 0 && (
             <p className="rounded-xl bg-stone-800 p-6 text-center text-stone-400">ยังไม่มีใคร กด "+ เพิ่มผู้ร่วมต่อสู้"</p>
           )}
@@ -265,6 +475,8 @@ export default function Tracker({ id }: { id: string }) {
               character={c.characterId ? byId.get(c.characterId) : undefined}
               active={enc.activeId === c.id}
               open={openId === c.id}
+              selected={selected.includes(c.id)}
+              onSelect={fighting ? (range) => selectRow(c.id, range) : undefined}
               onToggle={() => setOpenId(openId === c.id ? null : c.id)}
               onInitiative={(total, how) => setInitiative(c.id, total, how)}
               onUpdate={(fn) => updateCombatant(c.id, fn)}
@@ -297,6 +509,11 @@ export default function Tracker({ id }: { id: string }) {
         </div>
       </div>
 
+      {/* Said aloud by screen readers when the turn changes (the DM may be looking at the table, not the screen). */}
+      {fighting && activeCombatant && <p role="status" className="sr-only">ตาของ {activeCombatant.name} (รอบ {enc.round})</p>}
+      <Hotkeys handlers={keys} enabled={hotkeysOn} />
+      {sheetOpen && <ShortcutSheet enabled={hotkeysOn} onEnabled={(on) => { setHotkeysOn(on); saveHotkeysOn(on) }} onClose={closeSheet} />}
+
       {/* Turn controls stay at the bottom of the screen. */}
       {enc.status !== 'ended' && enc.combatants.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 border-t border-stone-700 bg-stone-900/95 p-3">
@@ -315,6 +532,17 @@ export default function Tracker({ id }: { id: string }) {
                 <Button variant="primary" className="flex-1 text-lg" onClick={next}>
                   ถัดไป ▶{nextName && <span className="ml-2 text-sm font-normal">{nextName}</span>}
                 </Button>
+                <button
+                  ref={shortcutBtn}
+                  type="button"
+                  aria-label="ทางลัดแป้นพิมพ์"
+                  aria-expanded={sheetOpen}
+                  title="ทางลัดแป้นพิมพ์ (?)"
+                  onClick={() => (sheetOpen ? closeSheet() : setSheetOpen(true))}
+                  className="hidden rounded-lg bg-stone-700 px-3 py-2 font-bold hover:bg-stone-600 lg:block"
+                >
+                  ⌨
+                </button>
                 <Button className="px-3" onClick={end}>🏁 จบ<span className="hidden sm:inline">การต่อสู้</span></Button>
               </>
             )}
@@ -323,6 +551,12 @@ export default function Tracker({ id }: { id: string }) {
       )}
     </div>
   )
+}
+
+/** Listens for the shortcut keys (a component so it can sit below the early returns with the other hooks above them). */
+function Hotkeys({ handlers, enabled }: { handlers: HotkeyHandlers; enabled: boolean }) {
+  useHotkeys(handlers, enabled)
+  return null
 }
 
 /** Group log entries by round (entries before the fight are round 0). */
