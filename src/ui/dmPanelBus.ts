@@ -1,5 +1,6 @@
-// Lets the Turn Card and the "/" key ask the DM panel (side panel on the fight screen) to show a tab.
-export type PanelRequest = 'stats' | 'lookup'
+// Lets the Turn Card and the "/" key ask the DM panel (side panel on the fight screen) to show a tab,
+// or ('search') to put the cursor in its quick search for notes and scenes.
+export type PanelRequest = 'stats' | 'lookup' | 'search'
 
 type Listener = (tab: PanelRequest) => void
 const listeners = new Set<Listener>()

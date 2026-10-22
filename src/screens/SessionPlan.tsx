@@ -4,7 +4,7 @@
 //   Afterwards, unplayed scenes move to a new Session page for next time.
 // - ScenesEditor: preparing. Add, order, fill in and remove scenes; link or create a fight per scene.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { go } from '../app/router'
 import { getEncounter, listEncounters, saveEncounter } from '../db/encounters'
 import { saveNote } from '../db/notes'
@@ -13,11 +13,14 @@ import { createNote, type Note } from '../model/note'
 import { addCheck, createScene, moveScene, progress, removeCheck, setCheck, splitUnplayed, updateScene, type Scene } from '../model/sessionPlan'
 import { Button, TextInput } from '../ui/kit'
 import LinkedText from '../ui/LinkedText'
+import PinButton from './PinButton'
 
 const STATUS = { setup: 'เตรียมไว้', active: 'กำลังสู้', ended: 'จบแล้ว' }
 
 /** The plan at the table: tick scenes and checklist items, read the boxed text, open the fight. */
-export function ScenesView({ note, pages, onChange, onFollow, onOpen }: {
+export function ScenesView({ note, pages, onChange, onFollow, onOpen, focusSceneId }: {
+  /** A pinned scene: starts open and scrolls into view. */
+  focusSceneId?: string
   note: Note
   pages: Note[]
   onChange: (n: Note) => void
@@ -25,8 +28,11 @@ export function ScenesView({ note, pages, onChange, onFollow, onOpen }: {
   onOpen: (id: string) => void
 }) {
   // The first scene not played yet starts open.
-  const [open, setOpen] = useState<string | null>(() => note.scenes.find((s) => !s.done)?.id ?? null)
+  const [open, setOpen] = useState<string | null>(() => focusSceneId ?? note.scenes.find((s) => !s.done)?.id ?? null)
   const [carried, setCarried] = useState<Note | null>(null)
+  useEffect(() => {
+    if (focusSceneId) document.getElementById(`scene-${focusSceneId}`)?.scrollIntoView({ block: 'start' })
+  }, [focusSceneId])
   if (note.scenes.length === 0) return null
   const p = progress(note.scenes)
   const setScene = (id: string, patch: Partial<Scene>) => onChange({ ...note, scenes: updateScene(note.scenes, id, patch) })
@@ -48,7 +54,7 @@ export function ScenesView({ note, pages, onChange, onFollow, onOpen }: {
       {note.scenes.map((s, i) => {
         const isOpen = open === s.id
         return (
-          <div key={s.id} className={`rounded-lg border ${s.done ? 'border-stone-800 bg-stone-900/50' : 'border-stone-700 bg-stone-900'}`}>
+          <div key={s.id} id={`scene-${s.id}`} className={`rounded-lg border ${s.done ? 'border-stone-800 bg-stone-900/50' : 'border-stone-700 bg-stone-900'}`}>
             <div className="flex items-center gap-2 p-2">
               <input
                 type="checkbox"
@@ -66,6 +72,7 @@ export function ScenesView({ note, pages, onChange, onFollow, onOpen }: {
                 {s.fightId && <span className="ml-1 text-xs">⚔️</span>}
               </button>
               <span className="text-stone-500">{isOpen ? '▲' : '▼'}</span>
+              <PinButton campaignId={note.campaignId} pin={{ noteId: note.id, sceneId: s.id }} />
             </div>
             {isOpen && (
               <div className="space-y-2 border-t border-stone-800 p-3 text-sm">
