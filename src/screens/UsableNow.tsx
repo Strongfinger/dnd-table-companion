@@ -92,7 +92,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
   const chips = [
     hasAttacks && { id: 'un-attacks', label: 'โจมตี' },
     (slots.length > 0 || slotsMissing) && { id: 'un-slots', label: `ช่อง ${slots.reduce((n, r) => n + r.left, 0)}` },
-    (features.length > 0 || canAddFeatures) && { id: 'un-features', label: `พลัง ${c.features.length}` },
+    (features.length > 0 || canAddFeatures) && { id: 'un-features', label: c.features.length > 0 ? `พลัง ${c.features.length}` : 'พลัง' },
     spells.length > 0 && { id: 'un-spells', label: `คาถา ${c.spells.length}` },
     { id: 'un-skills', label: 'Skills 18' },
   ].filter((x): x is { id: string; label: string } => !!x)
@@ -102,26 +102,20 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
       <Section title="ใช้ได้เลย">
         {message && <p className="mb-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{message}</p>}
         {/* Action economy for this turn (the combat tracker resets it automatically) */}
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <ActionEconomyBar
-              economy={c.turn}
-              // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).
-              onToggle={(kind) => {
-                if (c.turn[kind]) return act({ type: 'setActionUsed', kind, used: false })
-                if (waitingForTurn && kind !== 'reaction') return setMessage('🔒 ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)')
-                setPending(kind)
-              }}
-              locked={waitingForTurn ? ['action', 'bonusAction'] : []}
-            />
-          </div>
-          {!asPlayer && (
-            <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
-              ↻ เทิร์นใหม่
-            </Button>
-          )}
-        </div>
+        <ActionEconomyBar
+          economy={c.turn}
+          // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).
+          onToggle={(kind) => {
+            if (c.turn[kind]) return act({ type: 'setActionUsed', kind, used: false })
+            if (waitingForTurn && kind !== 'reaction') return setMessage('🔒 ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)')
+            setPending(kind)
+          }}
+          locked={waitingForTurn ? ['action', 'bonusAction'] : []}
+        />
         <nav aria-label="ไปที่" className="mt-3 flex flex-wrap items-center gap-1.5">
+          {!asPlayer && (
+            <button type="button" className="min-h-11 rounded-full border border-stone-500 px-3 text-sm text-stone-200" onClick={() => act({ type: 'resetTurn' })}>↻ เทิร์นใหม่</button>
+          )}
           <span className="text-xs text-stone-400">ไปที่</span>
           {chips.map((x) => (
             <button
@@ -136,10 +130,10 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
         </nav>
       </Section>
 
-      {hasAttacks && <div id="un-attacks" className="scroll-mt-32"><Attacks c={c} manual={manualAttacks} /></div>}
+      {hasAttacks && <div id="un-attacks" className="scroll-mt-40"><Attacks c={c} manual={manualAttacks} /></div>}
 
       {(slots.length > 0 || slotsMissing) && (
-        <div id="un-slots" className="scroll-mt-32">
+        <div id="un-slots" className="scroll-mt-40">
           <Section title="ช่องคาถาที่เหลือ (Spell Slots)">
             {slotsMissing && (
               <div className="rounded-lg bg-stone-900 p-3 text-sm">
@@ -172,7 +166,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
       )}
 
       {(features.length > 0 || canAddFeatures) && (
-        <div id="un-features" className="scroll-mt-32">
+        <div id="un-features" className="scroll-mt-40">
           <Section
             title="ความสามารถที่ใช้ได้จำกัด"
             action={canAddFeatures && !picking ? <Button className="min-h-11 shrink-0 px-2 py-1 text-xs" onClick={() => setPicking(true)}>+ จาก SRD</Button> : undefined}
@@ -183,7 +177,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
               <div key={g.recharge} className="mt-2">
                 <div className="text-xs font-bold text-amber-400">{g.recharge === 'short' ? 'คืนเมื่อ Short Rest' : 'คืนเมื่อ Long Rest'}</div>
                 {g.items.map(({ feature: f, left, spent }) => (
-                  <div key={f.id} className={spent ? 'opacity-50' : ''}>
+                  <div key={f.id} className={spent ? 'opacity-60' : ''}>
                     <div className="flex flex-wrap items-center gap-x-2">
                       <button type="button" className="min-h-11 min-w-24 text-left text-sm underline decoration-stone-600 underline-offset-4" onClick={() => setOpenFeature(openFeature === f.id ? null : f.id)}>
                         {f.name}
@@ -212,7 +206,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
       )}
 
       {spells.length > 0 && (
-        <div id="un-spells" className="scroll-mt-32">
+        <div id="un-spells" className="scroll-mt-40">
           <Section title="คาถาที่ใช้ได้">
             <p className="mb-1 text-xs text-stone-400">★ เตรียมไว้แล้ว · สีเทา = ไม่มี Slot เหลือ · แตะ "ร่าย" เพื่อเลือก Slot</p>
             {!srd && <p className="min-h-6 text-xs text-stone-400">กำลังโหลดเวลาร่ายของคาถา…</p>}
@@ -230,9 +224,9 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
         </div>
       )}
 
-      <div id="un-skills" className="scroll-mt-32">
+      <div id="un-skills" className="scroll-mt-40">
         <Section title="Skills (แตะเพื่อทอย d20)">
-          <p className="mb-2 text-xs text-stone-400">● ถนัด · ★ Expertise · ตัวเลขรวม Proficiency และ Exhaustion แล้ว · ดูว่า Skill ใช้ทำอะไรได้ที่แท็บ ความสามารถ</p>
+          <p className="mb-2 text-xs text-stone-400">● ถนัด · ★ Expertise · ตัวเลขรวม Proficiency และ Exhaustion แล้ว · วิธีใช้แต่ละ Skill ดูที่แท็บ ความสามารถ</p>
           <ul className="grid grid-cols-1 gap-x-3 min-[360px]:grid-cols-2">
             {skills.map((s) => {
               const mark = s.level === 'expertise' ? '★' : s.level === 'proficient' ? '●' : ''
@@ -246,7 +240,7 @@ export default function UsableNow({ c, manualAttacks, skillBonuses }: { c: Chara
                     className="flex min-h-11 w-full items-center gap-1.5 border-b border-stone-700/60 py-1 text-left"
                   >
                     <span className={`w-10 shrink-0 rounded-md py-1 text-center text-sm font-bold ${s.level === 'none' ? 'bg-stone-700 text-stone-100' : 'bg-amber-700 text-amber-50'}`}>{formatModifier(s.bonus)}</span>
-                    <span className="w-3 shrink-0 text-xs text-amber-300" aria-hidden="true">{mark}</span>
+                    {mark && <span className="shrink-0 text-xs text-amber-300" aria-hidden="true">{mark}</span>}
                     <span className="min-w-0 text-sm leading-tight">
                       {s.skill} <span className="text-[11px] text-stone-400">{ABILITY_LABEL[s.ability].short}</span>
                     </span>

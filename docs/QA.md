@@ -66,6 +66,20 @@ silently (`localTransport.ts:46`, `firebaseTransport.ts:113`); no crash. No cons
 
 **Check with real phones:** rules arrive over Firebase (not tested, test mode only); offline reading after the room ends.
 
+## Phase 4 "ใช้ได้เลย" (usable now) on the player sheet, combat tab (2026-10-22)
+**Status:** built in the PR "Phase 4 usable now". Checked in the browser at 360 px (caster + martial); **not** checked on a real phone or in a live room.
+
+How to try it (phone, or a 360 px window): open a character sheet, tab ต่อสู้ (the first tab).
+1. Top of the tab: a card "ใช้ได้เลย" with Action / Bonus Action / Reaction and jump chips (โจมตี, ช่อง N, พลัง N, คาถา N, Skills 18). Each chip should scroll to its block with the title visible under the sticky bar. A character without spells has no คาถา/ช่อง chip; without weapons no โจมตี chip.
+2. Attacks are the first block (same 🎯 / 💥 buttons as before). They are no longer under "ระหว่างเล่น".
+3. Spell slots: one row per level, `left/max` text, tap a full circle = use one, empty circle = give one back (a player in a room cannot give back: the circle is disabled). A level at 0 is dimmed with "หมด".
+4. Limited-use features: grouped "คืนเมื่อ Short Rest" / "คืนเมื่อ Long Rest". A used-up feature is dimmed and says when it comes back. Pool features (Lay On Hands) keep the amount box + ใช้ / คืน (คืน only for DM or offline play).
+5. Spells: grouped Action / Bonus Action / Reaction (and "อื่นๆ" for 1 minute+). Prepared (★) first, unprepared (○) after; a leveled spell with no slot at its level or higher is grey with "ช่อง Level N ขึ้นไปหมด" but still opens the cast panel. Cast one: the slot count above updates at once, the Action turns used.
+6. Skills: 18 cells, modifier on the left, ● proficient / ★ Expertise. Tap one: the dice roller opens with `1d20+N` and the skill name; try both the roll button and typing a real dice result.
+7. Check nothing important is hidden under the 🎲 button when each block is scrolled to its last row (the page has room at the bottom), and that all targets are 44 px or more.
+8. Live room: have the DM start a Long Rest / give back a slot; the section on the player's phone should update without reload. At 0 HP, Death Saves appear above the section.
+9. "ระหว่างเล่น" (below) now only has Concentration, Hit Dice and rests, Exhaustion, Conditions, Buffs.
+
 ## Pass 7 — PR #23 house rule pages (`rule` kind), 2026-10-21
 **Result:** pass. vitest 765/765, `tsc -b`, lint, build all clean. **Tested** (preview build, Chromium, 1280 px + 390 px):
 import `house-rules-pack.json` (3 rules, preview shows "📏 House rule × 3"), filter chip, open each rule (labels, house-rule
