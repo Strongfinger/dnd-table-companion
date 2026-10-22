@@ -1,7 +1,7 @@
 // Encounters for the DM's combat tracker. Monsters keep their own HP here;
 // player characters are linked to their saved sheet (HP lives on the sheet).
 import {
-  buffedArmorClass, CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie,
+  buffedArmorClass, CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie, startOfTurn,
   type ActionEconomy, type Condition, type Rng, type TimedEffect, type TurnCombatant,
 } from '../rules'
 import { newId, type Character } from './character'
@@ -21,6 +21,10 @@ export interface Combatant extends TurnCombatant {
   turn?: ActionEconomy
   /** DM secret: not shown to players (e.g. an ambusher not yet revealed). */
   hidden?: boolean
+  /** Monsters only: Legendary Action uses spent since the start of this monster's own turn. Missing = 0. */
+  legendaryUsed?: number
+  /** Monsters only: names of Recharge actions that are used up (waiting for a d6 roll). Missing = none. */
+  spent?: string[]
 }
 
 export interface Encounter {
@@ -130,6 +134,14 @@ export function createMonsters(input: MonsterInput, count: number, existing: Com
     notes: '',
     turn: { ...FRESH_TURN },
   }))
+}
+
+/**
+ * The start of a monster's own turn: Action, Bonus Action and Reaction come back, and so do its
+ * Legendary Action uses. Recharge actions stay used until the DM rolls the d6 for them.
+ */
+export function startMonsterTurn(c: Combatant): Combatant {
+  return { ...c, turn: startOfTurn(), ...(c.legendaryUsed ? { legendaryUsed: 0 } : {}) }
 }
 
 export interface MonsterResult {

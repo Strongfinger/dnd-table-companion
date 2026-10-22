@@ -49,6 +49,15 @@ export function applyDamage(state: HpState, amount: number, critical = false): D
   }
 }
 
+/**
+ * Half damage when a creature succeeds on a saving throw that says "Half damage": rounded down (2024).
+ * Done on the total, once: 7 damage → 3. Resistance is NOT applied here (the DM flags it by hand).
+ */
+export function halfDamage(amount: number): number {
+  if (!Number.isFinite(amount)) return 0
+  return Math.floor(Math.max(0, Math.floor(amount)) / 2)
+}
+
 /** Regain HP up to the max. Any healing at 0 HP ends dying, so death saves reset. */
 export function heal(state: HpState, amount: number): HpState {
   const gained = Math.max(0, Math.floor(amount))

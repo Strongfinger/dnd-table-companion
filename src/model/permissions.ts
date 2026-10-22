@@ -53,7 +53,7 @@ export type Permission = { ok: true } | { ok: false; reason: string }
  * Only the DM starts these for a player in a room: rests bring back slots and features, a new turn brings back actions,
  * and buffs are the DM's call. (A player may remove a buff, e.g. when the caster's Concentration ends.)
  */
-const DM_ONLY: CharacterAction['type'][] = ['shortRest', 'longRest', 'resetTurn', 'addBuff']
+const DM_ONLY: CharacterAction['type'][] = ['shortRest', 'longRest', 'resetTurn', 'addBuff', 'restoreVitals']
 
 /** Where the character is in a fight: not in one, or in one (and whether it's their turn now). */
 export type TurnInfo = { inFight: false } | { inFight: true; myTurn: boolean }

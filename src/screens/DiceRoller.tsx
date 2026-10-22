@@ -133,7 +133,7 @@ export default function DiceRoller({ history, onRoll }: { history: RollRecord[];
       )}
 
       {open && (
-        <div className="fixed inset-x-0 bottom-0 z-30 max-h-[85dvh] overflow-y-auto rounded-t-2xl border-t border-stone-700 bg-stone-900 p-4 pb-8 shadow-2xl">
+        <div role="dialog" aria-label="ตัวทอยลูกเต๋า" className="fixed inset-x-0 bottom-0 z-30 max-h-[85dvh] overflow-y-auto rounded-t-2xl border-t border-stone-700 bg-stone-900 p-4 pb-8 shadow-2xl">
           <div className="mx-auto max-w-xl space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-amber-400">🎲 ทอยลูกเต๋า</h2>

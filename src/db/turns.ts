@@ -3,11 +3,11 @@
 // - adding monsters: the tracker, and the SRD lookup's "add to fight"
 import { isDead } from '../model/actions'
 import { withDefaults } from '../model/character'
-import { conditionsToClear, createMonsters, isConditionName, type MonsterInput } from '../model/encounter'
+import { conditionsToClear, createMonsters, isConditionName, startMonsterTurn, type MonsterInput } from '../model/encounter'
 import { characterFromCombatant, characterFromMonster } from '../model/monsterCharacter'
 import { findMonsterForCombatant, loadFullMonsters } from '../model/monsterDetails'
 import { isTurnEventForPlayers } from '../model/playerView'
-import { nextTurn, sortByInitiative, startOfTurn } from '../rules'
+import { nextTurn, sortByInitiative } from '../rules'
 import { saveCharacter } from './characters'
 import { db } from './db'
 import { getEncounter, updateEncounter } from './encounters'
@@ -30,7 +30,7 @@ export async function advanceTurn(encounterId: string, expect?: { activeId: stri
     const before = x.combatants.map((c) => (c.kind === 'pc' && c.characterId ? { ...c, defeated: dead.has(c.characterId) } : c))
     const t = nextTurn(before, { round: x.round, activeId: x.activeId })
     // A monster's Action / Bonus Action / Reaction come back at the start of its turn.
-    const combatants = t.combatants.map((c) => (c.id === t.state.activeId && c.kind === 'monster' ? { ...c, turn: startOfTurn() } : c))
+    const combatants = t.combatants.map((c) => (c.id === t.state.activeId && c.kind === 'monster' ? startMonsterTurn(c) : c))
     return { encounter: { ...x, combatants, round: t.state.round, activeId: t.state.activeId }, result: { t, before } }
   })
   if (!r) return false

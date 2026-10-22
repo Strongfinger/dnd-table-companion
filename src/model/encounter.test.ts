@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sampleCharacters } from '../dev/sampleCharacters'
 import {
   addEffect, combatantFromCharacter, conditionsToClear, createEncounter, createMonsters, damageMonster, renameEncounter, healMonster, removeEffect,
-  rollInitiative, sheetOnlyConditions, tempHpMonster,
+  rollInitiative, sheetOnlyConditions, startMonsterTurn, tempHpMonster,
 } from './encounter'
 
 const goblin = { name: 'Goblin', ac: 15, hpMax: 7, initBonus: 2 }
@@ -130,5 +130,18 @@ describe('renaming a fight', () => {
     expect(renameEncounter(e, '   ')).toBe(e)
     expect(renameEncounter(e, 'Goblin ambush')).toBe(e)
     expect(renameEncounter(e, 'x'.repeat(150)).name).toHaveLength(100)
+  })
+})
+
+describe('startMonsterTurn', () => {
+  it('brings back Action, Bonus Action and Reaction and Legendary uses, keeps used Recharge actions', () => {
+    const m = { ...createMonsters(goblin, 1)[0], turn: { action: true, bonusAction: true, reaction: true }, legendaryUsed: 2, spent: ['Fire Breath'] }
+    const r = startMonsterTurn(m)
+    expect(r.turn).toEqual({ action: false, bonusAction: false, reaction: false })
+    expect(r.legendaryUsed).toBe(0)
+    expect(r.spent).toEqual(['Fire Breath'])
+  })
+  it('does not add the optional fields to a monster that never used them', () => {
+    expect('legendaryUsed' in startMonsterTurn(createMonsters(goblin, 1)[0])).toBe(false)
   })
 })
