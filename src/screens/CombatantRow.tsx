@@ -19,11 +19,15 @@ import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
 
-export default function CombatantRow({ c, character, active, open, onToggle, onInitiative, onUpdate, onPcAction, onRemove, onMakeCharacter }: {
+export default function CombatantRow({ c, character, active, open, selected = false, onSelect, onToggle, onInitiative, onUpdate, onPcAction, onRemove, onMakeCharacter }: {
   c: Combatant
   character: Character | undefined
   active: boolean
   open: boolean
+  /** Picked for a batch (damage / condition for several at once). */
+  selected?: boolean
+  /** Shows the select box when given. `range` = Shift was held (select everything up to this row). */
+  onSelect?: (range: boolean) => void
   onToggle: () => void
   onInitiative: (total: number, how: string) => void
   /** Change this combatant, starting from its newest saved state. */
@@ -128,8 +132,22 @@ export default function CombatantRow({ c, character, active, open, onToggle, onI
   const manualOk = initText.trim() !== '' && Number.isInteger(manualInit) && manualInit >= -10 && manualInit <= 50
 
   return (
-    <div className={`rounded-xl border-2 ${active ? 'border-amber-400 bg-stone-800' : 'border-transparent bg-stone-800/70'} ${c.defeated ? 'opacity-50' : ''}`}>
+    <div className={`rounded-xl border-2 ${active ? 'border-amber-400 bg-stone-800' : 'border-transparent bg-stone-800/70'} ${selected ? 'ring-2 ring-sky-400' : ''} ${c.defeated ? 'opacity-50' : ''}`}>
       <div className="flex items-center">
+      {/* Select box: a 44 px touch area around a 20 px box. The check mark is the cue, not only the ring colour. */}
+      {onSelect && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={selected}
+          aria-label={`เลือก ${c.name}`}
+          title="เลือก (Shift+คลิก = เลือกช่วง)"
+          onClick={(e) => onSelect(e.shiftKey)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center"
+        >
+          <span className={`flex h-5 w-5 items-center justify-center rounded border-2 text-xs font-bold ${selected ? 'border-sky-400 bg-sky-500 text-stone-900' : 'border-stone-500'}`}>{selected && '✓'}</span>
+        </button>
+      )}
       <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left">
         <div className="w-10 text-center">
           <div className="text-xl font-bold">{c.initiative ?? '–'}</div>

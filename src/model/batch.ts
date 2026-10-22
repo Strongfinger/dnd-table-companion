@@ -6,6 +6,11 @@ import { damageCharacter, healCharacter, isDead } from './actions'
 import type { Character } from './character'
 import { addEffect, damageMonster, healMonster, type Combatant } from './encounter'
 
+/** The conditions that come up most at the table (the sketch's list). */
+export const QUICK_CONDITIONS: Condition[] = [
+  'Prone', 'Poisoned', 'Frightened', 'Stunned', 'Grappled', 'Restrained', 'Blinded', 'Charmed', 'Incapacitated', 'Paralyzed',
+]
+
 /** A selected creature, with its sheet if it is a linked PC (a PC's HP lives on the sheet). */
 export interface BatchTarget {
   combatant: Combatant
