@@ -7,7 +7,6 @@ import { mayLevelUp } from '../model/levelLock'
 import { getCharacter } from '../db/characters'
 import { ABILITIES, buffedArmorClass, deriveSheet, formatModifier, loadedSpeed, SKILL_ABILITY, SKILLS } from '../rules'
 import { ABILITY_LABEL } from '../ui/labels'
-import Attacks from './Attacks'
 import ClassFeatures from './ClassFeatures'
 import ExportPanel from './ExportPanel'
 import HpCard from './HpCard'
@@ -22,6 +21,7 @@ import type { Character } from '../model/character'
 import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
 import PlayPanel from './PlayPanel'
+import UsableNow, { DeathSaves } from './UsableNow'
 import SpellList from './SpellList'
 import { Button, HpBar, Section, Stat } from '../ui/kit'
 import { Term } from '../ui/help'
@@ -211,8 +211,9 @@ export default function CharacterSheet({ id }: { id: string }) {
             </div>
           )}
           <ExhaustionNote c={c} penalty={s.d20Penalty} />
+          <DeathSaves c={c} />
+          <UsableNow c={c} manualAttacks={s.attacks} skillBonuses={s.skills} />
           <PlayPanel c={c} />
-          <Attacks c={c} manual={s.attacks} />
         </>
       )}
 
