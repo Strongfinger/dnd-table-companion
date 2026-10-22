@@ -1,4 +1,5 @@
-// In-play tracking on the sheet: Concentration, rests, Exhaustion, conditions, buffs.
+// In-play tracking on the sheet: Concentration, conditions, buffs, rests, Exhaustion.
+// Active conditions and buffs also show as chips in the HP box (HpCard), which links here.
 // (Action economy, death saves, spell slots and features moved to UsableNow.tsx.)
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
@@ -68,6 +69,27 @@ export default function PlayPanel({ c }: { c: Character }) {
         )}
       </div>
 
+      {/* Conditions and buffs: the HP box's status chips jump here (#status). */}
+      <div id="status" className="mt-4 scroll-mt-44">
+        <div className="mb-1 text-sm text-stone-400">Conditions <span className="text-xs text-stone-600">· กดค้าง/ชี้เมาส์ เพื่อดูคำอธิบาย</span></div>
+        <div className="flex flex-wrap gap-1.5">
+          {CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion').map((cond) => {
+            const on = c.conditions.includes(cond)
+            return (
+              <HelpButton
+                key={cond}
+                term={cond}
+                onClick={() => toggleCondition(cond)}
+                className={`rounded-full border px-2.5 py-1 text-xs ${on ? 'border-red-400 bg-red-800 font-bold' : 'border-stone-600 text-stone-400'}`}
+              >
+                {cond} <span className="opacity-70">{CONDITION_TH[cond]}</span>
+              </HelpButton>
+            )
+          })}
+        </div>
+        <BuffPanel c={c} act={act} canAdd={!asPlayer} canRemove />
+      </div>
+
       {/* Rests */}
       <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
       {asPlayer ? (
@@ -114,26 +136,6 @@ export default function PlayPanel({ c }: { c: Character }) {
         )}
       </div>
 
-      {/* Conditions */}
-      <div className="mt-4">
-        <div className="mb-1 text-sm text-stone-400">Conditions <span className="text-xs text-stone-600">· กดค้าง/ชี้เมาส์ เพื่อดูคำอธิบาย</span></div>
-        <div className="flex flex-wrap gap-1.5">
-          {CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion').map((cond) => {
-            const on = c.conditions.includes(cond)
-            return (
-              <HelpButton
-                key={cond}
-                term={cond}
-                onClick={() => toggleCondition(cond)}
-                className={`rounded-full border px-2.5 py-1 text-xs ${on ? 'border-red-400 bg-red-800 font-bold' : 'border-stone-600 text-stone-400'}`}
-              >
-                {cond} <span className="opacity-70">{CONDITION_TH[cond]}</span>
-              </HelpButton>
-            )
-          })}
-        </div>
-      </div>
-      <BuffPanel c={c} act={act} canAdd={!asPlayer} canRemove />
       {pending && (
         <ActionChoiceDialog
           kind={pending}

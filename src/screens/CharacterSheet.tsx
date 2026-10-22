@@ -17,6 +17,7 @@ import UpgradePanel from './UpgradePanel'
 import { missingLevelChoices } from '../model/feats'
 import { characterArmorClass } from '../model/inventory'
 import { characterLoad } from '../model/carrying'
+import { activeStatuses } from '../model/statusSummary'
 import type { Character } from '../model/character'
 import { useEquipment } from './useSrdData'
 import PlayLog from './PlayLog'
@@ -120,6 +121,13 @@ export default function CharacterSheet({ id }: { id: string }) {
     if (hpHidden) hpRef.current?.scrollIntoView()
   }
 
+  /** From the status chips in the HP box: open the ต่อสู้ tab at the conditions & buffs picker. */
+  function openStatus() {
+    setTab('play')
+    // Wait a frame so the tab is drawn before scrolling to it.
+    requestAnimationFrame(() => document.getElementById('status')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   return (
     <div className="space-y-4">
       <a href="#/" className="text-sm text-stone-400">← ตัวละครทั้งหมด</a>
@@ -172,7 +180,7 @@ export default function CharacterSheet({ id }: { id: string }) {
       )}
       {levelingUp && canLevelUp && <LevelUp key={c.level} c={c} onClose={() => setLevelingUp(false)} />}
 
-      <HpCard ref={hpRef} c={c} />
+      <HpCard ref={hpRef} c={c} onEditStatus={openStatus} />
 
       <div className="grid grid-cols-4 gap-2">
         <Stat label="AC" value={ac} sub={s.buffs.ac ? `บัฟ ${mod(s.buffs.ac)}` : undefined} />
@@ -279,8 +287,10 @@ function ExhaustionNote({ c, penalty }: { c: Character; penalty: number }) {
   return <p className="rounded-lg bg-red-950/60 p-2 text-sm text-red-300">Exhaustion {c.exhaustion}: ทุก D20 Test −{penalty} (ตัวเลขในชีทหักแล้ว)</p>
 }
 
-/** One line in the sticky bar: name, HP with a bar, AC. Tapping it scrolls back to the HP box. */
+/** One line in the sticky bar: name, HP with a bar, AC, and active statuses. Tapping it scrolls back to the HP box. */
 function HpStrip({ c, ac, onOpen }: { c: Character; ac: number; onOpen: () => void }) {
+  // Conditions first (red), then Exhaustion, Concentration and buffs, so the line stays useful when cut.
+  const statuses = activeStatuses(c).filter((x) => x.kind !== 'magic')
   return (
     <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 pt-2 text-left" aria-label="ไปที่ HP">
       <div className="min-w-0 flex-1">
@@ -289,6 +299,16 @@ function HpStrip({ c, ac, onOpen }: { c: Character; ac: number; onOpen: () => vo
           <span className="shrink-0"><b>{c.hp.current}</b><span className="text-stone-400">/{c.hp.max} HP</span> · AC <b>{ac}</b></span>
         </div>
         <HpBar current={c.hp.current} max={c.hp.max} className="mt-1 h-1.5" />
+        {statuses.length > 0 && (
+          <div className="mt-1 truncate text-xs">
+            {statuses.map((x, i) => (
+              <span key={i} className={x.kind === 'concentration' ? 'text-violet-300' : x.kind === 'buff' ? 'text-emerald-300' : 'font-bold text-red-300'}>
+                {i > 0 && <span className="text-stone-600"> · </span>}
+                {x.kind === 'condition' ? x.term : x.label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <span className="shrink-0 rounded-lg border border-stone-600 bg-stone-800 px-2.5 py-1.5 text-sm font-bold">± HP</span>
     </button>
