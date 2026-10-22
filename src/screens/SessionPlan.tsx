@@ -31,7 +31,10 @@ export function ScenesView({ note, pages, onChange, onFollow, onOpen, focusScene
   const [open, setOpen] = useState<string | null>(() => focusSceneId ?? note.scenes.find((s) => !s.done)?.id ?? null)
   const [carried, setCarried] = useState<Note | null>(null)
   useEffect(() => {
-    if (focusSceneId) document.getElementById(`scene-${focusSceneId}`)?.scrollIntoView({ block: 'start' })
+    // Scroll only the panel's own scroll box (scrollIntoView would also move the whole fight screen).
+    const el = focusSceneId ? document.getElementById(`scene-${focusSceneId}`) : null
+    const box = el?.closest<HTMLElement>('.overflow-y-auto')
+    if (el && box) box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - 8
   }, [focusSceneId])
   if (note.scenes.length === 0) return null
   const p = progress(note.scenes)
