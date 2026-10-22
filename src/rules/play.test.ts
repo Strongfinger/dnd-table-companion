@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rollDie } from './dice'
 import {
-  applyDamage, concentrationDC, exhaustionPenalty, gainTempHp, heal, hitDieHealing, hitDieSize, longRest, rollDeathSave,
+  applyDamage, concentrationDC, exhaustionPenalty, gainTempHp, halfDamage, heal, hitDieHealing, hitDieSize, longRest, rollDeathSave,
   shortRest, spendHitDie, type HpState, type RestState,
 } from './play'
 
@@ -47,6 +47,20 @@ describe('applyDamage', () => {
   it('damage fully absorbed by temp HP at 0 HP causes no failure', () => {
     const r = applyDamage({ ...down, hp: { ...down.hp, temp: 5 } }, 3)
     expect(r.deathSaves.failures).toBe(1)
+  })
+})
+
+describe('halfDamage', () => {
+  it('rounds down', () => {
+    expect(halfDamage(8)).toBe(4)
+    expect(halfDamage(7)).toBe(3)
+    expect(halfDamage(1)).toBe(0)
+    expect(halfDamage(59)).toBe(29)
+  })
+  it('zero, negative and fractions give 0 or the floor of half', () => {
+    expect(halfDamage(0)).toBe(0)
+    expect(halfDamage(-4)).toBe(0)
+    expect(halfDamage(5.9)).toBe(2)
   })
 })
 
