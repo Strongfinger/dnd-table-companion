@@ -40,6 +40,8 @@ export interface LobbyApi {
   /** Set when the DM removed this device from the room. */
   kickedNotice: string | null
   create: (campaignId: string, local: boolean) => void
+  /** DM: open a room with a code the DM typed (e.g. an old room no longer on the recent list). */
+  createWithCode: (code: string, campaignId: string, local: boolean) => void
   /** DM: the rooms this device hosted and left, newest first (a few). */
   recentHosted: LobbySession[]
   /** DM: every character played in the room right now (players' picks and handed-over characters). */

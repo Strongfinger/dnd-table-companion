@@ -29,7 +29,7 @@ import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { cleanupOldMessages, firebaseTransport } from '../sync/firebaseTransport'
-import { addKicked, isDm, isKicked, parseKick, addRecentHosted, recentHostedRooms, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
+import { addKicked, isDm, isKicked, parseKick, addRecentHosted, recentHostedRooms, roomForCode, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { isShareId } from '../sync/chronicleShare'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
@@ -808,6 +808,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     create: (campaignId, local) => {
       void clearGiveOffers() // a new room starts without gives left over from an old one
       connect({ code: newRoomCode(), role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null, grants: [] })
+    },
+    createWithCode: (code, campaignId, local) => {
+      const room = roomForCode(code, campaignId, local, recentHosted)
+      if (room && !sessionRef.current) connect(room)
     },
     setCampaign: async (campaignId) => {
       const s = sessionRef.current
