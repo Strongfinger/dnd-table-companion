@@ -54,6 +54,7 @@ export function applyDamage(state: HpState, amount: number, critical = false): D
  * Done on the total, once: 7 damage → 3. Resistance is NOT applied here (the DM flags it by hand).
  */
 export function halfDamage(amount: number): number {
+  if (!Number.isFinite(amount)) return 0
   return Math.floor(Math.max(0, Math.floor(amount)) / 2)
 }
 

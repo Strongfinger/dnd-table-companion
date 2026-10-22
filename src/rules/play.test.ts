@@ -61,6 +61,8 @@ describe('halfDamage', () => {
     expect(halfDamage(0)).toBe(0)
     expect(halfDamage(-4)).toBe(0)
     expect(halfDamage(5.9)).toBe(2)
+    expect(halfDamage(NaN)).toBe(0)
+    expect(halfDamage(Infinity)).toBe(0)
   })
 })
 

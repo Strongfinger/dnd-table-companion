@@ -42,7 +42,7 @@ export interface HpPlan {
  * Half damage is rounded down on the total (no resistance/vulnerability/immunity: the DM flags those by hand).
  */
 export function planHp(kind: 'damage' | 'heal', targets: BatchTarget[], amount: number, modes: Record<string, DamageMode> = {}): HpPlan[] {
-  const total = Math.max(0, Math.floor(amount))
+  const total = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0
   return targets.map(({ combatant: c, character: ch }) => {
     const mode: DamageMode = kind === 'damage' ? modes[c.id] ?? 'full' : 'full'
     const applied = mode === 'none' ? 0 : mode === 'half' ? halfDamage(total) : total

@@ -272,7 +272,7 @@ export default function Tracker({ id }: { id: string }) {
   /** Damage or heal everyone selected. Monsters change in ONE write; PCs go through their sheet like any single change. */
   async function applyHp(kind: 'damage' | 'heal', amount: number, modes: Record<string, DamageMode>) {
     const before = await freshTargets(selected)
-    const plans = planHp(kind, before, amount, modes).filter((p) => p.amount > 0)
+    const plans = planHp(kind, before, amount, modes).filter((p) => p.amount > 0 && p.outcome !== 'same')
     if (plans.length === 0) return
     const monsterLines = await update((x) => {
       const lines: string[] = []

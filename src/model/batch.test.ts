@@ -70,6 +70,20 @@ describe('planHp: damage', () => {
   })
 })
 
+describe('planHp: zero-effect batches', () => {
+  it('every target already at full HP: heal changes nothing (outcome same for all)', () => {
+    expect(planHp('heal', goblins.map(monster), 5).every((p) => p.outcome === 'same')).toBe(true)
+  })
+  it('damage absorbed by Temp HP still changes something (outcome hurt)', () => {
+    const t = monster({ ...goblins[0], hp: { max: 7, current: 7, temp: 9 } })
+    expect(planHp('damage', [t], 4)[0]).toMatchObject({ outcome: 'hurt', after: { current: 7, temp: 5 } })
+  })
+  it('NaN or Infinity amounts change nothing', () => {
+    expect(planHp('damage', [monster(goblins[0])], NaN)[0]).toMatchObject({ outcome: 'same', amount: 0 })
+    expect(planHp('damage', [monster(goblins[0])], Infinity)[0].outcome).toBe('same')
+  })
+})
+
 describe('planHp: heal', () => {
   it('heals up to max and brings a defeated monster back', () => {
     const down = monster({ ...goblins[0], hp: { max: 7, current: 0, temp: 0 }, defeated: true })
