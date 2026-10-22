@@ -1,7 +1,7 @@
 # Roadmap
 
-> **Updated 2026-10-22.** Phases 0–6 done; Phase 7 (party tools, house rules, UI redesign) and the team/tooling work
-> merged through PR #27. Live state for the next agent: [HANDOFF.md](HANDOFF.md). Quick view: **Now / Next** at the bottom.
+> **Updated 2026-10-22 (evening).** Phases 0–7 done; Phase 8 (fight speed, pinned notes, party give with accept, usable-now
+> sheet section) merged through PR #34. Live state for the next agent: [HANDOFF.md](HANDOFF.md). Quick view: **Now / Next** at the bottom.
 
 ## Phase 0 — Setup (½ day)
 - [x] Scaffold Vite + React + TS + Tailwind, add Thai font
@@ -118,6 +118,15 @@ Owner requests that came out of the playtest and later table use; all done, none
 - [x] 2026-10-22 Party give with receiver accept (Phase 3): in a room a give is a pending offer, the receiver accepts or declines, the sender can cancel, the DM's device moves it once; offers never expire
 - [x] 2026-10-22 Party overview redesign (`#/party`, PR #26): "ต้องดูแลก่อน" box, party HP total, Passive Perception, sort, card/table view, give sheet on friends' cards
 
+## Phase 8 — After Session 1 ✅ done 2026-10-22 (PRs #29–#34)
+Planned with the business analyst; design in `docs/design/phase2-sketch.md`.
+- [x] Mule stat block fix, house rules as Markdown on phones, a phone with no character still gets house rules/pool/party (PR #29)
+- [x] DM fight speed (PR #30): one-key Next Turn + Turn Card, multi-select damage/conditions with one undo, better action parser
+- [x] Pinned notes strip + always-visible quick search beside the tracker (PR #32)
+- [x] Party give with receiver accept; offers never expire (PR #33)
+- [x] "ใช้ได้เลย" section on the player Combat tab: slots, features, spells by action type, tap-to-roll skills (PR #34)
+- [ ] Optional left over: one-tap condition chips (2d), Ctrl/Cmd+Z, quick search over SRD entries
+
 ## Team and tools (not part of the app) ✅ 2026-10-21 to 2026-10-22
 - [x] 10 agents in 4 teams + work process: `.claude/agents/`, [TEAM.md](TEAM.md) (PR #19; status board rule PR #22)
 - [x] UX/UI design skills kit for `ux-ui-designer`: `.claude/ux-ui-kit/` + `.claude/skills/` (PR #24, upstream hooks left out)
@@ -131,14 +140,13 @@ Owner requests that came out of the playtest and later table use; all done, none
 - [ ] QR code export/import of a character (optional)
 - [x] Item and equipment pictures: 98 painted SRD item pictures + 117 game-icons.net icons for gear, tools, poisons, foci, packs and ammunition, shown in the inventory, slots and item details; custom items can carry their own small picture (2026-10-20 plan in [ITEM-IMAGES.md](ITEM-IMAGES.md); built 2026-10-20, waist-slot belt picture 2026-10-21)
 
-## Now / Next (2026-10-22)
+## Now / Next (2026-10-22, evening)
 **In progress / waiting on the owner**
-- [ ] Session 2 of *Dragon of Icespire Peak* (prep done 2026-10-21: read-aloud page, app pack with 2 fights, Owlbear maps/tokens in `docs/DM Scripts/Session 2` and `docs/Owlbear-Rodeo/Session 2`)
+- [ ] Session 2 of *Dragon of Icespire Peak* (more than a week away; prep done 2026-10-21: read-aloud page, app pack with 2 fights, Owlbear maps/tokens in `docs/DM Scripts/Session 2` and `docs/Owlbear-Rodeo/Session 2`)
 
 **Next (suggested order)**
-1. [ ] Play Session 2; collect what broke or felt clunky in [QA.md](QA.md); confirm the real-phone checks listed there
-2. [ ] Fix pass on that list (one commit per issue)
-3. [ ] Small open QA items (low): house-rule text shows raw Markdown on players' phones; a phone in the room with no character gets no house rules/pool/party (see QA pass 8)
-4. [ ] Data bug: English **Mule** in `src/data/srd-monster-details.json` is really the Octopus stat block (5e-bits); fix from the SRD 5.2.1 PDF
-5. [ ] Chapter 2 of the journey chronicle after Session 2 (campaign-bard → artist, Gemini only with the owner's yes → content-reviewer); use the new character looks in `docs/Character Art/`
-6. [ ] Optional: our own Thai for the translation gaps; QR export of a character; DM approval for party give (offered, not asked for). Receiver accept: done 2026-10-22 (Phase 3)
+1. [ ] Real-phone verification with 1 laptop + 1 phone (+ a friend for 10 minutes): party give, kick, offline phone, DM rejoin, level-up permission; see [QA.md](QA.md)
+2. [ ] Play Session 2; collect what broke or felt clunky in [QA.md](QA.md)
+3. [ ] Fix pass on that list (one commit per issue)
+4. [ ] Chapter 2 of the journey chronicle after Session 2 (campaign-bard → artist, Gemini only with the owner's yes → content-reviewer); use the new character looks in `docs/Character Art/`
+5. [ ] Optional: our own Thai for the translation gaps; QR export of a character; DM-screen follow-ups (condition chips, SRD in quick search)
