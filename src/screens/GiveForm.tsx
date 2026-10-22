@@ -1,6 +1,6 @@
 // "🤝 ส่งให้เพื่อน": hand an item (from the item's buttons) or coins (under the coin purse) to another party member.
-// - Player in a live room: the friends are the party cards; a 'give' message goes to the DM's device, which moves it
-//   (both sheets come back from there).
+// - Player in a live room: the friends are the party cards; a 'giveOffer' message goes to the DM's device, which keeps
+//   it as a pending offer. Nothing moves until the friend accepts (GiveOffers.tsx); both sheets then come back from there.
 // - Otherwise (e.g. the DM's device): the other characters saved here in the same campaign; it moves at once.
 // A character the DM runs but that isn't in the room can't give (the DM's device keeps its items and coins).
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -13,6 +13,7 @@ import type { Character, InventoryItem } from '../model/character'
 import { giftLabel } from '../model/give'
 import type { Coin } from '../rules'
 import { Button, Select } from '../ui/kit'
+import { WaitingMarks } from './GiveOffers'
 
 const COIN_ORDER: Coin[] = ['pp', 'gp', 'ep', 'sp', 'cp']
 
@@ -55,7 +56,7 @@ export function GiveItemForm({ c, item, onDone }: { c: Character; item: Inventor
     const label = giftLabel({ kind: 'item', name: item.name, qty: n })
     if (g.room) {
       lobby.give({ fromId: c.id, toId: friend.id, itemId: item.id, qty: n })
-      setMessage({ ok: true, text: `ส่ง ${label} ให้ ${friend.name} แล้ว ของจะย้ายเมื่อเครื่อง DM ยืนยัน` })
+      setMessage({ ok: true, text: `ส่งคำขอ ${label} ให้ ${friend.name} แล้ว รอเพื่อนกดรับ (ยกเลิกได้ที่ของชิ้นนั้น)` })
       return
     }
     const error = await giveNow({ fromId: c.id, toId: friend.id, itemId: item.id, qty: n })
@@ -103,7 +104,7 @@ export function GiveCoinsForm({ c }: { c: Character }) {
     const label = giftLabel({ kind: 'coins', coin, amount: n })
     if (g.room) {
       lobby.give({ fromId: c.id, toId: friend.id, coin, amount: n })
-      setMessage({ ok: true, text: `ส่ง ${label} ให้ ${friend.name} แล้ว เงินจะย้ายเมื่อเครื่อง DM ยืนยัน` })
+      setMessage({ ok: true, text: `ส่งคำขอ ${label} ให้ ${friend.name} แล้ว รอเพื่อนกดรับ (ยกเลิกได้ใต้กระเป๋าเงิน)` })
     } else {
       const error = await giveNow({ fromId: c.id, toId: friend.id, coin, amount: n })
       if (error) return setMessage({ ok: false, text: error })
@@ -211,7 +212,7 @@ function GiveSheetBody({ from, toId }: { from: Character; toId: string }) {
     const label = 'itemId' in request ? giftLabel({ kind: 'item', name: item!.name, qty: n }) : giftLabel({ kind: 'coins', coin, amount: coins })
     if (g.room) {
       lobby.give(request)
-      setMessage({ ok: true, text: `ส่ง ${label} ให้ ${friend.name} แล้ว จะย้ายเมื่อเครื่อง DM ยืนยัน` })
+      setMessage({ ok: true, text: `ส่งคำขอ ${label} ให้ ${friend.name} แล้ว รอเพื่อนกดรับ` })
     } else {
       const error = await giveNow(request)
       if (error) return setMessage({ ok: false, text: error })
@@ -271,7 +272,8 @@ function GiveSheetBody({ from, toId }: { from: Character; toId: string }) {
         </>
       )}
 
-      {g.room && <p className="text-xs text-stone-500">ของจะย้ายเมื่อเครื่อง DM ยืนยัน</p>}
+      {g.room && <p className="text-xs text-stone-500">ของจะย้ายเมื่อ {friend.name} กดรับ (รอได้จนกว่าจะเลิกห้อง ยกเลิกได้เอง)</p>}
+      {g.room && <WaitingMarks characterId={from.id} to={friend.id} />}
       <Button variant="primary" className="min-h-12 w-full" onClick={() => void send()}>
         {kind === 'item'
           ? item ? `ส่ง ${item.name}${n > 1 ? ` ${n} ชิ้น` : ''} ให้ ${friend.name}` : 'เลือกของที่จะส่ง'
