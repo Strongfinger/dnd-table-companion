@@ -25,3 +25,7 @@ docs/Owlbear-Rodeo/
 # UX/UI kit gate receipts (local only)
 .ds-receipts/
 __pycache__/
+
+# Local only (owner's copy of tools/agent-guild; art based on real friends' faces)
+/agent-guild/
+/docs/Character Art/

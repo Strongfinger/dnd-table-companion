@@ -1,4 +1,34 @@
-# Handoff — state on 2026-10-21
+# Handoff — state on 2026-10-22
+
+> **Updated 2026-10-22** for handing work to Claude Code on the owner's Mac. New: "Before you start", "Working rules",
+> Phase 7 (PRs #19–#27), Session 1 played, new next steps. Removed as outdated: "Suggested next: the first real session"
+> (it was played 2026-10-18) and "Reply in English" under owner preferences (the team rule is now Thai).
+
+## Before you start (Claude Code on the Mac)
+- This folder (`/Users/mac/Claude Project/DND`) **is the git clone** of https://github.com/Strongfinger/dnd-table-companion.
+  On 2026-10-22 it sat at `55d28ca` (PR #26); `origin/main` is at `1db62e0` (PR #27). Run `git pull` first
+  (PR #27 adds `tools/agent-guild/` and changes only `docs/TEAM.md`, so the uncommitted edits in ROADMAP/HANDOFF/QA pull cleanly).
+- The 2026-10-22 edits to `docs/ROADMAP.md`, `docs/HANDOFF.md`, `docs/QA.md` are **not committed**. Commit them on a
+  branch + PR (the repo is public), don't push to `main`.
+- Untracked folders, **do not commit**: `agent-guild/` (the owner's local copy of `tools/agent-guild/`, used by
+  `install.py` hooks) and `docs/Character Art/` (new party looks based on real friends' faces; ask the owner, or add it
+  to `.gitignore` with his OK).
+- Private, git-ignored: `docs/DM Scripts/` (campaign packs, session scripts, backups), `docs/Character Sheets/`,
+  `docs/Owlbear-Rodeo/`, `docs/DND-TH/`, `.env.local`.
+
+## Working rules (owner's standing rules, see [TEAM.md](TEAM.md))
+- **Merge a PR only when Tan says so** ("merge", "merge เลย"). `main` deploys to Vercel at once.
+- **Ask Tan before every Gemini image run** (what, how many, which model) and wait for a yes. Credits are limited.
+- **Wait for Tan's go-ahead** before anything that can't be undone: publishing Firebase rules, Vercel settings,
+  deleting data, sending things to players.
+- **Reply to Tan in Thai** (he writes Thai; TEAM.md says Thai; CLAUDE.md still has an older "reply in English" line).
+  UI in Thai, D&D terms in English, SRD 5.2.1 content only, no AI in the app, no secret keys in code.
+- One task = one thread/branch; flow BA → developer/UX → tests + build → PR assigned to Tan → qa-tester +
+  content-reviewer → Tan merges. Run `content-reviewer` after changing `src/rules/` or game content.
+- Agent status board: update the agent's row (cloud threads via `ArtifactData`; on the Mac the agent-guild hooks
+  show local sessions). Details in TEAM.md.
+- Stage only your own files (never `git add -A`).
+
 
 **Start here.** The app is feature-complete for the table. Phases 0–4 and 3 are done, plus the content plan in
 [docs/RESEARCH.md](RESEARCH.md) and the **Thai translation** of all SRD content (DND-TH's text, with permission).
@@ -6,13 +36,16 @@ A **playtest on 2026-10-16** found five problems; they were fixed on 2026-10-18 
 to 10-21, PRs #5–#18)** added table extras the owner asked for: coin purse and equipment slots, temporary buffs, full
 backup/restore, the journey chronicle, item pictures, Carrying Capacity, the reward pool with coin requests, magic items
 on the sheet and a waist slot (see "Phase 6" below). All 278 SRD magic items are in.
-**Suggested next:** the first real session with friends (*Dragon of Icespire Peak* Session 1), then a fix pass.
+**Session 1** of *Dragon of Icespire Peak* was played 2026-10-18 (5 players); its feedback became PRs #5–#9. Then
+**Phase 7 (2026-10-21 to 10-22)**: party give, house rules, sheet tabs + fight tracker redesign, party overview
+redesign, plus the agent team, UX kit and agent guild (PRs #19–#27, all merged). No PR is open.
+**Suggested next:** Session 2, then a fix pass; see "Next steps" at the bottom.
 Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local post-commit hook rebuilds it).
 
 ## Run, test, deploy
 - **Live:** https://dnd-table-companion.vercel.app (Vercel auto-deploys `main`; installable offline PWA)
 - **Dev:** `npm run dev` (launch config `dev`, :5173) · `preview` = production build on :4173
-- **Checks:** `npm test` (749 passing, 94 files) · `npx tsc -b` · `npm run lint` · `npm run build`
+- **Checks:** `npm test` (781 passing after PR #26) · `npx tsc -b` · `npm run lint` · `npm run build`
 - **Rules:** D&D 2024 / SRD 5.2.1 only. Pure rules in `src/rules/`; run the `content-reviewer` agent (was rules-reviewer) after
   changing `src/rules/` (also worth it for new game content/data).
 - **Reset a device:** About page → "ล้างข้อมูลในเครื่องนี้" (`src/db/reset.ts`). After a deploy, a device may run
@@ -56,6 +89,9 @@ Progress page: `npm run roadmap` → `docs/roadmap.html` (git-ignored; a local p
 | Help/glossary | `src/model/glossary.ts` (incl. Thai help for the 18 skills), `src/ui/help.tsx`, `src/ui/useHelp.ts` |
 | Action suggestions | `src/model/actionSuggestions.ts` (`actionKindFor`: spells by SRD casting time, features by `activation`; Focus/Sorcery Points also under Bonus Action), `src/screens/ActionChoiceDialog.tsx` |
 | Missing choices | `src/rules/missingChoices.ts` (subclass from level 3, empty ASI slots) → amber banner with "เลือก" on `CharacterSheet.tsx` |
+| Sheet tabs + HP strip (PR #25) | `src/screens/CharacterSheet.tsx` (5 tabs ต่อสู้/ความสามารถ/คาถา/กระเป๋า/โน้ต, sticky tab bar uses `--nav-h`), `src/screens/HpCard.tsx` (HP + damage/heal above the tabs); tracker rows `CombatantRow.tsx` (quick HP −/+, tags, condition chips, ⋯ menu), dice docked in `DmPanel.tsx` on lg |
+| Party overview (PR #26) | `src/screens/PartyOverview.tsx` (`#/party`: "ต้องดูแลก่อน" box, HP total, Passive Perception, sort, card/table view, give sheet), pure helpers `src/model/partySummary.ts`; give sheet reuses `GiveForm.tsx` |
+| Agent guild (PR #27, tool) | `tools/agent-guild/` (`guild.html` board page, `server.py` local SSE on 127.0.0.1:4777, `install.py` adds/removes Claude Code hooks marked `#agent-guild` in `~/.claude/settings.json`, `open-guild.command`). Not part of the app build |
 | Navigation | `src/app/router.ts` `goBack()` (previous in-app page, scroll restored); lookup pages have "← กลับ"; spell cards open in place on the sheet |
 
 ## Live rooms: how they work now
@@ -112,7 +148,7 @@ and the 7 untranslated spells in `src/data/README.md`.
   rooms the DM device was never in stay.
 
 - **Chronicle (2026-10-19):** `chronicles/{shareId}` (20-character id, any signed-in user reads, only its `owner` writes);
-  rules in `database.rules.json` — **re-publish them in the console if not done yet** (the owner publishes them by hand).
+  rules in `database.rules.json`, published by the owner 2026-10-19 (he publishes by hand; re-publish only if the file changes).
 
 ## Testing tips
 - Two tabs of one browser share IndexedDB **and** the Firebase sign-in, so they can't test sync. Use the
@@ -179,17 +215,42 @@ Requested by the owner (Tan) after the playtest. Written by parallel sessions; u
   Only the DM edits effects of characters it runs.
 - **Chronicle + backup:** see the code map. Chapters live on the DM's device and are included in backups.
 - **UI:** one ไทย/EN button in the top bar sets every card (the old per-card switches are gone; a section on the room tab too).
-- **Open/unknown:** Firebase rules for `chronicles/` published? Nobody has recorded checking the reward pool and chronicle over real Firebase. This handoff's older sections (Phase 5, Known limits) are still accurate.
+- **Open/unknown:** ~~Firebase rules for `chronicles/` published?~~ Published by the owner 2026-10-19 and sharing works. The reward pool and coin requests are still unchecked over real Firebase. This handoff's older sections (Phase 5, Known limits) are still accurate.
+
+## Phase 7: party tools, house rules, new look (2026-10-21 to 10-22, PRs #19–#27)
+- **Party give (PR #21):** see the code map. Two-tab test room only.
+- **House rules (PR #23 + QA fixes):** notebook kind `rule`; players read them at `#/lookup/house`. The owner's 3 rules
+  pack is in the project files (`house-rules-pack.json`). Two-context test room only, not real Firebase.
+- **UI redesign (PRs #25, #26):** sheet tabs with HP on top, quicker fight tracker, party overview with give sheet.
+  Built with the UX kit (`.claude/ux-ui-kit/`, PR #24; project rules win over kit rules). Room view checked by code only.
+- **Team (PRs #19, #22):** 10 agents in `.claude/agents/`, process in TEAM.md.
+- **Agent guild (PR #27):** board artifact restyled; on the Mac Tan runs `python3 agent-guild/install.py` himself
+  (Claude Code auto mode blocks editing `~/.claude/settings.json`; don't retry that for him), then double-clicks
+  `open-guild.command`. Remove with `python3 install.py --uninstall` (see its README). Installed and confirmed moving on the Mac 2026-10-22 (hooks reach only sessions started after install).
+- **Party character redesign (2026-10-22, not in the app):** all 5 new looks approved; images + design notes in
+  `docs/Character Art/`, English prompt text for future chapter pictures in
+  `docs/Character Art/คำบรรยายตัวละครใหม่ (สำหรับ prompt ภาพบทต่อไป).md` (the old chapter-1 reference sheet is outdated).
+- **Chronicle:** chapter 1 with 14 pictures is live (Firebase `chronicles/` rules published by the owner, sharing works).
+
+## Campaign state (for DM work)
+- Party (all level 1 after Session 1, level 2 planned in Session 2): HypenosZ (Orc Paladin), PetchKung (Dwarf Cleric),
+  Mobius (Elf Rogue), Griffith (Human Fighter), Gojo Satoru (Elf Ranger). All male.
+- Session 2 package ready (2026-10-21): `docs/DM Scripts/Session 2/` (read-aloud, app pack with fights E7 Ochre Jelly
+  and E1 orcs led by Grukthar, new NPC Silas Crowe) and `docs/Owlbear-Rodeo/Session 2/`. Import the pack with
+  "add only" so the owner's edited notebook pages stay. Note: on the DM device the E7 fight has id `doip-fight-ochre-e5`.
+- After each session: ask the owner to export a backup (`#/backup`), then recap → chronicle chapter → pictures (ask first).
 
 ## Next steps (suggested)
-1. **Icespire Session 1** with friends on several phones; keep a list of problems during play.
+1. **Session 2** with friends; keep a list of problems during play. Confirm the real-phone checks in [QA.md](QA.md)
+   ("Real-phone checklist").
 2. **Fix pass** on that list (one commit per issue, like the playtest PR).
-3. Re-publish `database.rules.json` if the chronicle rules aren't live; check the pool and chronicle over Firebase.
-4. Optional: our own Thai for the translation gaps; QR export
-   (the last "Later" item in `docs/ROADMAP.md`).
+3. **Mule data bug:** English Mule in `src/data/srd-monster-details.json` is the Octopus stat block (5e-bits error);
+   fix from the SRD 5.2.1 PDF (and check the Thai entry), run `content-reviewer`.
+4. **Chapter 2** of the chronicle after Session 2 with the new character looks (Gemini only after Tan's yes).
+5. Optional: our own Thai for the translation gaps; QR export; DM approval / receiver accept for party give.
 
 ## Owner preferences (also in Claude's memory and CLAUDE.md)
-- Reply in English; UI in Thai with English game terms; generated proper names in English.
+- Reply in Thai (updated 2026-10-22); UI in Thai with English game terms; generated proper names in English.
 - Every dice roll: in-app roll **or** typed result from real dice.
 - Guided rules with a DM override (warn, don't block); Point Buy in the wizard.
 - No AI in the app (decided 2026-10-12); battle map = outside tool (e.g. Owlbear Rodeo).

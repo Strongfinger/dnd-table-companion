@@ -3,6 +3,37 @@
 QA passes: what was tested, what was fixed, and findings handed to the implementor.
 Newest pass first. Implementor: move an item to "Done" (or delete it) when it ships.
 
+> **Updated 2026-10-22:** added "Status now" and the "Real-phone checklist" below; marked items fixed since passes 5–8
+> with ✅ (nothing removed).
+
+## Status now (2026-10-22, `main` at PR #27)
+- **Unit tests:** 781 passing after PR #26 (PR #27 is a tool outside `src/`). `tsc -b`, lint and build were clean on
+  every merged PR. Run: `npm test`, `npx tsc -b`, `npm run lint`, `npm run build`.
+- **Browser checks:** Playwright in test mode (two tabs / two contexts, BroadcastChannel, no Firebase) for PRs #1–#26.
+  Fake devices for Firebase rooms: `scripts/lobby-test/*.cjs`.
+- **Real table:** playtest 2026-10-16 (fixed in PRs #1–#3); Session 1 played 2026-10-18 (feedback → PRs #5–#9).
+  No QA pass has been written for PRs #9–#26 on real phones over Firebase yet.
+- **Open data bug:** English **Mule** in `src/data/srd-monster-details.json` is the Octopus stat block (5e-bits);
+  fix from the SRD 5.2.1 PDF.
+
+## Real-phone checklist (next session, Firebase, 2+ phones + DM laptop)
+Nothing below has been checked over real Firebase on separate phones. Tick and date each one; write problems as a new pass.
+- [ ] DM leaves and rejoins with "กลับเข้าห้องเดิม" (same code, players and grants kept) (PR #1)
+- [ ] Kicked player disappears from **every** phone's member list; "let back in" shows them again (PR #3)
+- [ ] Player characters move into the room's campaign ("Dragon of Icespire Peak") on join; imported packs stay in it (PR #6)
+- [ ] Firebase cleanup: old room messages deleted (DM device, on open + every 15 min)
+- [ ] Level-up permission: ⬆️ hidden until "⬆️ ให้เลเวลอัป", sheet above allowed level refused (Pass 6) — matters for level 2 in Session 2
+- [ ] Reward pool: player takes an item; coin request → DM approves; DM's copy keeps coins (PR #16–#18)
+- [ ] Party give: item and coins between two phones in the room; 🤝 log line on both (PR #21); give sheet on `#/party` (PR #26)
+- [ ] House rules arrive at `#/lookup/house`, update when the DM edits, readable offline after the room ends (PR #23)
+- [ ] Sheet tabs: sticky tab bar + HP strip on small phones, nothing hidden under the 🎲 button (PR #25)
+- [ ] DM fight tracker: quick HP −/+, ⋯ menu, condition chips on the laptop; players' fight view still hides monster HP (PR #25)
+- [ ] Party overview room view: care box, sort, card/table (PR #26, checked by code only)
+- [ ] Renamed fight name reaches players (PR #11, code only)
+- [ ] Chronicle chapter 1 opens on a player's phone via link/QR and offline afterwards (works for the owner, 2026-10-19)
+- [ ] Handed-over monster removed from the player's phone after "เอาคืน" (Pass 4)
+- [ ] Older items from "Next QA pass should also cover" below (equip in a live room, Action Surge/Second Wind off-turn, airplane mode → reconnect)
+
 ## Pass 8 — players read house rules (`houseRules` room message, lookup tab 📏 House rules), commit 4b34078, 2026-10-21
 **Result:** pass. vitest 771/771, `tsc -b`, lint, build clean. **Tested** (preview build of HEAD, Chromium; DM 1280 px,
 player 390 px; DM and player in **two separate browser contexts** = separate IndexedDB, local test-mode room with the
@@ -17,20 +48,20 @@ Old app + new `houseRules` kind: `parseEnvelope` (`src/sync/envelope.ts:45`) rej
 silently (`localTransport.ts:46`, `firebaseTransport.ts:113`); no crash. No console errors.
 
 **Open (low):**
-- **Single search result can't be collapsed.** `isOpen = open === r.id || found.length === 1`
+- ✅ Fixed (6e0d12a). **Single search result can't be collapsed.** `isOpen = open === r.id || found.length === 1`
   (`src/screens/HouseRuleSearch.tsx:38`) forces it open; tapping the header does nothing. Fix: auto-open only while
   `open` is unset for that id, e.g. track a "closed" id, or drop the auto-open.
-- **Rule with an empty status (`status: ""`, e.g. from a pack) was not sent** while the editor shows 🟢 ใช้อยู่
+- ✅ Fixed + test (6e0d12a). **Rule with an empty status (`status: ""`, e.g. from a pack) was not sent** while the editor shows 🟢 ใช้อยู่
   (`isShared` used `??`, `src/model/houseRules.ts:30`). Already changed to `||` in the uncommitted working tree; add a test
   (`rulesToShare([rule('X', { status: '' })], 'doip')` → 1 rule).
-- **DM's own lookup tab mixes rules from all campaigns** (`ownRules`, `HouseRuleSearch.tsx:14`): with 2 campaigns the DM
+- ✅ Fixed (6e0d12a, filtered to the current campaign). **DM's own lookup tab mixes rules from all campaigns** (`ownRules`, `HouseRuleSearch.tsx:14`): with 2 campaigns the DM
   sees "Other Campaign Rule" next to DoIP rules, while players only get the room campaign's. Idea: filter to the current
   campaign (or label each rule with its campaign).
 - **A player in the room without a character gets no rules** (nor campaign/pool/party): catch-up is sent only on the
   player's `hello`, which needs a character (`src/app/lobby.tsx:394`, resync at `:229`). Picking a character later fixes it.
   Pre-existing design; matters only for a "spectator" phone.
 - Body text shows Markdown raw (`- item` lines) in the player view; the notebook page renders the same text. Cosmetic.
-- At HEAD the DM gets no warning that rule pages (body, linked page names) are shown to players; the uncommitted working tree
+- ✅ Kept (`RuleSharedHint`, 6e0d12a). At HEAD the DM gets no warning that rule pages (body, linked page names) are shown to players; the uncommitted working tree
   adds `RuleSharedHint` in `Notebook.tsx`. Keep it.
 
 **Check with real phones:** rules arrive over Firebase (not tested, test mode only); offline reading after the room ends.
@@ -44,12 +75,12 @@ and "replace" (no duplicates), backup download keeps `kind: 'rule'` and `parseBa
 no console errors. Generators / ImportPack / DmPanel unaffected; notes are not synced to players.
 
 **Open (low):**
-- **Changing a page's type keeps old field values that mean something else.** Quest → House rule keeps `status: 'open'`:
+- ✅ Fixed (fb23d53, `changeKind` in `src/model/note.ts`). **Changing a page's type keeps old field values that mean something else.** Quest → House rule keeps `status: 'open'`:
   the page shows raw "สถานะกฎ: open", the list line drops the status, and the editor select shows "🟢 ใช้อยู่" while `open`
   is stored (same for rule → quest with `active`, and place → rule with free-text `type`). Cause: the type select
   (`src/screens/Notebook.tsx:237`) only sets `kind`. Fix idea: on type change, drop a choice field whose value is not
   one of the new type's choices and use the new type's default (`createNote` defaults), plus a test.
-- **An older app build reading a `rule` page from IndexedDB would crash the notebook list** (`KIND_LABEL[n.kind].split`,
+- ✅ Fixed (fb23d53, unknown kinds open as Session pages). **An older app build reading a `rule` page from IndexedDB would crash the notebook list** (`KIND_LABEL[n.kind].split`,
   `Notebook.tsx:70`; `KIND_FIELDS[note.kind].filter`, `:141`). Only after a rollback/stale PWA on the same device;
   backup/pack import in an old build falls back to a Session page (fields kept, hidden). Fix idea (future-proof): in
   `withNoteDefaults`, map unknown kinds to `'session'`.
@@ -61,7 +92,7 @@ no console errors. Generators / ImportPack / DmPanel unaffected; notes are not s
 | Re-importing the campaign pack with "replace" didn't reset a fight already played | New checkbox on the import screen: reset started/finished fights too (back to the prepared fight, fight log cleared; PC sheet conditions stay). Before this: delete the fight in the tracker, then import with "add only". |
 
 **Open (low, owner: after the Firebase usage reset):**
-- **A removed (kicked) player still shows in the other players' room list.** Likely cause: the removed list lives only in
+- ✅ Fixed in PR #3 (2026-10-18; not yet checked on real phones). **A removed (kicked) player still shows in the other players' room list.** Likely cause: the removed list lives only in
   the DM's session (`session.kicked`); players filter with their own empty list (`visibleMembers` in `src/sync/lobby.ts`),
   and the removed player's member record stays in Firebase. Fix idea: the DM sends the removed list to the room (or
   players record the `kick` messages they see), or the DM deletes the member record.
@@ -87,7 +118,7 @@ and features tabs, overflow scan of 24 routes at 375 px, lazy chunks all in the 
 | Firebase messages piled up | Rules allow deleting messages > 1 h old; the DM's device cleans its rooms. Rules published by the owner 2026-10-13 |
 
 **Open (low):**
-- The edit screen's rule check says ✓ at level 3+ with no Subclass, and at level 4 with no ASI/feat. A warning would help.
+- ✅ Done in PR #2 (amber banner on the sheet). The edit screen's rule check says ✓ at level 3+ with no Subclass, and at level 4 with no ASI/feat. A warning would help.
 - The roller's big "last result" shows the last roll from any sheet (e.g. Nyx's Dagger while on Boom's sheet).
 - **Not verified live yet:** the Firebase cleanup (rules now published; check during the next real session), and everything in "Next QA pass" below
   that needs real phones.
