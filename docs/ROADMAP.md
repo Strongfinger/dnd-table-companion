@@ -1,5 +1,8 @@
 # Roadmap
 
+> **Updated 2026-10-22.** Phases 0–6 done; Phase 7 (party tools, house rules, UI redesign) and the team/tooling work
+> merged through PR #27. Live state for the next agent: [HANDOFF.md](HANDOFF.md). Quick view: **Now / Next** at the bottom.
+
 ## Phase 0 — Setup (½ day)
 - [x] Scaffold Vite + React + TS + Tailwind, add Thai font
 - [x] Add a Vitest test that runs
@@ -78,7 +81,10 @@ side panel with tabs (Notebook · Generators · Lookup) that opens without leavi
         18 skills, Action/Bonus Action/Reaction only suggest spells and features that fit, spells open in place + back
         button, ค้นหา tab for everyone, party rest on the DM tab, missing subclass/ASI warning, kicked players leave
         every list
-  - [ ] First real session with friends (Icespire Session 1) on several phones; check the Firebase cleanup live
+  - [x] First real session with friends: *Dragon of Icespire Peak* Session 1 played 2026-10-18 (5 players on phones);
+        its feedback became Phase 6 (PRs #5–#9)
+  - [ ] Still to confirm on real phones over Firebase (next session): DM rejoin ("กลับเข้าห้องเดิม"), kicked player
+        leaving every list, players' characters moving into the room's campaign on join, Firebase cleanup — see [QA.md](QA.md)
 - [x] Translation: Thai text for SRD rules content, game terms stay English, English original kept (TH/EN switch).
       Source: **DND-TH's translation, used with permission (2026-10-13)**; only SRD 5.2.1 (2024) entries, credit
       DND-TH. Our own translation only where DND-TH has none.
@@ -105,9 +111,33 @@ Owner requests that came out of the playtest and later table use; all done, none
 - [x] 2026-10-21 SRD magic items can go into the reward pool (✨ chip), get a wear slot after adding, and show a short Thai effect summary (`srd-magic-items-summary-th.json`, all 278) with a read-more page; the treasure generator can fill the pool
 - [x] 2026-10-21 New waist slot (เอว) for belts; belts worn on the legs move to it
 
+## Phase 7 — Party tools, house rules, new look ✅ done 2026-10-21 to 2026-10-22 (PRs #21, #23, #25, #26)
+- [x] 2026-10-21 Give items and coins to a party member (🤝 ส่งให้เพื่อน, PR #21): direct give, no DM approval; in a room the DM's device applies it
+- [x] 2026-10-21 House rule library: notebook page kind `rule` (📏 House rule, PR #23); players read the room campaign's rules at `#/lookup/house` (room message `houseRules`, offline copy); the owner's 3 rules are an import pack
+- [x] 2026-10-21 UI redesign (PR #25): player sheet in 5 tabs (ต่อสู้/ความสามารถ/คาถา/กระเป๋า/โน้ต) with HP always on top; DM fight tracker with quick HP −/+, PC/monster tags, condition chips, ⋯ menu, dice docked in the side panel
+- [x] 2026-10-22 Party overview redesign (`#/party`, PR #26): "ต้องดูแลก่อน" box, party HP total, Passive Perception, sort, card/table view, give sheet on friends' cards
+
+## Team and tools (not part of the app) ✅ 2026-10-21 to 2026-10-22
+- [x] 10 agents in 4 teams + work process: `.claude/agents/`, [TEAM.md](TEAM.md) (PR #19; status board rule PR #22)
+- [x] UX/UI design skills kit for `ux-ui-designer`: `.claude/ux-ui-kit/` + `.claude/skills/` (PR #24, upstream hooks left out)
+- [x] Agent guild: animated status board + Claude Code hooks on the owner's Mac, `tools/agent-guild/` (PR #27, merged 2026-10-22). Installed on the owner's Mac and confirmed moving 2026-10-22
+- [x] Party character redesign (all 5 approved 2026-10-22, Gemini art): local copy in `docs/Character Art/` (not in git yet; ask the owner before committing: faces are based on real friends)
+
 ## Later
 - [x] Content enhancement: SRD weapons/armor, class features and limited-use features, starting gear, magic items, spells, feats, poisons, Lookup tabs: done as the content plan E1–E7, F1, F2 in [RESEARCH.md](RESEARCH.md) (2026-10-13)
 - [ ] ~~Minimap / battle map~~ → use an outside tool (e.g. Owlbear Rodeo) next to the app (decided 2026-10-12)
 - [ ] ~~Claude API DM helper~~ → no AI (decided 2026-10-12)
 - [ ] QR code export/import of a character (optional)
 - [x] Item and equipment pictures: 98 painted SRD item pictures + 117 game-icons.net icons for gear, tools, poisons, foci, packs and ammunition, shown in the inventory, slots and item details; custom items can carry their own small picture (2026-10-20 plan in [ITEM-IMAGES.md](ITEM-IMAGES.md); built 2026-10-20, waist-slot belt picture 2026-10-21)
+
+## Now / Next (2026-10-22)
+**In progress / waiting on the owner**
+- [ ] Session 2 of *Dragon of Icespire Peak* (prep done 2026-10-21: read-aloud page, app pack with 2 fights, Owlbear maps/tokens in `docs/DM Scripts/Session 2` and `docs/Owlbear-Rodeo/Session 2`)
+
+**Next (suggested order)**
+1. [ ] Play Session 2; collect what broke or felt clunky in [QA.md](QA.md); confirm the real-phone checks listed there
+2. [ ] Fix pass on that list (one commit per issue)
+3. [ ] Small open QA items (low): house-rule text shows raw Markdown on players' phones; a phone in the room with no character gets no house rules/pool/party (see QA pass 8)
+4. [ ] Data bug: English **Mule** in `src/data/srd-monster-details.json` is really the Octopus stat block (5e-bits); fix from the SRD 5.2.1 PDF
+5. [ ] Chapter 2 of the journey chronicle after Session 2 (campaign-bard → artist, Gemini only with the owner's yes → content-reviewer); use the new character looks in `docs/Character Art/`
+6. [ ] Optional: our own Thai for the translation gaps; QR export of a character; DM approval / receiver accept for party give (offered, not asked for)
