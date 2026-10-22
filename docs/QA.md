@@ -25,6 +25,7 @@ Nothing below has been checked over real Firebase on separate phones. Tick and d
 - [ ] Level-up permission: ⬆️ hidden until "⬆️ ให้เลเวลอัป", sheet above allowed level refused (Pass 6) — matters for level 2 in Session 2
 - [ ] Reward pool: player takes an item; coin request → DM approves; DM's copy keeps coins (PR #16–#18)
 - [ ] Party give: item and coins between two phones in the room; 🤝 log line on both (PR #21); give sheet on `#/party` (PR #26)
+- [ ] Party give with accept (Phase 3, see "Pass 9" below): the 12 steps on two real phones + DM laptop
 - [ ] House rules arrive at `#/lookup/house`, update when the DM edits, readable offline after the room ends (PR #23)
 - [ ] Sheet tabs: sticky tab bar + HP strip on small phones, nothing hidden under the 🎲 button (PR #25)
 - [ ] DM fight tracker: quick HP −/+, ⋯ menu, condition chips on the laptop; players' fight view still hides monster HP (PR #25)
@@ -33,6 +34,31 @@ Nothing below has been checked over real Firebase on separate phones. Tick and d
 - [ ] Chronicle chapter 1 opens on a player's phone via link/QR and offline afterwards (works for the owner, 2026-10-19)
 - [ ] Handed-over monster removed from the player's phone after "เอาคืน" (Pass 4)
 - [ ] Older items from "Next QA pass should also cover" below (equip in a live room, Action Surge/Second Wind off-turn, airplane mode → reconnect)
+
+## Pass 9 — party give with receiver accept (Phase 3), 2026-10-22
+Checked in the browser at 360 px in test mode (DM tab + two player tabs, local BroadcastChannel, no Firebase), unit tests
+in `src/model/giveOffer.test.ts` and `src/db/giveOffers.test.ts`. **Not checked on real phones over Firebase.**
+Fake device for Firebase rooms: `node scripts/lobby-test/give-player.cjs ROOM offer|accept|decline [CHARACTER_ID] [--twice]`.
+
+Steps (A = sender, B = receiver, both players in the room; DM laptop open on the room):
+1. A: `#/party` → 🤝 ส่งของให้ B → pick a Potion ×1 → send. Message says "รอเพื่อนกดรับ"; A's potion count does **not** drop.
+2. A's sheet, tab กระเป๋า: the Potion shows "🤝 รอ B รับ …" with ยกเลิก. Coins offers show the same line under the purse.
+3. B (any page): amber box "🤝 A อยากส่งให้ B / Potion of Healing" with รับ / ไม่รับ.
+4. B taps รับ: B gets the potion, A loses one, both logs show "🤝 ส่ง … / ได้รับ …", the box and A's waiting line disappear.
+5. Tap รับ twice quickly (or `give-player.cjs … accept`, which sends it twice): the item moves **once**.
+6. B taps ไม่รับ: nothing moves, A's waiting line disappears. A taps ยกเลิก before B answers: B's box disappears.
+7. A offers, then spends/removes the item (or coins) before B accepts; B taps รับ: nothing moves, both see a red notice
+   "ส่ง … ไม่สำเร็จ / A มีเงินไม่พอ (หรือไม่มี … แล้ว)" with ปิด.
+8. B's phone offline (airplane mode) while A offers: after B reconnects the box shows. A offering while A is offline: the
+   offer goes out after reconnect (outbox).
+9. Kick B (DM) then try to accept from B's old tab: nothing moves. Offer to a player who left: "ไม่ได้อยู่ในห้อง" notice for A.
+10. Offers do not expire: leave one open for several minutes, it is still there; DM closes the room: all offers vanish and the
+    items stay with the senders. Open a new room: no old offers.
+11. DM device: giving between characters saved on the DM's device (no room) still moves at once (no accept step).
+12. Players never see DM-only data; export a backup: it contains no offers (they live in settings, which are not backed up).
+
+Browser result (test mode, 360 px): steps 1–7 and 10 (cancel, decline, accept once, accept twice at the same moment, sender
+lost the coins, reload shows pending offers again) behaved as described. Steps 8, 9 and 11 are by code and unit tests only.
 
 ## Pass 8 — players read house rules (`houseRules` room message, lookup tab 📏 House rules), commit 4b34078, 2026-10-21
 **Result:** pass. vitest 771/771, `tsc -b`, lint, build clean. **Tested** (preview build of HEAD, Chromium; DM 1280 px,

@@ -3,6 +3,7 @@ import UpdatePrompt from './app/UpdatePrompt'
 import PullToRefresh from './ui/PullToRefresh'
 import { HelpProvider } from './ui/help'
 import { LobbyProvider } from './app/lobby'
+import { GiveOfferNotice } from './screens/GiveOffers'
 import { useLobby } from './app/useLobby'
 import { useRoute, type Route } from './app/router'
 import About from './screens/About'
@@ -45,6 +46,7 @@ export default function App() {
     <HelpProvider>
     <LobbyProvider>
       <NavBar route={route} />
+      <GiveOfferNotice />
       {/* The tracker gets a wider page for laptops/tablets; sheets stay phone-width. */}
       {/* pb-36: room so the floating 🎲 button and bottom bars never cover the last item. */}
       <main className={`mx-auto min-h-dvh p-4 pb-36 ${route.name === 'fight' ? 'max-w-7xl' : route.name === 'party' ? 'max-w-7xl' : 'max-w-xl'}`}>

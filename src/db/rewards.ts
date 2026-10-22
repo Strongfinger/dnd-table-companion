@@ -13,13 +13,13 @@ import { logCharacterEvent } from './log'
 const POOL = 'reward-pool'
 const REQUESTS = 'coin-requests'
 
-async function read<T>(key: string): Promise<T[]> {
+export async function read<T>(key: string): Promise<T[]> {
   const v = (await db.settings.get(key))?.value
   return Array.isArray(v) ? (v as T[]) : []
 }
 
 /** Change a saved list; `fn` returns the new list and anything else the caller wants back. */
-async function change<T, R>(key: string, fn: (list: T[]) => { list: T[]; result: R }): Promise<R> {
+export async function change<T, R>(key: string, fn: (list: T[]) => { list: T[]; result: R }): Promise<R> {
   return db.transaction('rw', db.settings, async () => {
     const before = await read<T>(key)
     const r = fn(before)
@@ -28,7 +28,7 @@ async function change<T, R>(key: string, fn: (list: T[]) => { list: T[]; result:
   })
 }
 
-function watch<T>(key: string, onChange: (list: T[]) => void): () => void {
+export function watch<T>(key: string, onChange: (list: T[]) => void): () => void {
   const sub = liveQuery(() => read<T>(key)).subscribe({ next: onChange, error: (err) => console.error('watch', key, err) })
   return () => sub.unsubscribe()
 }

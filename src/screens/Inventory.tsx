@@ -27,6 +27,7 @@ import { characterLoad, formatLb, hasTypedWeight, itemUnitWeight, MAX_ITEM_WEIGH
 import { OVER_CAPACITY_SPEED } from '../rules'
 import { compressItemImage } from '../ui/imageResize'
 import { GiveCoinsForm, GiveItemForm } from './GiveForm'
+import { WaitingMarks } from './GiveOffers'
 
 type Change = (fn: (latest: Character) => Character) => void
 
@@ -137,6 +138,7 @@ function CoinPurse({ c, change }: { c: Character; change: Change }) {
       <p className={`mt-1 text-xs ${message ? (message.ok ? 'text-emerald-400' : 'text-red-400') : 'text-stone-500'}`}>
         {message?.text ?? `รวมมูลค่า ${gp.toLocaleString('en-US', { maximumFractionDigits: 2 })} GP · จ่ายเกินเหรียญที่มี จะแตกเหรียญใหญ่และทอนให้เอง`}
       </p>
+      <WaitingMarks characterId={c.id} coins />
       <GiveCoinsForm c={c} />
     </Section>
   )
@@ -193,6 +195,7 @@ function CoinRequestForm({ c }: { c: Character }) {
       <p className={`mt-1 text-xs ${message ? (message.ok ? 'text-emerald-400' : 'text-red-400') : 'text-stone-500'}`}>
         {message?.text ?? `รวมมูลค่า ${gp.toLocaleString('en-US', { maximumFractionDigits: 2 })} GP`}
       </p>
+      <WaitingMarks characterId={c.id} coins />
       <GiveCoinsForm c={c} />
       {mine.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm">
@@ -328,6 +331,7 @@ function ItemRow({ c, item, srd, slots, onEquip, change, noMore }: {
           </button>
         )}
       </div>
+      <WaitingMarks characterId={c.id} itemId={item.id} />
       {choosing && (
         <div className="mt-1 flex flex-wrap gap-1.5">
           {fits.map((s) => (

@@ -115,6 +115,7 @@ Owner requests that came out of the playtest and later table use; all done, none
 - [x] 2026-10-21 Give items and coins to a party member (🤝 ส่งให้เพื่อน, PR #21): direct give, no DM approval; in a room the DM's device applies it
 - [x] 2026-10-21 House rule library: notebook page kind `rule` (📏 House rule, PR #23); players read the room campaign's rules at `#/lookup/house` (room message `houseRules`, offline copy); the owner's 3 rules are an import pack
 - [x] 2026-10-21 UI redesign (PR #25): player sheet in 5 tabs (ต่อสู้/ความสามารถ/คาถา/กระเป๋า/โน้ต) with HP always on top; DM fight tracker with quick HP −/+, PC/monster tags, condition chips, ⋯ menu, dice docked in the side panel
+- [x] 2026-10-22 Party give with receiver accept (Phase 3): in a room a give is a pending offer, the receiver accepts or declines, the sender can cancel, the DM's device moves it once; offers never expire
 - [x] 2026-10-22 Party overview redesign (`#/party`, PR #26): "ต้องดูแลก่อน" box, party HP total, Passive Perception, sort, card/table view, give sheet on friends' cards
 
 ## Team and tools (not part of the app) ✅ 2026-10-21 to 2026-10-22
@@ -140,4 +141,4 @@ Owner requests that came out of the playtest and later table use; all done, none
 3. [ ] Small open QA items (low): house-rule text shows raw Markdown on players' phones; a phone in the room with no character gets no house rules/pool/party (see QA pass 8)
 4. [ ] Data bug: English **Mule** in `src/data/srd-monster-details.json` is really the Octopus stat block (5e-bits); fix from the SRD 5.2.1 PDF
 5. [ ] Chapter 2 of the journey chronicle after Session 2 (campaign-bard → artist, Gemini only with the owner's yes → content-reviewer); use the new character looks in `docs/Character Art/`
-6. [ ] Optional: our own Thai for the translation gaps; QR export of a character; DM approval / receiver accept for party give (offered, not asked for)
+6. [ ] Optional: our own Thai for the translation gaps; QR export of a character; DM approval for party give (offered, not asked for). Receiver accept: done 2026-10-22 (Phase 3)

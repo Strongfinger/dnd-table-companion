@@ -10,6 +10,7 @@ import type { LobbySession } from '../sync/lobby'
 import type { PartyCard } from '../sync/party'
 import type { CoinRequest, PoolItem } from '../model/rewards'
 import type { GiveRequest } from '../model/give'
+import type { GiveOffer } from '../model/giveOffer'
 import type { ConnectionStatus, Member } from '../sync/transport'
 
 export interface CharacterPick {
@@ -53,8 +54,12 @@ export interface LobbyApi {
   takeFromPool: (characterId: string, itemId: string, qty: number) => void
   /** Player: ask the DM to add or take coins from my character. */
   requestCoins: (characterId: string, request: Pick<CoinRequest, 'kind' | 'coin' | 'amount' | 'note'>) => void
-  /** Player: hand an item or coins from my character to another one in the room (the DM's device moves it). */
+  /** Player: offer an item or coins from my character to another one in the room. Nothing moves until they accept. */
   give: (request: GiveRequest) => void
+  /** Player: pending gives in the room (from the DM's device): offers to me and offers I made. */
+  giveOffers: GiveOffer[]
+  /** Player: accept / decline an offer made to my character, or cancel one I made (or close a failed one). */
+  answerOffer: (offerId: string, answer: 'accept' | 'decline' | 'cancel') => void
   /** Player: every character this device plays in the room (the picked one + any the DM handed over). */
   myCharacterIds: string[]
   /** DM: hand a character to a player's device (null = take it back). */
