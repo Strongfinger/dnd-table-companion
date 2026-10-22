@@ -60,11 +60,14 @@ function pressFrom(e: KeyboardEvent): KeyPress {
   }
 }
 
+export type HotkeyHandlers = Partial<Record<HotkeyAction, () => void>>
+
 /**
- * Run `handlers[action]` when a shortcut key is pressed. The handlers can change on every
- * render: the newest ones are always used (a ref), so two quick presses see fresh state.
+ * Run `handlers[action]` when a shortcut key is pressed. The handlers can change on every render:
+ * the newest ones are always used (kept in a ref), so even two quick presses see fresh state.
+ * `enabled` (the on/off switch) is read at press time too.
  */
-export function useHotkeys(handlers: Partial<Record<HotkeyAction, () => void>>, enabled: boolean, active = true) {
+export function useHotkeys(handlers: HotkeyHandlers, enabled: boolean) {
   const latest = useRef(handlers)
   const on = useRef(enabled)
   useEffect(() => {
@@ -72,7 +75,6 @@ export function useHotkeys(handlers: Partial<Record<HotkeyAction, () => void>>, 
     on.current = enabled
   })
   useEffect(() => {
-    if (!active) return
     const onKey = (e: KeyboardEvent) => {
       const action = hotkeyFor(pressFrom(e), on.current)
       const run = action && latest.current[action]
@@ -82,5 +84,24 @@ export function useHotkeys(handlers: Partial<Record<HotkeyAction, () => void>>, 
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active])
+  }, [])
+}
+
+const SAVED_KEY = 'tracker-hotkeys'
+
+/** Shortcuts are on unless the DM switched them off on this device (storage may be unavailable). */
+export function savedHotkeysOn(): boolean {
+  try {
+    return localStorage.getItem(SAVED_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+export function saveHotkeysOn(on: boolean) {
+  try {
+    localStorage.setItem(SAVED_KEY, on ? 'on' : 'off')
+  } catch {
+    // not saved: fine
+  }
 }

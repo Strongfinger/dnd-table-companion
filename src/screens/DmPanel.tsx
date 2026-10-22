@@ -4,7 +4,8 @@
 // - Generators: NPCs, places, loot, encounters (added to this fight)…
 // - Notebook: this campaign's pages (sessions, NPCs, places, quests…), read and edited in place
 // - Fight log
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { onPanelRequest } from '../ui/dmPanelBus'
 import { dockRoller, openRoller } from '../ui/rollerBus'
 import { addMonstersToFight } from '../db/turns'
 import type { Encounter } from '../model/encounter'
@@ -39,6 +40,12 @@ function savedTab(): PanelTab {
 
 export default function DmPanel({ encounter, log }: { encounter: Encounter; log: ReactNode }) {
   const [tab, setTab] = useState<PanelTab>(savedTab)
+  const panel = useRef<HTMLElement>(null)
+  // The Turn Card ("ดู Stat block เต็ม") and the "/" key ask for a tab; "/" also puts the cursor in the search box.
+  useEffect(() => onPanelRequest((t) => {
+    setTab(t)
+    if (t === 'lookup') setTimeout(() => panel.current?.querySelector<HTMLInputElement>('input[type="text"], input:not([type])')?.focus(), 50)
+  }), [])
   // This panel has its own 🎲 button (laptop), so the floating one steps aside.
   useEffect(() => dockRoller(), [])
   const choose = (t: PanelTab) => {
@@ -51,7 +58,7 @@ export default function DmPanel({ encounter, log }: { encounter: Encounter; log:
   }
 
   return (
-    <section className="rounded-xl bg-stone-800 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-9rem)] lg:flex-col">
+    <section ref={panel} className="rounded-xl bg-stone-800 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-9rem)] lg:flex-col">
       <div className="flex flex-wrap items-center gap-1 border-b border-stone-700 p-2">
         {TABS.map((t) => (
           <button
