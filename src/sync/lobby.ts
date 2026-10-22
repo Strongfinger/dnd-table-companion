@@ -93,6 +93,18 @@ export function addRecentHosted(rooms: LobbySession[], left: LobbySession): Lobb
   return [room, ...rooms.filter((r) => r.code !== room.code)].slice(0, MAX_RECENT_HOSTED)
 }
 
+/**
+ * DM: the session for opening a room with a code the DM typed (an old room left before it was
+ * remembered here, or hosted on another device). A room still on the recent list keeps what it
+ * had there (removed players, handed-over characters), with the campaign picked now. Null if the code is not valid.
+ */
+export function roomForCode(code: string, campaignId: string, local: boolean, recent: LobbySession[]): LobbySession | null {
+  if (!isValidRoomCode(code)) return null
+  const known = recent.find((r) => r.code === code)
+  if (known) return { ...known, campaignId, local }
+  return { code, role: 'dm', campaignId, characterId: null, characterName: null, local, kicked: [], shortRestSince: null, grants: [] }
+}
+
 /** The link in the QR code: opens the lobby with the code filled in. */
 export function joinLink(origin: string, code: string): string {
   return `${origin.replace(/\/$/, '')}/#/lobby/${code}`

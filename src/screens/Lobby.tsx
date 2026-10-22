@@ -64,6 +64,8 @@ function Start({ linkCode }: { linkCode: string | null }) {
   // Test mode (two browser tabs on this computer): for development, or if Firebase isn't set up.
   const [local, setLocal] = useState(!lobby.onlineAvailable)
   const typed = normalizeRoomCode(codeInput)
+  const [oldCode, setOldCode] = useState('')
+  const oldTyped = normalizeRoomCode(oldCode)
   const character = characters.find((c) => c.id === characterId)
 
   // Save the name first so the room shows it.
@@ -88,6 +90,20 @@ function Start({ linkCode }: { linkCode: string | null }) {
         >
           เปิดห้องใหม่
         </Button>
+        {/* An old room that isn't on the list above (left before this device remembered rooms, or hosted on another device). */}
+        <details className="mt-3 text-sm">
+          <summary className="cursor-pointer text-stone-400">จำรหัสห้องเดิมได้? เปิดห้องนั้นอีกครั้ง</summary>
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-stone-400">ผู้เล่นที่ยังอยู่ในห้องนั้นจะเชื่อมต่อกลับเอง ใช้กับห้องของคุณเองเท่านั้น</p>
+            <TextInput value={oldCode} placeholder="รหัสห้องเดิม 6 ตัว" onChange={setOldCode} />
+            <Button
+              className={`w-full ${campaignId !== ALL && isValidRoomCode(oldTyped) ? '' : 'opacity-40'}`}
+              onClick={() => campaignId !== ALL && isValidRoomCode(oldTyped) && saveName().then(() => lobby.createWithCode(oldTyped, campaignId, local))}
+            >
+              เปิดห้อง {isValidRoomCode(oldTyped) ? oldTyped : 'เดิม'} เป็น DM
+            </Button>
+          </div>
+        </details>
       </Section>
 
       <Section title="🧑 ผู้เล่น: เข้าห้อง">

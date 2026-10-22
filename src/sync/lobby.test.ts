@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addKicked, addRecentHosted, isDm, joinLink, lastHostedRoom, MAX_RECENT_HOSTED, recentHostedRooms, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
+import { addKicked, addRecentHosted, roomForCode, isDm, joinLink, lastHostedRoom, MAX_RECENT_HOSTED, recentHostedRooms, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
 import type { Member } from './transport'
 
 const member = (deviceId: string, name: string, role: Member['role'], online = true): Member =>
@@ -152,5 +152,27 @@ describe('recent hosted rooms (DM goes back to any of the last rooms)', () => {
 
   it('reads the single room an older version saved', () => {
     expect(recentHostedRooms({ ...room('AAAAAA'), shortRestSince: 5 })).toEqual([room('AAAAAA')])
+  })
+})
+
+describe('roomForCode (DM opens a room again by typing its code)', () => {
+  const recent = [{
+    code: 'K7QX4M', role: 'dm' as const, campaignId: 'old', characterId: null, characterName: null, local: false,
+    kicked: [{ deviceId: 'd9', name: 'Spam' }], shortRestSince: null, grants: [{ characterId: 'm1', deviceId: 'd2' }],
+  }]
+
+  it('a code not on the recent list opens a fresh DM room with that code and campaign', () => {
+    expect(roomForCode('AB23CD', 'camp1', false, recent)).toEqual({
+      code: 'AB23CD', role: 'dm', campaignId: 'camp1', characterId: null, characterName: null, local: false, kicked: [], shortRestSince: null, grants: [],
+    })
+  })
+
+  it('a code on the recent list keeps its removed players and handed-over characters, with the campaign picked now', () => {
+    expect(roomForCode('K7QX4M', 'camp2', false, recent)).toEqual({ ...recent[0], campaignId: 'camp2' })
+  })
+
+  it('an invalid code gives nothing', () => {
+    expect(roomForCode('K7QX4', 'camp1', false, recent)).toBeNull()
+    expect(roomForCode('K7QX4O', 'camp1', false, recent)).toBeNull()
   })
 })
