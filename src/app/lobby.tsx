@@ -45,7 +45,7 @@ import { givePoolItem, receiveCoinRequest, watchCoinRequests, watchPool } from '
 import { parseHouseRules } from '../model/houseRules'
 import { keepDmEconomy, parseCoinRequestBody, parseCoinRequests, parsePool, parseTake, type CoinRequest, type PoolItem } from '../model/rewards'
 import {
-  isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet, takenBack,
+  helloBody, isEditHello, MAX_GRANTS, mayChange, mergeEdit, parseActionBody, parseControl, parseEndTurn, parseSheetBody, playedCharacterIds, takeDmState, takeIncomingSheet, takenBack,
 } from '../sync/sheets'
 import { LobbyContext, type LobbyApi, type RoomRoll } from './useLobby'
 import type { ConnectionStatus, Member, RoomConnection } from '../sync/transport'
@@ -391,10 +391,12 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
    */
   function maybeHello() {
     const s = sessionRef.current
-    if (!s || s.role !== 'player' || !s.characterId || !needHello.current) return
+    if (!s || s.role !== 'player' || !needHello.current) return
     if (outbox.current.length > 0 || statusRef.current !== 'connected') return
     needHello.current = false
-    void getCharacter(s.characterId).then((c) => c && send('hello', { character: c }))
+    // No character yet: a hello without a sheet still makes the DM send the room's rules, pool and party.
+    if (!s.characterId) send('hello', helloBody(null))
+    else void getCharacter(s.characterId).then((c) => c && send('hello', helloBody(c)))
   }
 
   function onStatus(status: ConnectionStatus) {
