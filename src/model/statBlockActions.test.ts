@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import details from '../data/srd-monster-details.json'
 import type { MonsterDetail } from './monsterDetails'
-import { abilityShort, firstSentence, legendaryCost, legendaryUsesMax, parseAction, rechargeMin, rechargeReady } from './statBlockActions'
+import { abilityShort, firstSentence, legendaryCost, legendaryUsesMax, parseAction, parseSpellcasting, rechargeMin, rechargeReady } from './statBlockActions'
 
 describe('parseAction: attacks', () => {
   it('reads to-hit, reach, damage and the extra damage rider (Goblin Boss Scimitar)', () => {
@@ -9,6 +9,7 @@ describe('parseAction: attacks', () => {
     expect(a).toEqual({
       kind: 'attack', name: 'Scimitar', range: 'Melee', toHit: 4, reach: 'reach 5 ft.',
       damage: { dice: '1d6+2', average: 5, type: 'Slashing' },
+      damages: [{ dice: '1d6+2', average: 5, type: 'Slashing' }, { dice: '1d4', average: 2, type: 'Slashing' }],
       extra: 'plus 2 (1d4) Slashing damage if the attack roll had Advantage.',
     })
   })
@@ -33,9 +34,40 @@ describe('parseAction: attacks', () => {
     expect(a).toMatchObject({ kind: 'attack', toHit: -1, damage: { dice: '1d6', average: 3 } })
   })
 
-  it('keeps the attack but no damage button when the hit has no dice (flat 1 damage)', () => {
-    const a = parseAction({ name: 'Bite', text: 'Melee Attack Roll: +1, reach 5 ft. Hit: 1 Piercing damage.' })
-    expect(a).toMatchObject({ kind: 'attack', toHit: 1, damage: null, extra: '1 Piercing damage.' })
+  it('flat damage with no dice: the dice are the number (Piranha bite, with a note after the bonus)', () => {
+    const a = parseAction({ name: 'Bite', text: 'Melee Attack Roll: +5 (with Advantage if the target doesn’t have all its Hit Points), reach 5 ft. Hit: 1 Piercing damage.' })
+    expect(a).toMatchObject({
+      kind: 'attack', toHit: 5, reach: 'reach 5 ft. (with Advantage if the target doesn’t have all its Hit Points)',
+      damage: { dice: '1', average: 1, type: 'Piercing' }, extra: '',
+    })
+  })
+
+  it('a note after the bonus is kept (Ankheg Bite) and the acid rider gets its own damage part', () => {
+    const a = parseAction({ name: 'Bite', text: 'Melee Attack Roll: +5 (with Advantage if the target is Grappled by the ankheg), reach 5 ft. Hit: 10 (2d6 + 3) Slashing damage plus 3 (1d6) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).' })
+    expect(a).toMatchObject({ kind: 'attack', toHit: 5, reach: 'reach 5 ft. (with Advantage if the target is Grappled by the ankheg)' })
+    if (a.kind !== 'attack') throw new Error('not an attack')
+    expect(a.damages).toEqual([{ dice: '2d6+3', average: 10, type: 'Slashing' }, { dice: '1d6', average: 3, type: 'Acid' }])
+    expect(a.extra).toContain('Grappled condition (escape DC 13)')
+  })
+
+  it('every damage part gets its own entry: Adult Red Dragon Rend and Mummy Lord Rotting Fist', () => {
+    const rend = parseAction({ name: 'Rend', text: 'Melee Attack Roll: +14, reach 10 ft. Hit: 13 (1d10 + 8) Slashing damage plus 5 (2d4) Fire damage.' })
+    expect(rend.kind === 'attack' && rend.damages).toEqual([{ dice: '1d10+8', average: 13, type: 'Slashing' }, { dice: '2d4', average: 5, type: 'Fire' }])
+    const fist = parseAction({ name: 'Rotting Fist', text: 'Melee Attack Roll: +9, reach 5 ft. Hit: 15 (2d10 + 4) Bludgeoning damage plus 10 (3d6) Necrotic damage. If the target is a creature, it is cursed. While cursed, the target can’t regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.' })
+    // The curse's "10 (3d6) every 24 hours" is not damage: no "damage" word follows it.
+    expect(fist.kind === 'attack' && fist.damages).toEqual([{ dice: '2d10+4', average: 15, type: 'Bludgeoning' }, { dice: '3d6', average: 10, type: 'Necrotic' }])
+  })
+
+  it('Unicode minus in dice is read as "-" (Baboon bite 1d4 − 1) and the en dash too', () => {
+    const a = parseAction({ name: 'Bite', text: 'Melee Attack Roll: +1, reach 5 ft. Hit: 1 (1d4 − 1) Piercing damage.' })
+    expect(a).toMatchObject({ kind: 'attack', toHit: 1, damage: { dice: '1d4-1', average: 1, type: 'Piercing' } })
+    expect(parseAction({ name: 'X', text: 'Melee Attack Roll: –1, reach 5 ft. Hit: 2 (1d4 – 1) Piercing damage.' })).toMatchObject({ toHit: -1, damage: { dice: '1d4-1' } })
+  })
+
+  it('"+17 to hit" wording (Ancient Gold Dragon Rend)', () => {
+    const a = parseAction({ name: 'Rend', text: 'Melee Attack Roll: +17 to hit, reach 15 ft. Hit: 19 (2d8 + 10) Slashing damage plus 9 (2d8) Fire damage.' })
+    expect(a).toMatchObject({ kind: 'attack', toHit: 17, reach: 'reach 15 ft.', damage: { dice: '2d8+10' } })
+    expect(a.kind === 'attack' && a.damages).toHaveLength(2)
   })
 })
 
@@ -44,7 +76,7 @@ describe('parseAction: saves', () => {
     const a = parseAction({ name: 'Fire Breath', text: 'Dexterity Saving Throw: DC 21, each creature in a 60-foot Cone. Failure: 59 (17d6) Fire damage. Success: Half damage.' })
     expect(a).toEqual({
       kind: 'save', name: 'Fire Breath', ability: 'Dexterity', dc: 21, target: 'each creature in a 60-foot Cone',
-      damage: { dice: '17d6', average: 59, type: 'Fire' }, onSuccess: 'Half damage',
+      damage: { dice: '17d6', average: 59, type: 'Fire' }, damages: [{ dice: '17d6', average: 59, type: 'Fire' }], onSuccess: 'Half damage',
     })
   })
 
@@ -70,16 +102,26 @@ describe('parseAction: falls back to plain text', () => {
     for (const m of details as MonsterDetail[]) {
       for (const e of [...m.actions, ...m.bonusActions, ...m.reactions, ...m.legendaryActions]) {
         const a = parseAction(e)
-        if (/^(Melee|Ranged|Melee or Ranged) Attack Roll: [+-]\d+, /.test(e.text)) {
+        if (/^(Melee|Ranged|Melee or Ranged) Attack Roll: /.test(e.text)) {
           expect(a.kind, `${m.id} / ${e.name}`).toBe('attack')
           attacks++
           if (a.kind === 'attack' && a.damage) withDamage++
         }
       }
     }
-    expect(attacks).toBeGreaterThan(300)
-    // Nearly every attack has dice damage; a few are flat damage or conditions only.
-    expect(withDamage / attacks).toBeGreaterThan(0.9)
+    // Every attack roll in the SRD reads now (before: 430 of 440), and all but one have a damage part (before: 411).
+    expect(attacks).toBe(440)
+    expect(withDamage).toBeGreaterThanOrEqual(439)
+  })
+})
+
+describe('parseSpellcasting', () => {
+  it('reads save DC and spell attack bonus (Adult Red Dragon)', () => {
+    expect(parseSpellcasting('The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 20, +12 to hit with spell attacks):')).toEqual({ dc: 20, attack: 12 })
+  })
+  it('DC only (Mage) and neither', () => {
+    expect(parseSpellcasting('The mage casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 14):')).toEqual({ dc: 14, attack: null })
+    expect(parseSpellcasting('The creature casts spells.')).toEqual({ dc: null, attack: null })
   })
 })
 

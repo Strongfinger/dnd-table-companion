@@ -21,7 +21,10 @@ export type ParsedAction =
       toHit: number
       /** "reach 5 ft." or "range 80/320 ft." */
       reach: string
+      /** The first damage part (null if none). */
       damage: DamagePart | null
+      /** Every damage part in order: the Hit damage and riders like "plus 5 (2d4) Fire damage". */
+      damages: DamagePart[]
       /** Everything after the first damage: "plus 2 (1d4) Slashing damage if…", riders, conditions. */
       extra: string
     }
@@ -33,6 +36,7 @@ export type ParsedAction =
       /** Who it hits: "each creature in a 60-foot Cone". */
       target: string
       damage: DamagePart | null
+      damages: DamagePart[]
       /** What a successful save does after the damage: "Half damage" (empty if not stated). */
       onSuccess: string
     }
@@ -42,11 +46,18 @@ const ABILITY_SHORT: Record<string, string> = {
   Strength: 'STR', Dexterity: 'DEX', Constitution: 'CON', Intelligence: 'INT', Wisdom: 'WIS', Charisma: 'CHA',
 }
 
-/** "5 (1d6 + 2) Slashing damage" → { dice: '1d6+2', average: 5, type: 'Slashing' }. */
-function damageAt(text: string): { part: DamagePart; end: number } | null {
-  const m = /(\d+) \((\d+d\d+(?: [+-] \d+)?)\) ([A-Za-z]+) damage/.exec(text)
-  if (!m) return null
-  return { part: { dice: m[2].replace(/ /g, ''), average: Number(m[1]), type: m[3] }, end: m.index + m[0].length }
+const MINUS = /[−–]/g
+/** "5 (1d6 + 2) Slashing damage" and also flat "1 Piercing damage" (dice = the number). Unicode minus is read as "-". */
+const DAMAGE = /(\d+)(?: \((\d+d\d+(?: [+\-−–] \d+)?)\))? ([A-Za-z]+) damage/g
+
+function damageParts(text: string): { parts: DamagePart[]; firstEnd: number } {
+  const parts: DamagePart[] = []
+  let firstEnd = 0
+  for (const m of text.matchAll(DAMAGE)) {
+    if (parts.length === 0) firstEnd = (m.index ?? 0) + m[0].length
+    parts.push({ dice: (m[2] ?? m[1]).replace(MINUS, '-').replace(/ /g, ''), average: Number(m[1]), type: m[3] })
+  }
+  return { parts, firstEnd }
 }
 
 /** Read one action's text. `usage` ("Recharge 5–6") is kept on the entry, not here. */
@@ -55,14 +66,16 @@ export function parseAction(entry: Pick<StatBlockEntry, 'name' | 'text'>): Parse
   const raw: ParsedAction = { kind: 'text', name: entry.name, text }
 
   // "Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Slashing damage, plus …"
-  const atk = /^(Melee or Ranged|Melee|Ranged) Attack Roll: ([+-]\d+), (.+?) Hit: (.*)$/s.exec(text)
+  // The bonus may be followed by " to hit" or a note: "+5 (with Advantage if the target is Grappled), reach 5 ft."
+  const atk = /^(Melee or Ranged|Melee|Ranged) Attack Roll: ([+\-−–]\d+)(?: to hit)?(?: \(([^)]*)\))?, (.+?) Hit: (.*)$/s.exec(text)
   if (atk) {
-    const hit = atk[4]
-    const dmg = damageAt(hit)
+    const hit = atk[5]
+    const { parts, firstEnd } = damageParts(hit)
     return {
-      kind: 'attack', name: entry.name, range: atk[1], toHit: Number(atk[2]), reach: atk[3],
-      damage: dmg ? dmg.part : null,
-      extra: (dmg ? hit.slice(dmg.end) : hit).replace(/^[\s,.]+/, '').trim(),
+      kind: 'attack', name: entry.name, range: atk[1], toHit: Number(atk[2].replace(MINUS, '-')),
+      reach: atk[3] ? `${atk[4]} (${atk[3]})` : atk[4],
+      damage: parts[0] ?? null, damages: parts,
+      extra: (parts.length ? hit.slice(firstEnd) : hit).replace(/^[\s,.]+/, '').trim(),
     }
   }
 
@@ -70,14 +83,21 @@ export function parseAction(entry: Pick<StatBlockEntry, 'name' | 'text'>): Parse
   const save = /^(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throw: DC (\d+), (.+?)\. Failure: (.*)$/s.exec(text)
   if (save) {
     const fail = save[4]
-    const dmg = damageAt(fail)
+    const { parts } = damageParts(fail)
     const success = /Success: ([^.]*)\./.exec(fail)
     return {
       kind: 'save', name: entry.name, ability: save[1], dc: Number(save[2]), target: save[3],
-      damage: dmg ? dmg.part : null, onSuccess: success ? success[1].trim() : '',
+      damage: parts[0] ?? null, damages: parts, onSuccess: success ? success[1].trim() : '',
     }
   }
   return raw
+}
+
+/** A Spellcasting entry's numbers: "(spell save DC 20, +12 to hit with spell attacks)". Missing ones are null. */
+export function parseSpellcasting(text: string): { dc: number | null; attack: number | null } {
+  const dc = /spell save DC (\d+)/i.exec(text)?.[1]
+  const atk = /([+\-−–]\d+) to hit with spell attacks/i.exec(text)?.[1]
+  return { dc: dc ? Number(dc) : null, attack: atk ? Number(atk.replace(MINUS, '-')) : null }
 }
 
 /** "STR", "DEX"… for a save's ability name (falls back to the name). */

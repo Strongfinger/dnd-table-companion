@@ -7,7 +7,7 @@ import type { Character } from '../model/character'
 import { sheetOnlyConditions, type Combatant, type MonsterResult } from '../model/encounter'
 import { findMonsterForCombatant, type FullMonster, type StatBlockEntry } from '../model/monsterDetails'
 import {
-  abilityShort, firstSentence, legendaryCost, legendaryUsesMax, parseAction, rechargeMin, rechargeReady, type ParsedAction,
+  abilityShort, firstSentence, legendaryCost, legendaryUsesMax, parseAction, parseSpellcasting, rechargeMin, rechargeReady, type DamagePart, type ParsedAction,
 } from '../model/statBlockActions'
 import { buffedArmorClass, FRESH_TURN, formatModifier } from '../rules'
 
@@ -132,12 +132,23 @@ function NoStatBlock({ active, onUpdate }: { active: Combatant; onUpdate: Update
   )
 }
 
+/** 💥 for one damage part. Several parts (Hit plus a rider like "+5 (2d4) Fire") each get their own button. */
+function DamageButton({ d, name, label }: { d: DamagePart; name: string; label: (what: string) => string }) {
+  const flat = d.dice === String(d.average)
+  return (
+    <button type="button" className={rollBtn} aria-label={`${name} ทอยดาเมจ ${d.dice} ${d.type}`} onClick={() => openRoller({ expression: d.dice, label: label(`ดาเมจ (${d.type})`) })}>
+      💥 {d.average}{!flat && ` (${d.dice})`} {d.type}
+    </button>
+  )
+}
+
 const rollBtn = 'rounded-md bg-stone-700 px-2 py-0.5 text-sm font-bold hover:bg-stone-600'
 
 function MonsterActions({ active, m, onUpdate }: { active: Combatant; m: FullMonster; onUpdate: Update }) {
   const [openText, setOpenText] = useState<string | null>(null)
   const multi = m.actions.find((a) => a.name === 'Multiattack')
-  const rest = m.actions.filter((a) => a !== multi && a.name !== 'Spellcasting')
+  const casting = m.actions.find((a) => a.name === 'Spellcasting')
+  const rest = m.actions.filter((a) => a !== multi && a !== casting)
   const spent = active.spent ?? []
 
   return (
@@ -146,6 +157,7 @@ function MonsterActions({ active, m, onUpdate }: { active: Combatant; m: FullMon
       {rest.map((entry) => (
         <ActionLine key={entry.name} who={active.name} entry={entry} spent={spent.includes(entry.name)} onUpdate={onUpdate} />
       ))}
+      {casting && <SpellcastingLine who={active.name} entry={casting} />}
       {m.bonusActions.map((entry) => (
         <div key={entry.name}>
           <button type="button" className="text-left" aria-expanded={openText === entry.name} onClick={() => setOpenText(openText === entry.name ? null : entry.name)}>
@@ -172,28 +184,38 @@ function ActionLine({ who, entry, spent, onUpdate }: { who: string; entry: StatB
         <>
           <span className="text-xs text-stone-400">{a.range} · {a.reach}</span>
           <button type="button" className={rollBtn} aria-label={`${entry.name} ทอยโจมตี ${formatModifier(a.toHit)}`} onClick={() => openRoller({ expression: d20(a.toHit), label: label('โจมตี') })}>🎯 {formatModifier(a.toHit)}</button>
-          {a.damage && (
-            <button type="button" className={rollBtn} aria-label={`${entry.name} ทอยดาเมจ ${a.damage.dice}`} onClick={() => openRoller({ expression: a.damage!.dice, label: label(`ดาเมจ (${a.damage!.type})`) })}>
-              💥 {a.damage.average} ({a.damage.dice}) {a.damage.type}
-            </button>
-          )}
+          {a.damages.map((d, i) => <DamageButton key={i} d={d} name={entry.name} label={label} />)}
           {a.extra && <span className="text-xs text-stone-400">{a.extra}</span>}
         </>
       )}
       {a.kind === 'save' && (
         <>
           <span className="text-xs text-stone-300">DC {a.dc} {abilityShort(a.ability)} · {a.target}</span>
-          {a.damage && (
-            <button type="button" className={rollBtn} aria-label={`${entry.name} ทอยดาเมจ ${a.damage.dice}`} onClick={() => openRoller({ expression: a.damage!.dice, label: label(`ดาเมจ (${a.damage!.type})`) })}>
-              💥 {a.damage.average} ({a.damage.dice}) {a.damage.type}
-            </button>
-          )}
+          {a.damages.map((d, i) => <DamageButton key={i} d={d} name={entry.name} label={label} />)}
           {a.onSuccess && <span className="text-xs text-stone-400">สำเร็จ: {a.onSuccess}</span>}
           {!a.damage && <span className="text-xs text-stone-300">{entry.text.replace(/^.*?Failure: /s, 'Failure: ')}</span>}
         </>
       )}
       {/* Anything we could not read stays as the book wrote it. */}
       {a.kind === 'text' && <span className="text-stone-200">{a.text}</span>}
+    </div>
+  )
+}
+
+/** Spellcasting: the spell save DC and the spell attack bonus (🎯 opens the roller). The spell list stays in the full stat block. */
+function SpellcastingLine({ who, entry }: { who: string; entry: StatBlockEntry }) {
+  const { dc, attack } = parseSpellcasting(entry.text)
+  if (dc === null && attack === null) return <p><b>{entry.name}</b> <span className="text-stone-200">{firstSentence(entry.text)}</span></p>
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+      <b>{entry.name}</b>
+      {dc !== null && <span className="rounded bg-stone-800 px-1.5 text-xs text-stone-200">Spell save DC {dc}</span>}
+      {attack !== null && (
+        <button type="button" className={rollBtn} aria-label={`${entry.name} ทอยโจมตีด้วยคาถา ${formatModifier(attack)}`} onClick={() => openRoller({ expression: d20(attack), label: `${who} · ${entry.name} · โจมตีด้วยคาถา` })}>
+          🎯 {formatModifier(attack)} คาถา
+        </button>
+      )}
+      <span className="text-xs text-stone-400">รายชื่อคาถา: ดู Stat block เต็ม</span>
     </div>
   )
 }
