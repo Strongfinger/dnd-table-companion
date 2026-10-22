@@ -1,38 +1,28 @@
-// In-play tracking on the sheet: action economy, death saves, rests, spell slots, features, conditions, buffs.
+// In-play tracking on the sheet: Concentration, rests, Exhaustion, conditions, buffs.
+// (Action economy, death saves, spell slots and features moved to UsableNow.tsx.)
 // Every tap saves straight to the device; the rules live in src/rules/play.ts.
 import { useState } from 'react'
 import { useLobby } from '../app/useLobby'
 import type { SuggestionKind } from '../model/actionSuggestions'
-import { isDead } from '../model/actions'
 import type { Character } from '../model/character'
 import type { CharacterAction } from '../model/characterActions'
-import { CONDITIONS, exhaustionPenalty, hitDieSize, MAX_FEATURE_USES, spellSlotsFor, type Condition } from '../rules'
-import { ActionEconomyBar, Button, DiceRoll, HelpButton, Section } from '../ui/kit'
+import { CONDITIONS, exhaustionPenalty, hitDieSize, type Condition } from '../rules'
+import { Button, DiceRoll, HelpButton, Section } from '../ui/kit'
 import { Term } from '../ui/help'
 import ActionChoiceDialog from './ActionChoiceDialog'
 import BuffPanel from './BuffPanel'
 import { useCharacterAct } from './useCharacterAct'
-import { FeatureCard, FeaturePicker } from './FeatureCatalog'
-import { useFeatureTexts } from './useSrdData'
-import { featuresToAdd } from '../model/featureCatalog'
-import { CONDITION_TH, RECHARGE_LABEL } from '../ui/labels'
-
-const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
+import { CONDITION_TH } from '../ui/labels'
 
 export default function PlayPanel({ c }: { c: Character }) {
   const lobby = useLobby()
   const [message, setMessage] = useState('')
   const [resting, setResting] = useState(false)
   const [confirmLong, setConfirmLong] = useState(false)
-  // Which confirm dialog is open: an Action / Bonus Action / Reaction, or Concentration.
+  // The Concentration confirm dialog (Action / Bonus Action / Reaction live in UsableNow).
   const [pending, setPending] = useState<SuggestionKind | null>(null)
 
-  const { act: apply, asPlayer, waitingForTurn } = useCharacterAct(c)
-  const [picking, setPicking] = useState(false)
-  const [openFeature, setOpenFeature] = useState<string | null>(null)
-  const featureTexts = useFeatureTexts()
-  const canAddFeatures = featuresToAdd(c).length > 0
-
+  const { act: apply, asPlayer } = useCharacterAct(c)
   /** Send one action and show what happened (or why it was refused). */
   const act = async (action: CharacterAction) => {
     const { text, refused } = await apply(action)
@@ -40,10 +30,6 @@ export default function PlayPanel({ c }: { c: Character }) {
     else if (text) setMessage(text)
   }
   const atZero = c.hp.current === 0
-  const dead = isDead(c)
-  const stable = atZero && c.deathSaves.successes >= 3
-
-  const deathSave = (d20: number, manual: boolean) => act({ type: 'deathSave', d20, manual })
 
   function useHitDie(roll: number, manual: boolean) {
     if (atZero || c.hitDiceSpent >= c.level) return setMessage(atZero ? 'HP 0 ใช้ Hit Dice ไม่ได้' : 'Hit Dice หมดแล้ว')
@@ -61,23 +47,6 @@ export default function PlayPanel({ c }: { c: Character }) {
     act({ type: 'longRest' })
   }
 
-  /**
-   * One tap = one use: tap a full pip to spend one, an empty pip to give one back.
-   * (Never several at once: a mis-tap on a phone can't burn all the slots.)
-   */
-  const tapPip = (used: number, i: number) => (i < used ? used - 1 : used + 1)
-
-  const slots = c.spellSlots.map((s, i) => ({ ...s, level: i })).filter((s) => s.max > 0)
-  // Characters made before slots existed have none set; offer the class table in one tap.
-  const slotsMissing = slots.length === 0 && spellSlotsFor(c.className, c.level).some((n) => n > 0)
-
-  const tapSlot = (level: number, i: number) => act({ type: 'setSlotUsed', level, used: tapPip(c.spellSlots[level].used, i) })
-
-  function tapFeature(id: string, i: number) {
-    const f = c.features.find((x) => x.id === id)
-    if (f) act({ type: 'setFeatureUsed', featureId: id, used: tapPip(f.used, i) })
-  }
-
   const changeExhaustion = (delta: number) => act({ type: 'setExhaustion', level: c.exhaustion + delta })
   const toggleCondition = (cond: Condition) => act({ type: 'setCondition', condition: cond, on: !c.conditions.includes(cond) })
   const penalty = exhaustionPenalty(c.exhaustion)
@@ -86,40 +55,6 @@ export default function PlayPanel({ c }: { c: Character }) {
     <Section title="ระหว่างเล่น">
       {/* HP sits above the tabs on the sheet (HpCard), so it never scrolls away. */}
       {message && <p className="mb-2 rounded-lg bg-stone-900 p-2 text-sm text-amber-200">{message}</p>}
-
-      {/* Action economy for this turn (the combat tracker resets it automatically) */}
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <ActionEconomyBar
-            economy={c.turn}
-            // Using one asks what for (then logs it); tapping a used one gives it back (not for players in a room).
-            onToggle={(kind) => {
-              if (c.turn[kind]) return act({ type: 'setActionUsed', kind, used: false })
-              if (waitingForTurn && kind !== 'reaction') return setMessage('🔒 ใช้ Action / Bonus Action ได้เฉพาะตาของตัวเอง (Reaction ใช้ได้ตลอด)')
-              setPending(kind)
-            }}
-            locked={waitingForTurn ? ['action', 'bonusAction'] : []}
-          />
-        </div>
-        {!asPlayer && (
-          <Button className="whitespace-nowrap px-2 text-sm" onClick={() => act({ type: 'resetTurn' })}>
-            ↻ เทิร์นใหม่
-          </Button>
-        )}
-      </div>
-
-      {/* Death saves */}
-      {atZero && (
-        <div className="mt-3 rounded-lg bg-red-950/60 p-3">
-          <div className="mb-2 font-bold text-red-300">{dead ? '💀 ตายแล้ว' : stable ? <Term name="Stable">อาการคงที่ (Stable)</Term> : <Term name="Death Save">Death Saves (DC 10)</Term>}</div>
-          {dead && <Button className="mb-2 w-full" onClick={() => act({ type: 'revive' })}>✨ ชุบชีวิต (เช่น Revivify): กลับมาที่ 1 HP</Button>}
-          <div className="flex justify-between text-sm">
-            <span>สำเร็จ {'●'.repeat(c.deathSaves.successes)}{'○'.repeat(3 - c.deathSaves.successes)}</span>
-            <span>ล้มเหลว {'●'.repeat(c.deathSaves.failures)}{'○'.repeat(3 - c.deathSaves.failures)}</span>
-          </div>
-          {!dead && !stable && <div className="mt-2"><DiceRoll sides={20} label="Death Save" onRoll={deathSave} /></div>}
-        </div>
-      )}
 
       {/* Concentration: started through the confirm dialog, so it's always logged */}
       <div className="mt-4 flex items-center gap-2">
@@ -132,72 +67,6 @@ export default function PlayPanel({ c }: { c: Character }) {
           <Button className="flex-1 text-sm" onClick={() => setPending('concentration')}>🔮 เริ่ม Concentration</Button>
         )}
       </div>
-
-      {/* Spell slots */}
-      {slotsMissing && (
-        <div className="mt-4 rounded-lg bg-stone-900 p-3 text-sm">
-          <p className="mb-2 text-stone-400">Spell Slots ยังไม่ได้ตั้ง</p>
-          <Button className="w-full" onClick={() => act({ type: 'setSlotsFromTable' })}>
-            ✨ ตั้ง Spell Slots ตามตาราง {c.className} {c.level}
-          </Button>
-        </div>
-      )}
-      {slots.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-1 text-sm text-stone-400"><Term name="Spell Slots" />{c.className === 'Warlock' && ' (Pact Magic: คืนเมื่อพักสั้น)'} · {asPlayer ? 'แตะเพื่อใช้ (DM เป็นคนคืน)' : 'แตะเพื่อใช้/คืน'}</div>
-          {slots.map((s) => (
-            <div key={s.level} className="flex items-center gap-2 py-1">
-              <span className="w-10 text-sm">{SLOT_LABEL[s.level]}</span>
-              {Array.from({ length: s.max }, (_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`${SLOT_LABEL[s.level]} slot ${i + 1}`}
-                  onClick={() => tapSlot(s.level, i)}
-                  className={`h-7 w-7 rounded-full border-2 border-violet-400 ${i < s.used ? 'bg-transparent' : 'bg-violet-500'}`}
-                />
-              ))}
-              <span className="text-xs text-stone-400">{s.max - s.used}/{s.max}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Limited-use features (tap a name for its card; "+ จาก SRD" adds catalog features) */}
-      {(c.features.length > 0 || canAddFeatures) && (
-        <div className="mt-4">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className="text-sm text-stone-400">ความสามารถที่ใช้ได้จำกัด · แตะชื่อเพื่อดู/ใช้{asPlayer ? ' (DM เป็นคนคืน)' : ''}</span>
-            {canAddFeatures && !picking && <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => setPicking(true)}>+ จาก SRD</Button>}
-          </div>
-          {picking && <FeaturePicker c={c} onClose={() => setPicking(false)} />}
-          {c.features.map((f) => (
-            <div key={f.id}>
-              {f.pool || f.max > 10 ? (
-                <PoolRow f={f} canGiveBack={!asPlayer} onOpen={() => setOpenFeature(openFeature === f.id ? null : f.id)}
-                  onSet={(used) => act({ type: 'setFeatureUsed', featureId: f.id, used })} />
-              ) : (
-                <div className="flex flex-wrap items-center gap-2 py-1">
-                  <button type="button" className="min-w-28 text-left text-sm underline decoration-stone-600 underline-offset-4" onClick={() => setOpenFeature(openFeature === f.id ? null : f.id)}>
-                    {f.name}
-                  </button>
-                  {Array.from({ length: f.max }, (_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      aria-label={`${f.name} ${i + 1}`}
-                      onClick={() => tapFeature(f.id, i)}
-                      className={`h-7 w-7 rounded border-2 border-amber-400 ${i < f.used ? 'bg-transparent' : 'bg-amber-500'}`}
-                    />
-                  ))}
-                  <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
-                </div>
-              )}
-              {openFeature === f.id && <FeatureCard c={c} featureId={f.id} texts={featureTexts} />}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Rests */}
       <div className="mt-4 text-sm text-stone-400"><Term name="Hit Dice" />: d{hitDieSize(c)} เหลือ {c.level - c.hitDiceSpent}/{c.level}</div>
@@ -282,28 +151,5 @@ export default function PlayPanel({ c }: { c: Character }) {
         />
       )}
     </Section>
-  )
-}
-
-/** A pool of points (Lay On Hands, Focus Points…): spend any amount; the DM (or offline play) can give some back. */
-function PoolRow({ f, canGiveBack, onSet, onOpen }: { f: Character['features'][number]; canGiveBack: boolean; onSet: (used: number) => void; onOpen: () => void }) {
-  const [amount, setAmount] = useState('1')
-  const n = Math.max(1, Math.min(MAX_FEATURE_USES, Number(amount) || 1))
-  const left = f.max - f.used
-  return (
-    <div className="flex flex-wrap items-center gap-2 py-1">
-      <button type="button" className="min-w-28 text-left text-sm underline decoration-stone-600 underline-offset-4" onClick={onOpen}>{f.name}</button>
-      <span className="font-bold text-amber-300">{left}/{f.max}</span>
-      <input
-        className="w-14 rounded-lg border border-stone-600 bg-stone-900 px-2 py-1 text-center text-base"
-        inputMode="numeric"
-        aria-label={`จำนวน ${f.name}`}
-        value={amount}
-        onChange={(e) => setAmount(e.target.value.replace(/\D/g, '').slice(0, 3))}
-      />
-      <Button className={`px-3 py-1 text-sm ${left < n ? 'opacity-40' : ''}`} onClick={() => left >= n && onSet(f.used + n)}>ใช้</Button>
-      {canGiveBack && <Button className={`px-3 py-1 text-sm ${f.used < n ? 'opacity-40' : ''}`} onClick={() => f.used >= n && onSet(f.used - n)}>คืน</Button>}
-      <span className="text-xs text-stone-400">{RECHARGE_LABEL[f.recharge]}</span>
-    </div>
   )
 }

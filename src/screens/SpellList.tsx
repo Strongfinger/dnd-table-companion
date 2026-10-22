@@ -223,7 +223,7 @@ function SpellPicker({ c, srd, onAdd }: { c: Character; srd: SrdSpell[] | null; 
  * Cast one spell: pick the slot (lowest free one first; higher = upcast) or a Ritual, see what it costs,
  * then apply it as the usual checked actions (Action / Bonus Action / Reaction, slot, Concentration).
  */
-function CastPanel({ c, spell, info, onDone }: { c: Character; spell: CharacterSpell; info: SrdSpell | null; onDone: (note?: string) => void }) {
+export function CastPanel({ c, spell, info, onDone }: { c: Character; spell: CharacterSpell; info: SrdSpell | null; onDone: (note?: string) => void }) {
   const { act } = useCharacterAct(c)
   // Homebrew spells (not in the SRD) are taken as a 1-Action spell without Concentration.
   const castable: CastableSpell = {
