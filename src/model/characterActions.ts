@@ -42,6 +42,11 @@ export type CharacterAction =
   /** A temporary buff (rules/buffs.ts); one with the same name is replaced. */
   | { type: 'addBuff'; buff: Buff }
   | { type: 'removeBuff'; buffId: string }
+  /**
+   * The tracker's "เลิกทำ" (undo) puts a PC's HP, death saves, conditions and Concentration back to what
+   * they were before a batch. App-only: never sent by a phone (parseCharacterAction rejects it, players may not).
+   */
+  | { type: 'restoreVitals'; hp: { current: number; temp: number }; deathSaves: { successes: number; failures: number }; conditions: Condition[]; concentration: string }
 
 const SLOT_LABEL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th']
 const hpText = (h: Character['hp']) => `HP ${h.current}/${h.max}${h.temp ? ` (+${h.temp} Temp)` : ''}`
@@ -176,6 +181,15 @@ export function applyCharacterAction(c: Character, a: CharacterAction): ActionRe
         character: { ...c, buffs: addBuff(c.buffs, a.buff) },
         text: `✨ ${c.name} ได้ ${a.buff.name}${mods ? ` (${mods})` : ''}${a.buff.note ? ` · ${a.buff.note}` : ''} · ${BUFF_ENDS_LABEL[a.buff.ends]}`,
       }
+    }
+    case 'restoreVitals': {
+      const hp = { ...c.hp, current: Math.min(c.hp.max, Math.max(0, Math.floor(a.hp.current))), temp: Math.max(0, Math.floor(a.hp.temp)) }
+      const conditions = a.conditions.filter((x, i, all) => CONDITION_NAMES.includes(x) && all.indexOf(x) === i)
+      const same = hp.current === c.hp.current && hp.temp === c.hp.temp && a.concentration === c.concentration
+        && a.deathSaves.successes === c.deathSaves.successes && a.deathSaves.failures === c.deathSaves.failures
+        && conditions.length === c.conditions.length && conditions.every((x) => c.conditions.includes(x))
+      if (same) return null
+      return { character: { ...c, hp, deathSaves: { ...a.deathSaves }, conditions, concentration: a.concentration }, text: '' }
     }
     case 'removeBuff': {
       const b = c.buffs.find((x) => x.id === a.buffId)

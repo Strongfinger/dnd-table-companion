@@ -142,3 +142,36 @@ describe('using Action / Bonus Action / Reaction is logged with what it was for'
     expect(parseCharacterAction({ type: 'setActionUsed', kind: 'reaction', used: true, detail: 5 })).toBeNull()
   })
 })
+
+describe('restoreVitals (the tracker undo)', () => {
+  const hit = applyCharacterAction(cleric, { type: 'damage', amount: 20, critical: false })!.character // 0 HP, Unconscious, dying
+  const restore: CharacterAction = {
+    type: 'restoreVitals', hp: { current: 11, temp: 0 }, deathSaves: { successes: 0, failures: 0 }, conditions: [], concentration: '',
+  }
+
+  it('puts HP, death saves, conditions and Concentration back', () => {
+    expect(hit.hp.current).toBe(0)
+    expect(hit.conditions).toContain('Unconscious')
+    const r = applyCharacterAction(hit, restore)!.character
+    expect(r.hp).toEqual(cleric.hp)
+    expect(r.conditions).toEqual([])
+    expect(r.deathSaves).toEqual({ successes: 0, failures: 0 })
+  })
+  it('restores Concentration lost at 0 HP', () => {
+    const conc = { ...cleric, concentration: 'Bless' }
+    const down = applyCharacterAction(conc, { type: 'damage', amount: 20, critical: false })!.character
+    expect(down.concentration).toBe('')
+    expect(applyCharacterAction(down, { ...restore, concentration: 'Bless' })!.character.concentration).toBe('Bless')
+  })
+  it('keeps HP inside 0..max and only real conditions, once each', () => {
+    const r = applyCharacterAction(hit, { ...restore, hp: { current: 99, temp: -3 }, conditions: ['Prone', 'Prone', 'Exhaustion' as never] })!.character
+    expect(r.hp).toMatchObject({ current: 11, temp: 0 })
+    expect(r.conditions).toEqual(['Prone'])
+  })
+  it('does nothing (null) when the sheet already matches', () => {
+    expect(applyCharacterAction(cleric, restore)).toBeNull()
+  })
+  it('is never accepted from another device', () => {
+    expect(parseCharacterAction(restore)).toBeNull()
+  })
+})
