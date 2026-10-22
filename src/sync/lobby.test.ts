@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addKicked, isDm, joinLink, lastHostedRoom, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
+import { addKicked, addRecentHosted, isDm, joinLink, lastHostedRoom, MAX_RECENT_HOSTED, recentHostedRooms, parseKick, parseLobbySession, rollerName, visibleMembers } from './lobby'
 import type { Member } from './transport'
 
 const member = (deviceId: string, name: string, role: Member['role'], online = true): Member =>
@@ -112,5 +112,45 @@ describe('lastHostedRoom', () => {
     expect(lastHostedRoom({ ...hosted, role: 'player' })).toBeNull()
     expect(lastHostedRoom({ ...hosted, code: 'nope' })).toBeNull()
     expect(lastHostedRoom(null)).toBeNull()
+  })
+})
+
+describe('recent hosted rooms (DM goes back to any of the last rooms)', () => {
+  const room = (code: string, campaignId = 'camp1') => ({
+    code, role: 'dm' as const, campaignId, characterId: null, characterName: null, local: false, kicked: [], shortRestSince: null, grants: [],
+  })
+
+  it('leaving a second room keeps the first one (the bug: lobby2 replaced lobby1)', () => {
+    let rooms = addRecentHosted([], room('AAAAAA'))
+    rooms = addRecentHosted(rooms, room('BBBBBB', 'camp2'))
+    expect(rooms.map((r) => r.code)).toEqual(['BBBBBB', 'AAAAAA'])
+  })
+
+  it('leaving a room again moves it first with its newest state, without a duplicate', () => {
+    const rooms = addRecentHosted([room('BBBBBB'), room('AAAAAA')], { ...room('AAAAAA', 'camp3'), shortRestSince: 99 })
+    expect(rooms.map((r) => r.code)).toEqual(['AAAAAA', 'BBBBBB'])
+    expect(rooms[0]).toEqual(room('AAAAAA', 'camp3'))
+  })
+
+  it('keeps only the newest few rooms', () => {
+    let rooms: ReturnType<typeof recentHostedRooms> = []
+    for (const c of ['AAAAAA', 'BBBBBB', 'CCCCCC', 'DDDDDD', 'EEEEEE', 'FFFFFF']) rooms = addRecentHosted(rooms, room(c))
+    expect(rooms).toHaveLength(MAX_RECENT_HOSTED)
+    expect(rooms[0].code).toBe('FFFFFF')
+    expect(rooms.some((r) => r.code === 'AAAAAA')).toBe(false)
+  })
+
+  it('a player session is never added', () => {
+    expect(addRecentHosted([room('AAAAAA')], { ...room('BBBBBB'), role: 'player' })).toEqual([room('AAAAAA')])
+  })
+
+  it('reads a saved list, skipping bad entries and duplicates', () => {
+    expect(recentHostedRooms([room('AAAAAA'), { code: 'bad' }, room('AAAAAA', 'other'), room('BBBBBB')]).map((r) => r.code)).toEqual(['AAAAAA', 'BBBBBB'])
+    expect(recentHostedRooms(null)).toEqual([])
+    expect(recentHostedRooms('junk')).toEqual([])
+  })
+
+  it('reads the single room an older version saved', () => {
+    expect(recentHostedRooms({ ...room('AAAAAA'), shortRestSince: 5 })).toEqual([room('AAAAAA')])
   })
 })

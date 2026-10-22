@@ -29,7 +29,7 @@ import { parsePlayerView, type PlayerEncounterView } from '../model/playerView'
 import { parseRollEvent, rollEventText, type RollEvent } from '../model/rollEvent'
 import { Deduper, makeEnvelope, RateLimiter, type Envelope } from '../sync/envelope'
 import { cleanupOldMessages, firebaseTransport } from '../sync/firebaseTransport'
-import { addKicked, isDm, isKicked, parseKick, lastHostedRoom, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
+import { addKicked, isDm, isKicked, parseKick, addRecentHosted, recentHostedRooms, parseLobbySession, rollerName, type LobbySession } from '../sync/lobby'
 import { isShareId } from '../sync/chronicleShare'
 import { localTransport } from '../sync/localTransport'
 import { newRoomCode } from '../sync/roomCode'
@@ -58,7 +58,7 @@ const OUTBOX = 'lobby-outbox'
 const APPLIED = 'lobby-applied'
 /** DM: the last room codes hosted on this device (their old messages are cleaned up). */
 const HOSTED_ROOMS = 'lobby-hosted-rooms'
-/** DM: the room left last, so "back to my room" opens the same code again. */
+/** DM: the last rooms left (newest first), so "back to my room" opens one of them again with the same code. An older version saved one room here. */
 const LAST_HOSTED = 'lobby-last-hosted'
 const RETRY_MS = 4000
 /** Fight-log lines per message. */
@@ -97,7 +97,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>('offline')
   const [members, setMembers] = useState<Member[]>([])
   const [kickedNotice, setKickedNotice] = useState<string | null>(null)
-  const [lastHosted, setLastHosted] = useState<LobbySession | null>(null)
+  const [recentHosted, setRecentHosted] = useState<LobbySession[]>([])
   const [fight, setFightState] = useState<PlayerEncounterView | null>(null)
   /** Player: the short rest the DM started (from 'rest' messages). The DM keeps it in the session. */
   const [restSince, setRestSince] = useState<number | null>(null)
@@ -583,7 +583,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     })
     const tabLast = sessionStorage.getItem(LAST_HOSTED)
     ;(tabLast ? Promise.resolve(JSON.parse(tabLast) as unknown) : getSetting<unknown>(LAST_HOSTED)).then((saved) => {
-      if (!cancelled) setLastHosted(lastHostedRoom(saved))
+      if (!cancelled) setRecentHosted(recentHostedRooms(saved))
     })
     return () => {
       cancelled = true
@@ -821,10 +821,18 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
       await moveToCampaign(playedNow(), campaignId)
       send('campaign', campaignMessage(campaign))
     },
-    lastHosted,
+    recentHosted,
     playedIds: session?.role === 'dm' ? playedCharacterIds(members, (id) => isKicked(session.kicked, id), session.grants) : [],
-    rejoinLast: () => {
-      if (lastHosted && !sessionRef.current) connect(lastHosted)
+    rejoin: (code) => {
+      const room = recentHosted.find((r) => r.code === code)
+      if (room && !sessionRef.current) connect(room)
+    },
+    forgetHosted: (code) => {
+      const room = recentHosted.find((r) => r.code === code)
+      if (!room) return
+      const rooms = recentHosted.filter((r) => r.code !== code)
+      store(LAST_HOSTED, rooms, room.local)
+      setRecentHosted(rooms)
     },
     join: (code, character, local) =>
       connect({ code, role: 'player', campaignId: null, characterId: character?.id ?? null, characterName: character?.name ?? null, local, kicked: [], shortRestSince: null, grants: [] }),
@@ -835,10 +843,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
         if (s.shortRestSince) send('rest', { since: null })
         // The room ends: pending gives go away (the items never left their senders).
         void clearGiveOffers()
-        // Remember the room, so the DM can come back to the same code with the same players.
-        const last = lastHostedRoom(s)
-        store(LAST_HOSTED, last, s.local)
-        setLastHosted(last)
+        // Remember the room (with the other recent ones), so the DM can come back to the same code with the same players.
+        const rooms = addRecentHosted(recentHosted, s)
+        store(LAST_HOSTED, rooms, s.local)
+        setRecentHosted(rooms)
       }
       // Player: handed-over characters belong to the DM; their copies leave with me (they come back on rejoin).
       if (s?.role === 'player' && !s.local) for (const id of takenBack(s.grants.map((g) => g.characterId), [], s.characterId)) void deleteCharacter(id)

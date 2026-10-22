@@ -69,6 +69,30 @@ export function lastHostedRoom(saved: unknown): LobbySession | null {
   return s && s.role === 'dm' ? { ...s, shortRestSince: null } : null
 }
 
+/** How many rooms the DM can go back to (the newest left first). */
+export const MAX_RECENT_HOSTED = 5
+
+/**
+ * DM: the rooms this device hosted and left, newest first, to open one again with the same code.
+ * Reads a saved list, or the single room an older version saved.
+ */
+export function recentHostedRooms(saved: unknown): LobbySession[] {
+  const list = Array.isArray(saved) ? saved : saved == null ? [] : [saved]
+  const rooms: LobbySession[] = []
+  for (const item of list) {
+    const s = lastHostedRoom(item)
+    if (s && !rooms.some((r) => r.code === s.code)) rooms.push(s)
+  }
+  return rooms.slice(0, MAX_RECENT_HOSTED)
+}
+
+/** The recent rooms with the room just left put first (replacing an older copy of it), kept to the newest few. */
+export function addRecentHosted(rooms: LobbySession[], left: LobbySession): LobbySession[] {
+  const room = lastHostedRoom(left)
+  if (!room) return rooms
+  return [room, ...rooms.filter((r) => r.code !== room.code)].slice(0, MAX_RECENT_HOSTED)
+}
+
 /** The link in the QR code: opens the lobby with the code filled in. */
 export function joinLink(origin: string, code: string): string {
   return `${origin.replace(/\/$/, '')}/#/lobby/${code}`
