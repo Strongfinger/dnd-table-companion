@@ -14,6 +14,8 @@ export interface Member {
   /** The character's name, so the DM sees who plays whom before their sheet arrives. */
   characterName: string | null
   online: boolean
+  /** When this device's app was built (ISO date, __BUILD_TIME__); missing on apps from before the version check. */
+  build?: string | null
 }
 
 export interface Me {
@@ -22,6 +24,8 @@ export interface Me {
   role: 'dm' | 'player'
   characterId: string | null
   characterName: string | null
+  /** My app's build time, shared so the room can spot out-of-date apps. */
+  build?: string
 }
 
 export interface RoomHandlers {

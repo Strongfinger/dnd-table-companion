@@ -19,7 +19,7 @@ export function localTransport(options: { heartbeatMs?: number; timeoutMs?: numb
       const channel = new BroadcastChannel(`dnd-room-${code}`)
       const dedupe = new Deduper()
       const lastSeen = new Map<string, { member: Omit<Member, 'online'>; at: number }>()
-      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId, characterName: me.characterName }
+      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId, characterName: me.characterName, build: me.build ?? null }
 
       const publishMembers = () => {
         const now = Date.now()

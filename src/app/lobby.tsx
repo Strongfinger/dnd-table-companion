@@ -555,7 +555,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   function join(s: LobbySession) {
     const transport = s.local ? localTransport() : online!
     const me = deviceFor(s.local)
-    conn.current = transport.join(s.code, { id: me.id, name: me.name, role: s.role, characterId: s.characterId, characterName: s.characterName }, {
+    conn.current = transport.join(s.code, { id: me.id, name: me.name, role: s.role, characterId: s.characterId, characterName: s.characterName, build: __BUILD_TIME__ }, {
       onMessage,
       onMembers: (list) => {
         // DM: a removed player who comes back online (e.g. typed the code again) is removed again.
