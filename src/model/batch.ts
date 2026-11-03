@@ -1,7 +1,7 @@
 // Several creatures at once in the DM's tracker (select a few, type one damage number).
 // Pure functions: they work out what WOULD happen (for the preview) and what to put back (undo);
 // nothing here writes to the database. The tracker applies the plan.
-import { applyDamage, halfDamage, type Condition, type TimedEffect } from '../rules'
+import { applyDamage, halfDamage, monsterBaseName, type Condition, type TimedEffect } from '../rules'
 import { damageCharacter, healCharacter, isDead } from './actions'
 import type { Character } from './character'
 import { addEffect, damageMonster, healMonster, type Combatant } from './encounter'
@@ -144,8 +144,8 @@ export function planUndo(entries: Snapshot[], now: Record<string, Vitals | undef
 
 // --- Selecting ----------------------------------------------------------------------------------
 
-/** "Goblin 3" → "Goblin". */
-export const baseName = (name: string): string => name.replace(/\s+\d+$/, '')
+/** "Goblin 3" → "Goblin", "Ochre Jelly A" → "Ochre Jelly". */
+export const baseName = (name: string): string => monsterBaseName(name)
 
 /** Chips like "Goblin ×3": monsters still in the fight that share a base name (two or more). */
 export function groupChips(list: Combatant[]): { label: string; ids: string[] }[] {

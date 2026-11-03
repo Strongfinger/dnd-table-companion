@@ -15,8 +15,8 @@ import {
   type BatchTarget, type DamageMode, type Snapshot, type Vitals,
 } from '../model/batch'
 import {
-  conditionsToClear, damageMonster, healMonster, isConditionName, MAX_FIGHT_NAME, renameEncounter, rollInitiative, startMonsterTurn,
-  type Combatant, type Encounter, type MonsterResult,
+  conditionsToClear, copyMonster, damageMonster, healMonster, isConditionName, MAX_FIGHT_NAME, renameEncounter, rollInitiative, splitMonster, startMonsterTurn,
+  type Combatant, type Encounter, type FightChange, type MonsterResult,
 } from '../model/encounter'
 import { nextTurn, previousTurn, sortByInitiative, startCombat } from '../rules'
 import { Button } from '../ui/kit'
@@ -225,6 +225,22 @@ export default function Tracker({ id }: { id: string }) {
     await patch((x) => ({ combatants: sortByInitiative([...x.combatants, ...list]) }))
     for (const c of list) await log(`➕ ${c.name} เข้าร่วมการต่อสู้`, c.characterId ?? '', enc.round, visible(c))
     setAdding(false)
+  }
+
+  /**
+   * Split a monster into two halves (Ochre Jelly) or add one more copy of it, then log it.
+   * The log line names no HP, so players see it unless the monster is hidden.
+   */
+  async function changeMonster(cid: string, how: (x: Encounter, id: string) => FightChange) {
+    const c = enc.combatants.find((x) => x.id === cid)
+    const r = await update<FightChange>((x) => {
+      const change = how(x, cid)
+      return { encounter: change.ok ? change.encounter : x, result: change }
+    })
+    if (!r) return
+    if (!r.ok) { setNotice(r.reason); return }
+    setOpenId(null)
+    await log(r.text, '', enc.round, visible(c))
   }
 
   async function removeFight() {
@@ -482,6 +498,8 @@ export default function Tracker({ id }: { id: string }) {
               onUpdate={(fn) => updateCombatant(c.id, fn)}
               onPcAction={(action) => c.characterId && pcAction(c.characterId, action)}
               onRemove={() => remove(c.id)}
+              onSplit={() => changeMonster(c.id, splitMonster)}
+              onCopy={() => changeMonster(c.id, copyMonster)}
               onMakeCharacter={() => void makeCharacterFromCombatant(enc.id, c.id)}
             />
           ))}

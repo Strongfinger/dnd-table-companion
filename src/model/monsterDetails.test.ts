@@ -47,4 +47,8 @@ describe('findMonsterForCombatant', () => {
     expect(findMonsterForCombatant(list, 'Werewolf, Hybrid Form 1')?.name).toBe('Werewolf, Hybrid Form')
     expect(findMonsterForCombatant(list, 'Snaggletooth')).toBeUndefined()
   })
+  it('matches split halves ("Ochre Jelly A", "Ochre Jelly AB", "Ochre Jelly A 2")', () => {
+    const jellies = [{ name: 'Ochre Jelly' }]
+    for (const n of ['Ochre Jelly A', 'Ochre Jelly AB', 'Ochre Jelly A 2']) expect(findMonsterForCombatant(jellies, n)?.name).toBe('Ochre Jelly')
+  })
 })
