@@ -1,7 +1,7 @@
 // Encounters for the DM's combat tracker. Monsters keep their own HP here;
 // player characters are linked to their saved sheet (HP lives on the sheet).
 import {
-  buffedArmorClass, CONDITIONS, concentrationDC, deriveSheet, FRESH_TURN, rollDie, startOfTurn,
+  buffedArmorClass, canSplit, CONDITIONS, concentrationDC, copyName, deriveSheet, FRESH_TURN, rollDie, sortByInitiative, splitHitPoints, splitNames, startOfTurn,
   type ActionEconomy, type Condition, type Rng, type TimedEffect, type TurnCombatant,
 } from '../rules'
 import { newId, type Character } from './character'
@@ -184,6 +184,75 @@ export function tempHpMonster(m: Combatant, amount: number): MonsterResult {
   return {
     combatant: { ...m, hp: { ...m.hp, temp } },
     text: temp === m.hp.temp && m.hp.temp > 0 ? `${m.name}: Temp HP ${amount} ไม่ซ้อนกัน ยังคง ${temp}` : `${m.name} ได้ Temp HP ${temp}`,
+  }
+}
+
+/** Result of a split or copy: the changed fight, or why it can't be done. */
+export type FightChange =
+  | { ok: true; encounter: Encounter; newIds: string[]; text: string }
+  | { ok: false; reason: string }
+
+/**
+ * Split a monster (SRD 5.2.1 "Split" reaction, e.g. Ochre Jelly): the original leaves and two new
+ * monsters take its place, each with half its current HP (round down) as both current and max HP,
+ * on the same initiative. They are new creatures: no effects, Temp HP or Concentration carry over,
+ * and their Action, Bonus Action, Reaction, Legendary and Recharge uses start fresh.
+ * If it was the original's turn, the turn passes to the first half. `text` holds no HP numbers,
+ * so it can be shown to players.
+ */
+export function splitMonster(e: Encounter, id: string): FightChange {
+  const c = e.combatants.find((x) => x.id === id)
+  if (!c || c.kind !== 'monster') return { ok: false, reason: 'แยกร่างได้เฉพาะมอนสเตอร์' }
+  if (!canSplit(c.hp.current)) return { ok: false, reason: `${c.name} มี HP ไม่พอจะแยกร่าง (ต้องมีอย่างน้อย 2)` }
+  const half = splitHitPoints(c.hp.current)
+  const others = e.combatants.filter((x) => x.id !== id)
+  const names = splitNames(c.name, others.map((x) => x.name))
+  const halves: Combatant[] = names.map((name) => ({
+    ...c,
+    id: newId(),
+    name,
+    hp: { max: half, current: half, temp: 0 },
+    defeated: false,
+    effects: [],
+    concentration: '',
+    turn: { ...FRESH_TURN },
+    legendaryUsed: 0,
+    spent: [],
+  }))
+  const at = e.combatants.findIndex((x) => x.id === id)
+  const combatants = sortByInitiative([...e.combatants.slice(0, at), ...halves, ...e.combatants.slice(at + 1)])
+  return {
+    ok: true,
+    encounter: { ...e, combatants, activeId: e.activeId === id ? halves[0].id : e.activeId },
+    newIds: halves.map((h) => h.id),
+    text: `✂️ ${c.name} แยกร่างเป็น ${names[0]} และ ${names[1]}`,
+  }
+}
+
+/**
+ * One more of the same monster, mid-fight: same stats and initiative as the original,
+ * full HP (the original's max HP), fresh turn, no effects.
+ */
+export function copyMonster(e: Encounter, id: string): FightChange {
+  const c = e.combatants.find((x) => x.id === id)
+  if (!c || c.kind !== 'monster') return { ok: false, reason: 'คัดลอกได้เฉพาะมอนสเตอร์' }
+  const copy: Combatant = {
+    ...c,
+    id: newId(),
+    name: copyName(c.name, e.combatants.map((x) => x.name)),
+    hp: { max: c.hp.max, current: c.hp.max, temp: 0 },
+    defeated: false,
+    effects: [],
+    concentration: '',
+    turn: { ...FRESH_TURN },
+    legendaryUsed: 0,
+    spent: [],
+  }
+  return {
+    ok: true,
+    encounter: { ...e, combatants: sortByInitiative([...e.combatants, copy]) },
+    newIds: [copy.id],
+    text: `➕ ${copy.name} เข้าร่วมการต่อสู้`,
   }
 }
 

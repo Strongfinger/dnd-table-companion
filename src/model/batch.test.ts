@@ -164,6 +164,12 @@ describe('selecting', () => {
   it('baseName strips the copy number', () => {
     expect(baseName('Goblin 3')).toBe('Goblin')
     expect(baseName('Goblin Boss')).toBe('Goblin Boss')
+    expect(baseName('Ochre Jelly B')).toBe('Ochre Jelly')
+  })
+  it('group chips put split halves together', () => {
+    const [a, b] = createMonsters({ name: 'Ochre Jelly', ac: 8, hpMax: 22, initBonus: -2 }, 2)
+    const halves = [{ ...a, name: 'Ochre Jelly A' }, { ...b, name: 'Ochre Jelly B' }]
+    expect(groupChips(halves)).toEqual([{ label: 'Ochre Jelly ×2', ids: halves.map((h) => h.id) }])
   })
   it('group chips: monsters sharing a name, two or more, not defeated, not PCs', () => {
     const list = [...goblins, wolves[0], { ...wolves[1], defeated: true }, heroRow]

@@ -1,6 +1,6 @@
 // Full SRD 5.2.1 stat blocks for the lookup (data: src/data/srd-monster-details.json, built by
 // scripts/srd/monster-details.mjs). Joined with the quick-add list (srd-monsters.json) by id.
-import { abilityModifier, formatModifier, type Ability } from '../rules'
+import { abilityModifier, formatModifier, monsterBaseName, type Ability } from '../rules'
 import { formatCR, loadSrdMonsters, type SrdMonster } from './monsters'
 
 export interface StatBlockEntry {
@@ -80,10 +80,10 @@ export function immunitiesLine(m: Pick<FullMonster, 'immunities' | 'conditionImm
 
 /**
  * The SRD monster a tracker combatant is, from its name: "Goblin Warrior 2" → Goblin Warrior.
- * Exact name first, then without the copy number. Renamed or homebrew monsters give undefined.
+ * Exact name first, then without the copy number or split letters ("Ochre Jelly A"). Renamed or homebrew monsters give undefined.
  */
 export function findMonsterForCombatant<T extends { name: string }>(list: T[], combatantName: string): T | undefined {
   const name = combatantName.trim().toLowerCase()
-  const base = name.replace(/\s+\d+$/, '')
+  const base = monsterBaseName(combatantName).toLowerCase()
   return list.find((m) => m.name.toLowerCase() === name) ?? list.find((m) => m.name.toLowerCase() === base)
 }

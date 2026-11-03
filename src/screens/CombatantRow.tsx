@@ -10,7 +10,7 @@ import {
   addEffect, conditionsToClear, damageMonster, sheetOnlyConditions, healMonster, isConditionName, removeEffect, rollInitiative, tempHpMonster,
   type Combatant, type MonsterResult,
 } from '../model/encounter'
-import { buffedArmorClass, CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, type ActionKind, type Condition } from '../rules'
+import { buffedArmorClass, canSplit, CONDITIONS, deriveSheet, formatModifier, FRESH_TURN, meetsSplitHp, SPLIT_MIN_HP, splitHitPoints, type ActionKind, type Condition } from '../rules'
 import { ActionEconomyBar, Button, DiceRoll, HelpButton } from '../ui/kit'
 import { Term } from '../ui/help'
 import ActionChoiceDialog from './ActionChoiceDialog'
@@ -19,7 +19,7 @@ import { CONDITION_TH } from '../ui/labels'
 
 const CONDITION_LIST = CONDITIONS.filter((x): x is Condition => x !== 'Exhaustion')
 
-export default function CombatantRow({ c, character, active, open, selected = false, onSelect, onToggle, onInitiative, onUpdate, onPcAction, onRemove, onMakeCharacter }: {
+export default function CombatantRow({ c, character, active, open, selected = false, onSelect, onToggle, onInitiative, onUpdate, onPcAction, onRemove, onSplit, onCopy, onMakeCharacter }: {
   c: Combatant
   character: Character | undefined
   active: boolean
@@ -35,6 +35,10 @@ export default function CombatantRow({ c, character, active, open, selected = fa
   /** Change the linked PC sheet with a character action (checked and logged by the tracker). */
   onPcAction: (action: CharacterAction) => void
   onRemove: () => void
+  /** Monsters only: split into two halves (SRD "Split", e.g. Ochre Jelly). */
+  onSplit: () => void
+  /** Monsters only: add one more of the same monster at full HP. */
+  onCopy: () => void
   /** Monster/NPC → a character sheet (to export, or for a player to control). */
   onMakeCharacter: () => void
 }) {
@@ -48,6 +52,7 @@ export default function CombatantRow({ c, character, active, open, selected = fa
   // Confirm dialog for using an Action / Bonus Action / Reaction or starting Concentration.
   const [pending, setPending] = useState<SuggestionKind | null>(null)
   const [confirmMake, setConfirmMake] = useState(false)
+  const [confirmSplit, setConfirmSplit] = useState(false)
 
   const isPc = c.kind === 'pc'
   const missing = isPc && !character
@@ -349,11 +354,35 @@ export default function CombatantRow({ c, character, active, open, selected = fa
               </button>
             )}
             {!isPc && (
+              <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={() => setConfirmSplit(!confirmSplit)}>✂️ แยกร่าง (Split)</button>
+            )}
+            {!isPc && (
+              <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={onCopy}>➕ เพิ่มอีกตัว</button>
+            )}
+            {!isPc && (
               <button type="button" className="rounded bg-stone-700 px-2 py-1" onClick={() => setConfirmMake(!confirmMake)}>🧑 เป็นตัวละคร</button>
             )}
             <button type="button" className="ml-auto text-red-400" onClick={() => setConfirmRemove(!confirmRemove)}>เอาออก</button>
             {confirmRemove && <Button variant="danger" className="text-sm" onClick={onRemove}>ยืนยันเอาออก</Button>}
           </div>
+          {confirmSplit && !isPc && (
+            <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-2 text-sm">
+              {canSplit(hp.current) ? (
+                <p className="text-stone-300">
+                  {c.name} แยกเป็น 2 ตัว ได้ HP ตัวละ {splitHitPoints(hp.current)} (ครึ่งหนึ่งของ HP ปัจจุบัน ปัดลง) ใช้ Initiative เดิม
+                  · ตัวเดิมออกจากการต่อสู้ และ Condition/เอฟเฟกต์ไม่ติดไปที่ตัวใหม่
+                  {!meetsSplitHp(hp.current) && <span className="block text-amber-300">⚠️ ตามกฎ SRD ต้องมี HP {SPLIT_MIN_HP}+ จึงจะแยกร่างได้</span>}
+                  <span className="block text-stone-400">ตามกฎ: ต้องมีขนาด Large หรือ Medium · แยกร่างเมื่อกลายเป็น Bloodied หรือโดนความเสียหายแบบ Lightning หรือ Slashing · แต่ละตัวที่แยกออกมาเล็กลงหนึ่งขนาด</span>
+                </p>
+              ) : (
+                <p className="text-amber-300">HP เหลือน้อยเกินไป แยกร่างไม่ได้ (ต้องมีอย่างน้อย 2)</p>
+              )}
+              <div className="flex gap-2">
+                {canSplit(hp.current) && <Button variant="primary" className="flex-1" onClick={() => { setConfirmSplit(false); onSplit() }}>✂️ แยกร่าง</Button>}
+                <Button className="flex-1" onClick={() => setConfirmSplit(false)}>ยกเลิก</Button>
+              </div>
+            </div>
+          )}
           {confirmMake && !isPc && (
             <div className="mt-2 space-y-2 rounded-lg bg-stone-900 p-2 text-sm">
               <p className="text-stone-300">
