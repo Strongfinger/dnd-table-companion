@@ -267,7 +267,7 @@ function InRoom() {
                 {m.deviceId === lobby.me.id && <span className="text-stone-500"> (ฉัน)</span>}
                 {/* DM: this player's app is older than mine (or too old to say), see sync/appVersion.ts. */}
                 {s.role === 'dm' && memberIsOutdated(m, __BUILD_TIME__) && (
-                  <span className="ml-1 inline-block whitespace-nowrap rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300" title="แอปของผู้เล่นคนนี้เก่ากว่าของ DM ให้เขากดอัปเดต (หรือปิดแล้วเปิดแอปใหม่)">⚠ แอปเก่า</span>
+                  <span className="ml-1 inline-block whitespace-nowrap rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300" title="แอปของผู้เล่นคนนี้เก่ากว่าของ DM บอกให้เขากดอัปเดต (หรือปิดแล้วเปิดแอปใหม่)">⚠ แอปเก่า</span>
                 )}
                 {m.role === 'player' && (
                   <span className="block text-xs text-stone-400">

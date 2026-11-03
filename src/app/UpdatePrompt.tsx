@@ -39,7 +39,7 @@ export default function UpdatePrompt() {
   if (behindDm && !laterBehindDm) {
     return (
       <div role="status" className="fixed inset-x-3 top-14 z-40 mx-auto max-w-md rounded-xl border border-amber-500 bg-stone-900 p-3 shadow-2xl">
-        <p className="text-sm">⚠ แอปของคุณเก่ากว่าของ DM กดอัปเดตเพื่อให้ใช้ได้ตรงกัน (ข้อมูลตัวละครไม่หาย)</p>
+        <p className="text-sm">⚠ แอปของคุณเก่ากว่าของ DM กดอัปเดตเพื่อให้เป็นเวอร์ชันเดียวกัน (ข้อมูลตัวละครไม่หาย)</p>
         <div className="mt-2 flex gap-2">
           <Button variant="primary" className="flex-1" onClick={() => { if (!checking) void updateNow() }}>{checking ? 'กำลังโหลด…' : 'อัปเดตเลย'}</Button>
           <Button className="flex-1" onClick={() => setLaterBehindDm(true)}>ไว้ทีหลัง</Button>
