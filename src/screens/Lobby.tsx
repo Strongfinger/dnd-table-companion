@@ -11,6 +11,7 @@ import { grantLevelUp, revokeLevelUp } from '../model/levelLock'
 import { listEncounters } from '../db/encounters'
 import { liveFight } from '../model/playerView'
 import { currentDevice, getSetting, setDeviceName } from '../db/device'
+import { memberIsOutdated } from '../sync/appVersion'
 import { joinLink, visibleMembers } from '../sync/lobby'
 import { isValidRoomCode, normalizeRoomCode } from '../sync/roomCode'
 import type { ConnectionStatus } from '../sync/transport'
@@ -264,6 +265,10 @@ function InRoom() {
               <span className="min-w-0 flex-1">
                 <span className={m.online ? '' : 'text-stone-500'}>{m.name}</span>
                 {m.deviceId === lobby.me.id && <span className="text-stone-500"> (ฉัน)</span>}
+                {/* DM: this player's app is older than mine (or too old to say), see sync/appVersion.ts. */}
+                {s.role === 'dm' && memberIsOutdated(m, __BUILD_TIME__) && (
+                  <span className="ml-1 inline-block whitespace-nowrap rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300" title="แอปของผู้เล่นคนนี้เก่ากว่าของ DM ให้เขากดอัปเดต (หรือปิดแล้วเปิดแอปใหม่)">⚠ แอปเก่า</span>
+                )}
                 {m.role === 'player' && (
                   <span className="block text-xs text-stone-400">
                     {!m.characterName ? 'ยังไม่ได้เลือกตัวละคร'

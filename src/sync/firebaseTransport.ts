@@ -7,6 +7,7 @@
 // never what the message claims.
 //
 // Firebase is loaded only when a lobby is joined, so the rest of the app stays small.
+import { parseBuild } from './appVersion'
 import { Deduper, parseEnvelope, type Envelope } from './envelope'
 import type { Me, Member, RoomConnection, RoomHandlers, RoomTransport } from './transport'
 
@@ -30,7 +31,7 @@ export function firebaseTransport(): RoomTransport | null {
     label: 'ออนไลน์ (Firebase)',
     join(code: string, me: Me, handlers: RoomHandlers): RoomConnection {
       let closed = false
-      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId, characterName: me.characterName }
+      let self: Omit<Member, 'online'> = { deviceId: me.id, name: me.name, role: me.role, characterId: me.characterId, characterName: me.characterName, build: me.build ?? null }
       const queue: Envelope[] = []
       let sendNow: ((e: Envelope) => void) | null = null
       let updateSelf: (() => void) | null = null
@@ -87,7 +88,7 @@ export function firebaseTransport(): RoomTransport | null {
             const m = child.val() as Member
             if (typeof m?.deviceId !== 'string' || typeof m?.name !== 'string') return
             byUid.set(child.key!, { id: m.deviceId, name: m.name.slice(0, 40) })
-            list.push({ deviceId: m.deviceId, name: m.name, role: m.role === 'dm' ? 'dm' : 'player', characterId: typeof m.characterId === 'string' ? m.characterId : null, characterName: typeof m.characterName === 'string' ? m.characterName.slice(0, 60) : null, online: !!m.online })
+            list.push({ deviceId: m.deviceId, name: m.name, role: m.role === 'dm' ? 'dm' : 'player', characterId: typeof m.characterId === 'string' ? m.characterId : null, characterName: typeof m.characterName === 'string' ? m.characterName.slice(0, 60) : null, online: !!m.online, build: parseBuild(m.build) })
           })
           handlers.onMembers(list)
         }))
